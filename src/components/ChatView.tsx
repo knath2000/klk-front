@@ -18,6 +18,40 @@ import TypingIndicator from './TypingIndicator';
 import ChatInput from './ChatInput';
 import clsx from 'clsx';
 
+// Mock personas data (will be replaced with API call)
+const mockPersonas: Persona[] = [
+  {
+    id: 'mex',
+    country_key: 'mex',
+    displayName: 'México',
+    locale_hint: 'Español mexicano',
+    prompt_text: 'Eres un asistente de IA. Debes responder siempre en español mexicano...',
+    safe_reviewed: true,
+    created_by: 'system',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'arg',
+    country_key: 'arg',
+    displayName: 'Argentina',
+    locale_hint: 'Español argentino',
+    prompt_text: 'Eres un asistente de IA. Debes responder siempre en español argentino...',
+    safe_reviewed: true,
+    created_by: 'system',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'esp',
+    country_key: 'esp',
+    displayName: 'España',
+    locale_hint: 'Español peninsular',
+    prompt_text: 'Eres un asistente de IA. Debes responder siempre en español de España...',
+    safe_reviewed: true,
+    created_by: 'system',
+    created_at: new Date().toISOString()
+  }
+];
+
 const ChatView: React.FC = () => {
   const [chatState, setChatState] = useState<ChatState>({
     messages: [],
@@ -30,17 +64,51 @@ const ChatView: React.FC = () => {
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Fetch personas from API - use full backend URL
+  useEffect(() => {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+    
+    fetch(`${backendUrl}/api/personas`)
+      .then(async res => {
+        console.log('API Response Status:', res.status);
+        console.log('API Response Headers:', [...res.headers.entries()]);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('API Error Response:', errorText);
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await res.text();
+          console.error('Non-JSON response:', text);
+          throw new Error('Response is not JSON');
+        }
+        
+        return res.json();
+      })
+      .then(data => {
+        console.log('Personas data received:', data);
+        setChatState(prev => ({ ...prev, personas: data.personas }));
+      })
+      .catch(error => {
+        console.error('Error fetching personas:', error);
+        // Set mock personas for testing
+        setChatState(prev => ({ 
+          ...prev, 
+          personas: mockPersonas 
+        }));
+      });
+  }, []);
+
   // Initialize WebSocket connection
   useEffect(() => {
-    // Fetch personas from API
-    fetch('/api/personas')
-      .then(res => res.json())
-      .then(data => {
-        setChatState(prev => ({ ...prev, personas: data.personas }));
-      });
-
-    // Connect to real WebSocket server
-    const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001');
+    // Connect to real WebSocket server with credentials
+    const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001', {
+      withCredentials: true,
+      transports: ['websocket', 'polling']
+    });
     
     socketRef.current = socket;
     
@@ -244,3 +312,5 @@ const ChatView: React.FC = () => {
 };
 
 export default ChatView;
+
+
