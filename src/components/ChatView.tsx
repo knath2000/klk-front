@@ -66,71 +66,191 @@ const ChatView: React.FC = () => {
 
   // Fetch personas from API - use full backend URL
   useEffect(() => {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-    
-    fetch(`${backendUrl}/api/personas`)
-      .then(async res => {
-        console.log('API Response Status:', res.status);
-        console.log('API Response Headers:', [...res.headers.entries()]);
-        
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error('API Error Response:', errorText);
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        
-        const contentType = res.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          const text = await res.text();
-          console.error('Non-JSON response:', text);
-          throw new Error('Response is not JSON');
-        }
-        
-        return res.json();
-      })
-      .then(data => {
-        console.log('Personas data received:', data);
-        setChatState(prev => ({ ...prev, personas: data.personas }));
-      })
-      .catch(error => {
-        console.error('Error fetching personas:', error);
-        // Set mock personas for testing
+    const fetchPersonasWithRetry = async (retries = 3) => {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+      
+      console.log('🔍 API CONFIGURATION:');
+      console.log('   Backend URL:', backendUrl);
+      console.log('   Environment:', process.env.NODE_ENV);
+      console.log('   Is Production:', process.env.NODE_ENV === 'production');
+      
+      // Validate backend URL
+      if (!backendUrl || backendUrl.includes('your-railway-app')) {
+        console.error('❌ INVALID BACKEND URL:', backendUrl);
+        console.error('   Please set NEXT_PUBLIC_BACKEND_URL to your actual Railway backend URL');
         setChatState(prev => ({ 
           ...prev, 
           personas: mockPersonas 
         }));
-      });
+        return;
+      }
+      
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        console.log(`🔄 ATTEMPT ${attempt}/${retries}: Fetching personas from ${backendUrl}/api/personas`);
+        
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+          
+          const response = await fetch(`${backendUrl}/api/personas`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
+          
+          console.log('📊 API RESPONSE:');
+          console.log('   Status:', response.status);
+          console.log('   Status Text:', response.statusText);
+          console.log('   Content-Type:', response.headers.get('content-type'));
+          console.log('   URL:', response.url);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ API ERROR RESPONSE:', errorText);
+            
+            // Check if it's a Next.js 404 page
+            if (errorText.includes('<!DOCTYPE html>') && errorText.includes('404')) {
+              console.error('🚨 DETECTED NEXT.JS 404 PAGE - Backend URL is incorrect or unreachable');
+              console.error('   Expected JSON response but got HTML 404 page');
+              console.error('   This usually means the backend URL is pointing to the frontend instead of backend');
+              throw new Error('Backend URL appears to be incorrect - got Next.js 404 page');
+            }
+            
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('❌ NON-JSON RESPONSE RECEIVED:');
+            console.error('   Content-Type:', contentType);
+            console.error('   Response Text (first 500 chars):', text.substring(0, 500));
+            throw new Error('Response is not JSON');
+          }
+          
+          const data = await response.json();
+          console.log('✅ PERSONAS DATA RECEIVED:', data);
+          
+          if (!data.personas || !Array.isArray(data.personas)) {
+            console.error('❌ INVALID DATA STRUCTURE:', data);
+            throw new Error('Invalid personas data structure');
+          }
+          
+          setChatState(prev => ({ ...prev, personas: data.personas }));
+          console.log('🎉 PERSONAS LOADED SUCCESSFULLY:', data.personas.length, 'personas');
+          return; // Success, exit the retry loop
+          
+        } catch (error) {
+          console.error(`💥 ERROR ON ATTEMPT ${attempt}/${retries}:`, error);
+          
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          const errorName = error instanceof Error ? error.name : 'UnknownError';
+          
+          if (errorName === 'AbortError') {
+            console.error('   Request timed out after 10 seconds');
+          } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+            console.error('   Network error - backend may be unreachable');
+            console.error('   Check if backend URL is correct and backend is running');
+          }
+          
+          // If this is the last attempt, fall back to mock data
+          if (attempt === retries) {
+            console.log('🔄 ALL RETRIES EXHAUSTED - FALLING BACK TO MOCK PERSONAS');
+            console.log('💡 TROUBLESHOOTING TIPS:');
+            console.log('   1. Check if NEXT_PUBLIC_BACKEND_URL is set correctly in Vercel');
+            console.log('   2. Verify the Railway backend is running and accessible');
+            console.log('   3. Check browser console for CORS errors');
+            console.log('   4. Try accessing the backend directly in a new tab');
+            
+            setChatState(prev => ({ 
+              ...prev, 
+              personas: mockPersonas 
+            }));
+          } else {
+            // Wait before retrying (exponential backoff)
+            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+            console.log(`⏳ RETRYING IN ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
+      }
+    };
+    
+    fetchPersonasWithRetry();
   }, []);
 
   // Initialize WebSocket connection
   useEffect(() => {
-    // Connect to real WebSocket server with credentials
-    const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001', {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+    
+    console.log('🔌 WEBSOCKET CONFIGURATION:');
+    console.log('   Backend URL:', backendUrl);
+    
+    // Validate backend URL for WebSocket
+    if (!backendUrl || backendUrl.includes('your-railway-app')) {
+      console.error('❌ INVALID BACKEND URL FOR WEBSOCKET:', backendUrl);
+      console.error('   WebSocket connection will fail');
+      return;
+    }
+    
+    console.log('🔌 INITIALIZING WEBSOCKET CONNECTION...');
+    const socket = io(backendUrl, {
       withCredentials: true,
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      timeout: 10000,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
     
     socketRef.current = socket;
     
     socket.on('connect', () => {
+      console.log('✅ WEBSOCKET CONNECTED:', socket.id);
       setChatState(prev => ({ ...prev, isConnected: true }));
     });
     
-    socket.on('disconnect', () => {
+    socket.on('connect_error', (error) => {
+      console.error('❌ WEBSOCKET CONNECTION ERROR:', error);
+      console.error('   This may indicate backend is unreachable or CORS issues');
       setChatState(prev => ({ ...prev, isConnected: false }));
     });
     
+    socket.on('disconnect', (reason) => {
+      console.log('🔌 WEBSOCKET DISCONNECTED:', reason);
+      setChatState(prev => ({ ...prev, isConnected: false }));
+    });
+    
+    socket.on('reconnect', (attemptNumber) => {
+      console.log('🔄 WEBSOCKET RECONNECTED after', attemptNumber, 'attempts');
+      setChatState(prev => ({ ...prev, isConnected: true }));
+    });
+    
+    socket.on('reconnect_error', (error) => {
+      console.error('❌ WEBSOCKET RECONNECT ERROR:', error);
+    });
+    
     socket.on('assistant_delta', (data) => {
-      // Handle streaming responses
+      console.log('📨 RECEIVED assistant_delta:', data);
       updateAssistantMessage(data.message_id, data.chunk, false);
     });
     
     socket.on('assistant_final', (data) => {
-      // Handle final response
+      console.log('📨 RECEIVED assistant_final:', data);
       updateAssistantMessage(data.message_id, data.final_content, true);
     });
     
+    socket.on('error', (error) => {
+      console.error('💥 WEBSOCKET ERROR:', error);
+    });
+    
     return () => {
+      console.log('🔌 CLEANING UP WEBSOCKET CONNECTION');
       socket.disconnect();
     };
   }, []);
@@ -312,5 +432,4 @@ const ChatView: React.FC = () => {
 };
 
 export default ChatView;
-
 
