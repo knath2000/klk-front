@@ -245,10 +245,6 @@ const ChatView: React.FC = () => {
       updateAssistantMessage(data.message_id, data.final_content, true);
     });
     
-    socket.on('error', (error) => {
-      console.error('💥 WEBSOCKET ERROR:', error);
-    });
-    
     return () => {
       console.log('🔌 CLEANING UP WEBSOCKET CONNECTION');
       socket.disconnect();
@@ -265,8 +261,13 @@ const ChatView: React.FC = () => {
   };
 
   const handleSendMessage = (message: string) => {
-    if (!chatState.selectedCountry || !socketRef.current) return;
+    if (!chatState.selectedCountry || !socketRef.current) {
+      console.error('❌ Cannot send message: no country selected or socket not connected');
+      return;
+    }
 
+    console.log('📤 SENDING MESSAGE:', { message, country: chatState.selectedCountry });
+    
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       type: 'user',
@@ -280,19 +281,15 @@ const ChatView: React.FC = () => {
       messages: [...prev.messages, userMessage]
     }));
 
-    // Send to server
-    const event: UserMessageEvent = {
-      type: 'user_message',
-      data: {
-        message,
-        selected_country_key: chatState.selectedCountry,
-        client_ts: Date.now(),
-        message_id: userMessage.id
-      },
-      timestamp: Date.now()
-    };
-
-    socketRef.current.emit('message', event);
+    // Send to server with correct event name
+    socketRef.current.emit('user_message', {
+      message,
+      selected_country_key: chatState.selectedCountry,
+      client_ts: Date.now(),
+      message_id: userMessage.id
+    });
+    
+    console.log('📤 MESSAGE SENT');
   };
 
   const selectedPersona = chatState.personas.find(p => p.country_key === chatState.selectedCountry);
@@ -432,4 +429,3 @@ const ChatView: React.FC = () => {
 };
 
 export default ChatView;
-
