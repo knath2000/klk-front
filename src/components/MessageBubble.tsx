@@ -36,6 +36,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLast = false }
           {message.content}
         </div>
 
+        {/* Message Type Label */}
+        {isUser && (
+          <div className="text-xs text-blue-100 mb-1 font-semibold">
+            Tú
+          </div>
+        )}
+
+        {isAssistant && (
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">
+            Assistant
+          </div>
+        )}
+
         {/* Streaming Indicator */}
         {isAssistant && message.isStreaming && (
           <motion.div

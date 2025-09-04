@@ -268,8 +268,11 @@ const ChatView: React.FC = () => {
 
     console.log('📤 SENDING MESSAGE:', { message, country: chatState.selectedCountry });
     
+    // Generate consistent message ID that matches server expectations
+    const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     const userMessage: Message = {
-      id: `user-${Date.now()}`,
+      id: `user-${messageId}`, // Clear user message ID prefix
       type: 'user',
       content: message,
       timestamp: Date.now(),
@@ -281,15 +284,15 @@ const ChatView: React.FC = () => {
       messages: [...prev.messages, userMessage]
     }));
 
-    // Send to server with correct event name
+    // Send to server with the base message ID
     socketRef.current.emit('user_message', {
       message,
       selected_country_key: chatState.selectedCountry,
       client_ts: Date.now(),
-      message_id: userMessage.id
+      message_id: messageId // Send base ID to server
     });
     
-    console.log('📤 MESSAGE SENT');
+    console.log('📤 MESSAGE SENT with ID:', messageId);
   };
 
   const selectedPersona = chatState.personas.find(p => p.country_key === chatState.selectedCountry);
@@ -297,10 +300,12 @@ const ChatView: React.FC = () => {
   // Helper function to update assistant messages from streaming
   const updateAssistantMessage = (messageId: string, content: string, isFinal: boolean) => {
     setChatState(prev => {
-      const existingMessageIndex = prev.messages.findIndex(msg => msg.id === messageId);
+      // Look for existing assistant message with the same base ID
+      const assistantMessageId = `assistant-${messageId}`;
+      const existingMessageIndex = prev.messages.findIndex(msg => msg.id === assistantMessageId);
       
       if (existingMessageIndex >= 0) {
-        // Update existing message
+        // Update existing assistant message
         const updatedMessages = [...prev.messages];
         updatedMessages[existingMessageIndex] = {
           ...updatedMessages[existingMessageIndex],
@@ -314,9 +319,9 @@ const ChatView: React.FC = () => {
           isTyping: !isFinal
         };
       } else {
-        // Create new assistant message
+        // Create new assistant message with clear ID
         const newMessage: Message = {
-          id: messageId,
+          id: assistantMessageId, // Clear assistant message ID
           type: 'assistant',
           content,
           timestamp: Date.now(),
