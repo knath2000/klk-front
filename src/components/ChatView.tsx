@@ -18,8 +18,8 @@ import TypingIndicator from './TypingIndicator';
 import ChatInput from './ChatInput';
 import clsx from 'clsx';
 
-// Mock personas data (will be replaced with API call)
-const mockPersonas: Persona[] = [
+// Fallback personas data (includes all personas including Dominican Republic)
+const fallbackPersonas: Persona[] = [
   {
     id: 'mex',
     country_key: 'mex',
@@ -46,6 +46,16 @@ const mockPersonas: Persona[] = [
     displayName: 'España',
     locale_hint: 'Español peninsular',
     prompt_text: 'Eres un asistente de IA. Debes responder siempre en español de España...',
+    safe_reviewed: true,
+    created_by: 'system',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'dom',
+    country_key: 'dom',
+    displayName: 'República Dominicana',
+    locale_hint: 'Español dominicano',
+    prompt_text: 'Eres un asistente dominicano de Santo Domingo que habla español dominicano auténtico...',
     safe_reviewed: true,
     created_by: 'system',
     created_at: new Date().toISOString()
@@ -80,7 +90,7 @@ const ChatView: React.FC = () => {
         console.error('   Please set NEXT_PUBLIC_BACKEND_URL to your actual Railway backend URL');
         setChatState(prev => ({ 
           ...prev, 
-          personas: mockPersonas 
+          personas: fallbackPersonas 
         }));
         return;
       }
@@ -160,7 +170,7 @@ const ChatView: React.FC = () => {
           
           // If this is the last attempt, fall back to mock data
           if (attempt === retries) {
-            console.log('🔄 ALL RETRIES EXHAUSTED - FALLING BACK TO MOCK PERSONAS');
+            console.log('🔄 ALL RETRIES EXHAUSTED - FALLING BACK TO FALLBACK_PERSONAS');
             console.log('💡 TROUBLESHOOTING TIPS:');
             console.log('   1. Check if NEXT_PUBLIC_BACKEND_URL is set correctly in Vercel');
             console.log('   2. Verify the Railway backend is running and accessible');
@@ -169,7 +179,7 @@ const ChatView: React.FC = () => {
             
             setChatState(prev => ({ 
               ...prev, 
-              personas: mockPersonas 
+              personas: fallbackPersonas 
             }));
           } else {
             // Wait before retrying (exponential backoff)
