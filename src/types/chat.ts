@@ -77,6 +77,25 @@ export interface TypingEvent {
   timestamp: number;
 }
 
+// T3 Chat features
+export interface AIModel {
+  id: string;
+  name: string;
+  display_name: string;
+  description: string;
+  inference_speed: 'fast' | 'medium' | 'slow';
+  is_available: boolean;
+}
+
+export interface Conversation {
+  id: string;
+  title: string;
+  model: string;
+  persona_id?: string;
+  message_count: number;
+  updated_at: string;
+}
+
 // Chat state
 export interface ChatState {
   messages: Message[];
@@ -84,6 +103,8 @@ export interface ChatState {
   isTyping: boolean;
   isConnected: boolean;
   personas: Persona[];
+  currentModel?: string; // T3 Chat feature: current active model
+  currentConversation?: Conversation; // T3 Chat feature: current conversation
 }
 
 // Component props
@@ -108,4 +129,14 @@ export interface ChatInputProps {
 export interface TypingIndicatorProps {
   isVisible: boolean;
   countryName?: string;
+}
+
+export interface ModelSelectorProps {
+  currentModel: string;
+  onModelChange: (modelId: string) => void;
+}
+
+export interface SearchBarProps {
+  onSearch: (query: string) => void;
+  onConversationSelect: (conversationId: string) => void;
 }

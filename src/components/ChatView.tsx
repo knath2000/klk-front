@@ -6,16 +6,14 @@ import { io, Socket } from 'socket.io-client';
 import {
   Message,
   Persona,
-  ChatState,
-  UserMessageEvent,
-  AssistantDeltaEvent,
-  AssistantFinalEvent,
-  TypingEvent
+  ChatState
 } from '@/types/chat';
 import CountrySelector from './CountrySelector';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import ChatInput from './ChatInput';
+import ModelSelector from './ModelSelector';
+import SearchBar from './SearchBar';
 import clsx from 'clsx';
 
 // Fallback personas data (includes all personas including Dominican Republic)
@@ -68,8 +66,12 @@ const ChatView: React.FC = () => {
     selectedCountry: null,
     isTyping: false,
     isConnected: false,
-    personas: []
+    personas: [],
+    currentModel: 'gpt-4o-mini' // Default model
   });
+
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -270,6 +272,23 @@ const ChatView: React.FC = () => {
     setChatState(prev => ({ ...prev, selectedCountry: countryKey }));
   };
 
+  const handleModelChange = (modelId: string) => {
+    setChatState(prev => ({ ...prev, currentModel: modelId }));
+    // In a real implementation, this would also update the backend
+    console.log('Model changed to:', modelId);
+  };
+
+  const handleSearch = (query: string) => {
+    // In a real implementation, this would search conversations
+    console.log('Searching for:', query);
+  };
+
+  const handleConversationSelect = (conversationId: string) => {
+    // In a real implementation, this would load the conversation
+    setCurrentConversationId(conversationId);
+    console.log('Selected conversation:', conversationId);
+  };
+
   const handleSendMessage = (message: string) => {
     if (!chatState.selectedCountry || !socketRef.current) {
       console.error('❌ Cannot send message: no country selected or socket not connected');
@@ -366,6 +385,18 @@ const ChatView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Search Bar */}
+            <SearchBar 
+              onSearch={handleSearch} 
+              onConversationSelect={handleConversationSelect} 
+            />
+
+            {/* Model Selector */}
+            <ModelSelector 
+              currentModel={chatState.currentModel || 'gpt-4o-mini'} 
+              onModelChange={handleModelChange} 
+            />
+
             {/* Connection status */}
             <div className="flex items-center gap-2">
               <div className={clsx(
