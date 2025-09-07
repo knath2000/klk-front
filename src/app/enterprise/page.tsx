@@ -8,11 +8,18 @@ import CollaborationPanel from '@/components/CollaborationPanel';
 import PermissionManager from '@/components/PermissionManager';
 import ExportPanel from '@/components/ExportPanel';
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 export default function EnterpriseDashboard() {
   const [activeTab, setActiveTab] = useState('analytics');
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     // Mock user data - in real app, this would come from auth context

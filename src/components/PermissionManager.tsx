@@ -3,13 +3,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-interface Permission {
-  id: string;
-  resource_type: string;
-  resource_id: string;
-  permission: string;
-  granted_by: string;
-  granted_at: string;
+interface PermissionManagerProps {
+  teamId: string;
 }
 
 interface TeamPermission {
@@ -22,7 +17,7 @@ interface TeamPermission {
   granted_at: string;
 }
 
-const PermissionManager: React.FC<{ teamId: string }> = ({ teamId }) => {
+const PermissionManager: React.FC<PermissionManagerProps> = ({ teamId }) => {
   const [permissions, setPermissions] = useState<TeamPermission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

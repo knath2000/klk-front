@@ -14,13 +14,12 @@ interface SearchSuggestion {
   title: string;
 }
 
-export default function SearchBar({ 
-  onSearch, 
-  onConversationSelect 
-}: { 
-  onSearch: (query: string) => void; 
+interface SearchBarProps {
   onConversationSelect: (conversationId: string) => void;
-}) {
+  onSearch: (query: string) => void;
+}
+
+const SearchBar: React.FC<SearchBarProps> = ({ onConversationSelect, onSearch }) => {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -79,13 +78,10 @@ export default function SearchBar({
       setIsOpen(true);
       setIsLoading(true);
       
-      // In a real implementation, this would call the API
-      // setTimeout(() => {
-      //   onSearch(searchQuery);
-      //   setIsLoading(false);
-      // }, 300);
+      // Call the onSearch prop
+      onSearch(searchQuery);
       
-      // Mock delay
+      // Mock delay for loading state
       setTimeout(() => {
         setIsLoading(false);
       }, 300);
@@ -217,3 +213,5 @@ export default function SearchBar({
     </div>
   );
 }
+
+export default SearchBar;

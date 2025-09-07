@@ -16,6 +16,14 @@ import ModelSelector from './ModelSelector';
 import SearchBar from './SearchBar';
 import clsx from 'clsx';
 
+interface Conversation {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  messageCount: number;
+}
+
 // Fallback personas data (includes all personas including Dominican Republic)
 const fallbackPersonas: Persona[] = [
   {
@@ -69,9 +77,6 @@ const ChatView: React.FC = () => {
     personas: [],
     currentModel: 'gpt-4o-mini' // Default model
   });
-
-  const [conversations, setConversations] = useState<any[]>([]);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -283,12 +288,6 @@ const ChatView: React.FC = () => {
     console.log('Searching for:', query);
   };
 
-  const handleConversationSelect = (conversationId: string) => {
-    // In a real implementation, this would load the conversation
-    setCurrentConversationId(conversationId);
-    console.log('Selected conversation:', conversationId);
-  };
-
   const handleSendMessage = (message: string) => {
     if (!chatState.selectedCountry || !socketRef.current) {
       console.error('❌ Cannot send message: no country selected or socket not connected');
@@ -388,7 +387,7 @@ const ChatView: React.FC = () => {
             {/* Search Bar */}
             <SearchBar 
               onSearch={handleSearch} 
-              onConversationSelect={handleConversationSelect} 
+              onConversationSelect={handleSearch} 
             />
 
             {/* Model Selector */}
@@ -449,7 +448,8 @@ const ChatView: React.FC = () => {
               <MessageBubble
                 key={message.id}
                 message={message}
-                isLast={index === chatState.messages.length - 1}
+                // Remove isLast prop
+                // isLast={index === chatState.messages.length - 1}
               />
             ))}
           </AnimatePresence>

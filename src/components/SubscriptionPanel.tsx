@@ -18,10 +18,11 @@ interface SubscriptionPlan {
   };
 }
 
-export default function SubscriptionPanel() {
+const SubscriptionPanel: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('free');
   const [isAnnual, setIsAnnual] = useState(false);
 
+  // Mock plans data
   const plans: SubscriptionPlan[] = [
     {
       id: 'free',
@@ -257,3 +258,5 @@ export default function SubscriptionPanel() {
     </div>
   );
 }
+
+export default SubscriptionPanel;

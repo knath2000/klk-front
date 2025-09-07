@@ -1,10 +1,16 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Message, MessageBubbleProps } from '@/types/chat';
+import { Message } from '@/types/chat';
 import clsx from 'clsx';
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLast = false }) => {
+interface MessageBubbleProps {
+  message: Message;
+  // Remove unused isLast parameter
+  // isLast: boolean;
+}
+
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const isUser = message.type === 'user';
   const isAssistant = message.type === 'assistant';
 

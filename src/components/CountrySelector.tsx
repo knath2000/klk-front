@@ -2,8 +2,15 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
-import { Persona, CountrySelectorProps } from '@/types/chat';
+import { Persona } from '@/types/chat';
 import clsx from 'clsx';
+
+interface CountrySelectorProps {
+  personas: Persona[];
+  selectedCountry: string | null;
+  onCountrySelect: (countryKey: string) => void;
+  disabled?: boolean;
+}
 
 const CountrySelector: React.FC<CountrySelectorProps> = ({
   personas,

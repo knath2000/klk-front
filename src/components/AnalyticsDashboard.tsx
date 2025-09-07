@@ -104,10 +104,10 @@ const AnalyticsDashboard: React.FC = () => {
           setTopConversations(insightsData.topConversations || []);
           
           // Process model usage data
-          const modelData: ModelUsageData[] = Object.entries(insightsData.modelUsage || {}).map(([name, value], index) => ({
+          const modelData: ModelUsageData[] = Object.entries(insightsData.modelUsage || {}).map(([name, value]) => ({
             name,
             value: value as number,
-            color: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index % 5]
+            color: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][Math.floor(Math.random() * 5)]
           }));
           setModelUsage(modelData);
         }
@@ -284,7 +284,7 @@ const AnalyticsDashboard: React.FC = () => {
         >
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Daily Usage Trend</h3>
           <div className="space-y-3">
-            {dailyUsage.slice(0, 5).map((day, index) => (
+            {dailyUsage.slice(0, 5).map((day) => (
               <div key={day.date} className="flex items-center justify-between">
                 <span className="text-sm text-gray-600 dark:text-gray-400">{day.date}</span>
                 <div className="flex-1 mx-4">
@@ -317,26 +317,23 @@ const AnalyticsDashboard: React.FC = () => {
         >
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Model Usage Distribution</h3>
           <div className="space-y-3">
-            {modelUsage.map((model, index) => (
-              <div key={model.name} className="flex items-center">
-                <div 
-                  className="w-4 h-4 rounded-full mr-3"
-                  style={{ backgroundColor: model.color }}
-                ></div>
-                <div className="flex-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-900 dark:text-white">{model.name}</span>
-                    <span className="text-gray-600 dark:text-gray-400">{model.value} uses</span>
+            {modelUsage.map((model) => (
+              <div key={model.name} className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium text-gray-900 dark:text-white">{model.name}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Model</p>
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
-                    <div 
-                      className="h-2 rounded-full"
-                      style={{ 
-                        width: `${(model.value / Math.max(...modelUsage.map(m => m.value))) * 100}%`,
-                        backgroundColor: model.color 
-                      }}
-                    ></div>
+                  <div className="text-right">
+                    <div className="text-lg font-semibold text-gray-900 dark:text-white">{model.value}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">requests</div>
                   </div>
+                </div>
+                <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div 
+                    className="bg-blue-500 h-2 rounded-full" 
+                    style={{ width: `${(model.value / Math.max(...modelUsage.map(m => m.value))) * 100}%` }}
+                  ></div>
                 </div>
               </div>
             ))}
@@ -348,7 +345,7 @@ const AnalyticsDashboard: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
+        transition={{ delay: 0.7 }}
         className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
       >
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Conversations</h3>

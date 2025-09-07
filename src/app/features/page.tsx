@@ -2,28 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import ModelSelector from '@/components/ModelSelector';
-import SearchBar from '@/components/SearchBar';
 import SubscriptionPanel from '@/components/SubscriptionPanel';
 
 export default function FeaturesPage() {
-  const [currentModel, setCurrentModel] = useState('gpt-4o-mini');
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const handleModelChange = (modelId: string) => {
-    setCurrentModel(modelId);
-    console.log('Model changed to:', modelId);
-  };
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    console.log('Searching for:', query);
-  };
-
-  const handleConversationSelect = (conversationId: string) => {
-    console.log('Selected conversation:', conversationId);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
@@ -34,17 +15,6 @@ export default function FeaturesPage() {
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 🚀 T3 Chat Features
               </h1>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <SearchBar 
-                onSearch={handleSearch} 
-                onConversationSelect={handleConversationSelect} 
-              />
-              <ModelSelector 
-                currentModel={currentModel} 
-                onModelChange={handleModelChange} 
-              />
             </div>
           </div>
         </div>

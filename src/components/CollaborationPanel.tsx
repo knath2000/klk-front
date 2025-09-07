@@ -4,6 +4,23 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { io, Socket } from 'socket.io-client';
 
+interface UserJoinedEvent {
+  userId: string;
+  timestamp: string;
+}
+
+interface UserLeftEvent {
+  userId: string;
+  timestamp: string;
+}
+
+interface UserTypingEvent {
+  userId: string;
+  conversationId: string;
+  isTyping: boolean;
+  timestamp: string;
+}
+
 interface Collaborator {
   id: string;
   name: string;
@@ -24,7 +41,6 @@ interface SharedUser {
 }
 
 const CollaborationPanel: React.FC<{ conversationId: string }> = ({ conversationId }) => {
-  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [sharedUsers, setSharedUsers] = useState<SharedUser[]>([]);
   const [newShareEmail, setNewShareEmail] = useState('');
   const [sharePermission, setSharePermission] = useState<'read' | 'write' | 'admin'>('read');
@@ -51,17 +67,17 @@ const CollaborationPanel: React.FC<{ conversationId: string }> = ({ conversation
       });
 
       // Listen for collaborator updates
-      socketRef.current.on('user_joined', (data: any) => {
+      socketRef.current.on('user_joined', (data: UserJoinedEvent) => {
         // Handle user joined
         console.log('User joined:', data);
       });
 
-      socketRef.current.on('user_left', (data: any) => {
+      socketRef.current.on('user_left', (data: UserLeftEvent) => {
         // Handle user left
         console.log('User left:', data);
       });
 
-      socketRef.current.on('user_typing', (data: any) => {
+      socketRef.current.on('user_typing', (data: UserTypingEvent) => {
         // Handle typing indicator
         console.log('User typing:', data);
       });
@@ -242,7 +258,7 @@ const CollaborationPanel: React.FC<{ conversationId: string }> = ({ conversation
             />
             <select
               value={sharePermission}
-              onChange={(e) => setSharePermission(e.target.value as any)}
+              onChange={(e) => setSharePermission(e.target.value as 'read' | 'write' | 'admin')}
               className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
               disabled={isSharing}
             >
@@ -298,7 +314,7 @@ const CollaborationPanel: React.FC<{ conversationId: string }> = ({ conversation
                 <div className="flex items-center space-x-2">
                   <select
                     value={share.permission}
-                    onChange={(e) => handleUpdatePermission(share.user_id, e.target.value as any)}
+                    onChange={(e) => handleUpdatePermission(share.user_id, e.target.value as 'read' | 'write' | 'admin')}
                     className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   >
                     <option value="read">Read</option>
