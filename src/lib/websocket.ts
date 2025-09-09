@@ -12,7 +12,9 @@ export const getWebSocketUrl = (): string => {
 
 export const createWebSocketConnection = (url?: string): Socket => {
   const wsUrl = url || getWebSocketUrl();
-  return io(wsUrl, {
+  console.log('🔌 Creating WebSocket connection to:', wsUrl);
+  
+  const socket = io(wsUrl, {
     transports: ['websocket', 'polling'],
     upgrade: true,
     rememberUpgrade: true,
@@ -20,6 +22,16 @@ export const createWebSocketConnection = (url?: string): Socket => {
     forceNew: false,
     reconnection: true,
     reconnectionAttempts: 5,
-    reconnectionDelay: 1000
+    reconnectionDelay: 1000,
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    autoConnect: true
   });
+  
+  // Enhanced logging
+  socket.on('connect', () => console.log('✅ WebSocket CONNECTED:', socket.id));
+  socket.on('connect_error', (err) => console.error('❌ WebSocket ERROR:', err.message));
+  socket.on('disconnect', (reason) => console.log('🔌 WebSocket DISCONNECTED:', reason));
+  
+  return socket;
 };

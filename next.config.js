@@ -3,6 +3,14 @@ const nextConfig = {
   turbopack: {
     root: './', // Explicitly set root to silence warning
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'klk-front.vercel.app',
+      },
+    ],
+  },
   webpack: (config) => {
     // Only apply webpack config when not using Turbopack
     if (process.env.TURBOPACK) {
