@@ -444,7 +444,7 @@ const ChatView: React.FC = () => {
 
           {/* Messages */}
           <AnimatePresence>
-            {chatState.messages.map((message, index) => (
+            {chatState.messages.map((message, _index) => (
               <MessageBubble
                 key={message.id}
                 message={message}

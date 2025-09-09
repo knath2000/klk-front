@@ -140,29 +140,31 @@ export default function SearchBar({ onSubmit, suggestions, isLoading }: SearchBa
   };
 
   return (
-    <div className="relative w-full max-w-md mx-auto">
-      <form onSubmit={handleSubmit} className="relative">
+    <div className="relative w-full max-w-md mx-auto px-4 sm:px-0" role="search" aria-label="Translation search area">
+      <form onSubmit={handleSubmit} className="relative" aria-label="Translation search form">
         <div className="relative">
           <motion.input
             ref={inputRef}
-            type="text"
+            type="search"
             value={searchState.query}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             onFocus={handleFocus}
             onBlur={handleBlur}
             placeholder="Enter a word or phrase to translate..."
-            className={`w-full px-4 py-3 pr-12 text-lg border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
-              searchState.isValid
-                ? "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
-                : "border-red-300 focus:border-red-500 focus:ring-red-200"
-            }`}
-            aria-label="Translation search"
+            className={`w-full px-4 py-3 pr-12 text-base sm:text-lg border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                searchState.isValid
+                  ? "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                  : "border-red-300 focus:border-red-500 focus:ring-red-200"
+              }`}
+            aria-label="Enter text to translate"
             aria-describedby={searchState.errorMessage ? "search-error" : undefined}
             aria-expanded={showSuggestions}
             aria-haspopup="listbox"
             role="combobox"
             aria-autocomplete="list"
+            aria-invalid={!searchState.isValid}
+            aria-errormessage={searchState.errorMessage ? "search-error" : undefined}
           />
 
           <motion.button
@@ -171,20 +173,22 @@ export default function SearchBar({ onSubmit, suggestions, isLoading }: SearchBa
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-md transition-colors duration-200 ${
-              searchState.isValid && !isLoading
-                ? "text-blue-600 hover:bg-blue-50"
-                : "text-gray-400 cursor-not-allowed"
-            }`}
-            aria-label="Search"
+                searchState.isValid && !isLoading
+                  ? "text-blue-600 hover:bg-blue-50"
+                  : "text-gray-400 cursor-not-allowed"
+              }`}
+            aria-label={isLoading ? "Searching..." : "Search for translation"}
+            aria-disabled={!searchState.isValid || isLoading}
           >
             {isLoading ? (
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                 className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full"
+                aria-label="Loading"
               />
             ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             )}
@@ -198,6 +202,7 @@ export default function SearchBar({ onSubmit, suggestions, isLoading }: SearchBa
             className="mt-2 text-sm text-red-600"
             id="search-error"
             role="alert"
+            aria-live="polite"
           >
             {searchState.errorMessage}
           </motion.p>

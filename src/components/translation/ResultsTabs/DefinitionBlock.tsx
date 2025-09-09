@@ -3,7 +3,15 @@
 import { motion } from "framer-motion";
 import { DefinitionBlockProps } from "./resultsTabs.types";
 
-export default function DefinitionBlock({ definitions, query }: DefinitionBlockProps) {
+export default function DefinitionBlock({ definitions, query, onAddToFavorites, isInFavorites }: DefinitionBlockProps) {
+  const isFavorite = isInFavorites ? isInFavorites(query, "es") : false;
+
+  const handleAddToFavorites = () => {
+    if (onAddToFavorites && definitions.length > 0) {
+      onAddToFavorites(query, definitions[0].text);
+    }
+  };
+
   if (!definitions || definitions.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -14,9 +22,38 @@ export default function DefinitionBlock({ definitions, query }: DefinitionBlockP
 
   return (
     <div className="space-y-6">
-      <h3 className="text-xl font-semibold text-gray-900 mb-4">
-        Definitions for &quot;{query}&quot;
-      </h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-semibold text-gray-900">
+          Definitions for &quot;{query}&quot;
+        </h3>
+        {onAddToFavorites && (
+          <motion.button
+            onClick={handleAddToFavorites}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className={`p-2 rounded-full transition-colors ${
+              isFavorite
+                ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+            aria-label={isFavorite ? `Remove ${query} from favorites` : `Add ${query} to favorites`}
+          >
+            <svg
+              className="w-5 h-5"
+              fill={isFavorite ? 'currentColor' : 'none'}
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+              />
+            </svg>
+          </motion.button>
+        )}
+      </div>
 
       <div className="space-y-4">
         {definitions.map((definition, index) => (

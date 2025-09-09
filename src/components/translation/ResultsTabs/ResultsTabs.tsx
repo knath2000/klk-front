@@ -14,7 +14,7 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-export default function ResultsTabs({ results, query, onRelatedClick }: ResultsTabsProps) {
+export default function ResultsTabs({ results, query, onRelatedClick, onAddToFavorites, isInFavorites }: ResultsTabsProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   // Define available tabs based on data
@@ -60,9 +60,9 @@ export default function ResultsTabs({ results, query, onRelatedClick }: ResultsT
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-0">
       <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-        <Tab.List className="flex space-x-1 rounded-xl bg-blue-900/20 p-1">
+        <Tab.List className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-1 rounded-xl bg-blue-900/20 p-1">
           {tabs.map((tab, index) => (
             <Tab
               key={tab.id}
@@ -84,9 +84,13 @@ export default function ResultsTabs({ results, query, onRelatedClick }: ResultsT
               >
                 <span>{tab.label}</span>
                 {tab.count !== undefined && tab.count > 0 && (
-                  <span className="ml-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-blue-100 bg-blue-600 rounded-full">
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="ml-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-blue-100 bg-blue-600 rounded-full"
+                  >
                     {tab.count}
-                  </span>
+                  </motion.span>
                 )}
               </motion.div>
             </Tab>
@@ -98,7 +102,7 @@ export default function ResultsTabs({ results, query, onRelatedClick }: ResultsT
             {tabs.map((tab, index) => (
               <Tab.Panel
                 key={tab.id}
-                className="rounded-xl bg-white p-6 shadow-lg"
+                className="rounded-xl bg-white p-4 sm:p-6 shadow-lg"
                 static
               >
                 <motion.div

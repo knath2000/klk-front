@@ -45,6 +45,8 @@ export interface ResultsTabsProps {
   results: TranslationResult;
   query: string;
   onRelatedClick: (query: string, lang: string) => void;
+  onAddToFavorites?: (query: string, result?: string) => void;
+  isInFavorites?: (query: string, language: string) => boolean;
 }
 
 export interface TabPanelProps {
@@ -55,6 +57,8 @@ export interface TabPanelProps {
 export interface DefinitionBlockProps {
   definitions: Definition[];
   query: string;
+  onAddToFavorites?: (query: string, result?: string) => void;
+  isInFavorites?: (query: string, language: string) => boolean;
 }
 
 export interface ExampleListProps {
