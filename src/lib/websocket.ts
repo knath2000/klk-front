@@ -23,8 +23,6 @@ export const createWebSocketConnection = (url?: string): Socket => {
     reconnection: true,
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
-    pingTimeout: 60000,
-    pingInterval: 25000,
     autoConnect: true
   });
   

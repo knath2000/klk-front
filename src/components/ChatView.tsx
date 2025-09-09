@@ -17,14 +17,6 @@ import SearchBar from './SearchBar';
 import { createWebSocketConnection } from '../lib/websocket';
 import clsx from 'clsx';
 
-interface Conversation {
-  id: string;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-  messageCount: number;
-}
-
 // Fallback personas data (includes all personas including Dominican Republic)
 const fallbackPersonas: Persona[] = [
   {
