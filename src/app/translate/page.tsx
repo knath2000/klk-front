@@ -6,6 +6,15 @@ import io, { Socket } from "socket.io-client";
 import { SearchBar, ResultsTabs, LoadingSkeleton, ErrorDisplay, HistoryList, FavoritesList } from "@/components/translation";
 import { TranslationProvider, useTranslation } from "@/context/TranslationContext";
 import ErrorBoundary from "@/components/translation/ErrorBoundary";
+import { Inter } from 'next/font/google';
+import { createWebSocketConnection } from '../../lib/websocket';
+
+// Add font configuration at the top
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+});
 
 interface TranslationResult {
   definitions: Array<{
@@ -46,59 +55,74 @@ function TranslateContent() {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    const initSocket = () => {
-      const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001", {
-        transports: ["websocket", "polling"],
-        timeout: 20000,
+    // Use the WebSocket utility function
+    const socket = createWebSocketConnection(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001");
+
+    socket.on("connect", () => {
+      console.log("Connected to translation WebSocket");
+    });
+
+    socket.on("connect_error", (err: Error) => {
+      console.error("WebSocket connection error:", err);
+      setError("Failed to connect to translation service");
+      setIsLoading(false);
+      
+      // Fix: Use optional chaining and type assertion for transports
+      const transports = socket.io?.opts?.transports as string[] | undefined;
+      if (transports?.includes('websocket')) {
+        socket.io!.opts.transports = ['polling'] as const;
+        socket.connect();
+      }
+    });
+
+    socket.on("disconnect", () => {
+      console.log("Disconnected from translation WebSocket");
+      setIsStreaming(false);
+    });
+
+    // Add reconnection handler
+    socket.on('reconnect', (attemptNumber: number) => {
+      console.log('🔄 Translation WebSocket RECONNECTED after', attemptNumber, 'attempts');
+    });
+
+    socket.on('reconnect_error', (error: Error) => {
+      console.error('❌ Translation WebSocket RECONNECT ERROR:', error);
+      // Attempt reconnection with exponential backoff
+      const reconnectionAttempts = 5;
+      setTimeout(() => {
+        socket.connect();
+      }, Math.min(1000 * Math.pow(2, reconnectionAttempts), 30000));
+    });
+
+    socket.on("translation_delta", (data: Partial<TranslationResult>) => {
+      console.log("Received translation delta:", data);
+      setPartialResults(prev => ({ ...prev, ...data }));
+      setIsStreaming(true);
+    });
+
+    socket.on("translation_final", (data: TranslationResult) => {
+      console.log("Received translation final:", data);
+      setResults(data);
+      setPartialResults({});
+      setIsStreaming(false);
+      setIsLoading(false);
+
+      // Add to history
+      addToHistory({
+        query: currentQueryRef.current,
+        language: "es",
+        result: data.definitions[0]?.text || "Translation completed",
       });
+    });
 
-      socket.on("connect", () => {
-        console.log("Connected to translation WebSocket");
-      });
+    socket.on("translation_error", (error: { message: string }) => {
+      console.error("Translation error:", error);
+      setError(error.message);
+      setIsStreaming(false);
+      setIsLoading(false);
+    });
 
-      socket.on("disconnect", () => {
-        console.log("Disconnected from translation WebSocket");
-        setIsStreaming(false);
-      });
-
-      socket.on("translation_delta", (data: Partial<TranslationResult>) => {
-        console.log("Received translation delta:", data);
-        setPartialResults(prev => ({ ...prev, ...data }));
-        setIsStreaming(true);
-      });
-
-      socket.on("translation_final", (data: TranslationResult) => {
-        console.log("Received translation final:", data);
-        setResults(data);
-        setPartialResults({});
-        setIsStreaming(false);
-        setIsLoading(false);
-
-        // Add to history
-        addToHistory({
-          query: currentQueryRef.current,
-          language: "es",
-          result: data.definitions[0]?.text || "Translation completed",
-        });
-      });
-
-      socket.on("translation_error", (error: { message: string }) => {
-        console.error("Translation error:", error);
-        setError(error.message);
-        setIsStreaming(false);
-        setIsLoading(false);
-      });
-
-      socket.on("connect_error", (err) => {
-        console.error("WebSocket connection error:", err);
-        setError("Failed to connect to translation service");
-        setIsLoading(false);
-      });
-
-      socketRef.current = socket;
-    };
-
-    initSocket();
+    socketRef.current = socket;
 
     return () => {
       if (socketRef.current) {
@@ -222,7 +246,7 @@ function TranslateContent() {
   const displayResults = results || (Object.keys(partialResults).length > 0 ? partialResults as TranslationResult : null);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`${inter.className} min-h-screen bg-gray-50 dark:bg-gray-900`}>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <motion.div

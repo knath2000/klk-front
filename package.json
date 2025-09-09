@@ -3,8 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "dev": "next dev",
+    "build": "next build",
+    "build:turbo": "next build --turbopack",
+    "build:dev": "next build --debug",
+    "build:analyze": "ANALYZE=true next build",
     "start": "next start",
     "lint": "eslint"
   },

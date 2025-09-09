@@ -14,6 +14,7 @@ import TypingIndicator from './TypingIndicator';
 import ChatInput from './ChatInput';
 import ModelSelector from './ModelSelector';
 import SearchBar from './SearchBar';
+import { createWebSocketConnection } from '../lib/websocket';
 import clsx from 'clsx';
 
 interface Conversation {
@@ -216,42 +217,45 @@ const ChatView: React.FC = () => {
     }
     
     console.log('🔌 INITIALIZING WEBSOCKET CONNECTION...');
-    const socket = io(backendUrl, {
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-      timeout: 10000,
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
-    
-    socketRef.current = socket;
-    
+    const socket = createWebSocketConnection(backendUrl);
+
     socket.on('connect', () => {
       console.log('✅ WEBSOCKET CONNECTED:', socket.id);
       setChatState(prev => ({ ...prev, isConnected: true }));
     });
-    
-    socket.on('connect_error', (error) => {
+
+    socket.on('connect_error', (error: Error) => {
       console.error('❌ WEBSOCKET CONNECTION ERROR:', error);
       console.error('   This may indicate backend is unreachable or CORS issues');
       setChatState(prev => ({ ...prev, isConnected: false }));
+      
+      // Fix: Use optional chaining and type assertion for transports
+      const transports = socket.io?.opts?.transports as string[] | undefined;
+      if (transports?.includes('websocket')) {
+        socket.io!.opts.transports = ['polling'] as const;
+        socket.connect();
+      }
     });
-    
+
     socket.on('disconnect', (reason) => {
       console.log('🔌 WEBSOCKET DISCONNECTED:', reason);
       setChatState(prev => ({ ...prev, isConnected: false }));
     });
-    
+
     socket.on('reconnect', (attemptNumber) => {
       console.log('🔄 WEBSOCKET RECONNECTED after', attemptNumber, 'attempts');
       setChatState(prev => ({ ...prev, isConnected: true }));
     });
-    
+
     socket.on('reconnect_error', (error) => {
       console.error('❌ WEBSOCKET RECONNECT ERROR:', error);
+      // Attempt reconnection with exponential backoff
+      const reconnectionAttempts = 5; // Use from config
+      setTimeout(() => {
+        socket.connect();
+      }, Math.min(1000 * Math.pow(2, reconnectionAttempts), 30000));
     });
-    
+
     socket.on('assistant_delta', (data) => {
       console.log('📨 RECEIVED assistant_delta:', data);
       updateAssistantMessage(data.message_id, data.chunk, false);
@@ -261,6 +265,8 @@ const ChatView: React.FC = () => {
       console.log('📨 RECEIVED assistant_final:', data);
       updateAssistantMessage(data.message_id, data.final_content, true);
     });
+
+    socketRef.current = socket;
     
     return () => {
       console.log('🔌 CLEANING UP WEBSOCKET CONNECTION');
