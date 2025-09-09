@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://klk-back-production.up.railway.app';
 
-export async function GET(request: NextRequest, { params }: { params: { path: string[] } }) {
-  const path = params.path.join('/');
-  const url = new URL(`${BACKEND_URL}/api/translate/${path}`);
+export async function GET(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const { path } = await params; // Await the params
+  const pathString = path.join('/');
+  const url = new URL(`${BACKEND_URL}/api/translate/${pathString}`);
   
   // Forward query parameters
   url.search = request.nextUrl.search;
@@ -31,9 +32,10 @@ export async function GET(request: NextRequest, { params }: { params: { path: st
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { path: string[] } }) {
-  const path = params.path.join('/');
-  const url = new URL(`${BACKEND_URL}/api/translate/${path}`);
+export async function POST(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const { path } = await params; // Await the params
+  const pathString = path.join('/');
+  const url = new URL(`${BACKEND_URL}/api/translate/${pathString}`);
   
   try {
     const body = await request.json();

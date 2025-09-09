@@ -1,7 +1,9 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   turbopack: {
-    root: './', // Explicitly set root to silence warning
+    root: path.resolve(__dirname), // Use absolute path
   },
   images: {
     remotePatterns: [
@@ -10,18 +12,6 @@ const nextConfig = {
         hostname: 'klk-front.vercel.app',
       },
     ],
-  },
-  webpack: (config) => {
-    // Only apply webpack config when not using Turbopack
-    if (process.env.TURBOPACK) {
-      return config; // Skip webpack modifications for Turbopack
-    }
-    
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-    };
-    return config;
   },
 };
 

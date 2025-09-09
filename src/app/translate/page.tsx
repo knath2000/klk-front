@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import io, { Socket } from "socket.io-client";
 import { SearchBar, ResultsTabs, LoadingSkeleton, ErrorDisplay, HistoryList, FavoritesList } from "@/components/translation";
 import { TranslationProvider, useTranslation } from "@/context/TranslationContext";
 import ErrorBoundary from "@/components/translation/ErrorBoundary";
@@ -38,6 +37,9 @@ interface TranslationResult {
   }>;
   related: string[];
 }
+
+// Add named import for Socket type only
+import { Socket } from 'socket.io-client';
 
 function TranslateContent() {
   const { addToHistory, clearHistory, addToFavorites, removeFromFavorites, isInFavorites, state } = useTranslation();
