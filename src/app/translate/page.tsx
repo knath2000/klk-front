@@ -6,7 +6,7 @@ import { SearchBar, ResultsTabs, LoadingSkeleton, ErrorDisplay, HistoryList, Fav
 import { TranslationProvider, useTranslation } from "@/context/TranslationContext";
 import ErrorBoundary from "@/components/translation/ErrorBoundary";
 import { Inter } from 'next/font/google';
-import { createWebSocketConnection } from '../../lib/websocket';
+import { createWebSocketConnection, handleTabSwitch } from '../../lib/websocket';
 
 // Add font configuration at the top
 const inter = Inter({
@@ -68,7 +68,7 @@ function TranslateContent() {
       console.error("WebSocket connection error:", err);
       setError("Failed to connect to translation service");
       setIsLoading(false);
-      
+
       // Fix: Use optional chaining and type assertion for transports
       const transports = socket.io?.opts?.transports as string[] | undefined;
       if (transports?.includes('websocket')) {
@@ -125,6 +125,9 @@ function TranslateContent() {
     });
 
     socketRef.current = socket;
+
+    // Add tab switch detection
+    handleTabSwitch(socket);
 
     return () => {
       if (socketRef.current) {
