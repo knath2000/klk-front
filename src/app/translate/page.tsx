@@ -148,11 +148,21 @@ function TranslateContent() {
     try {
       // Emit WebSocket event for translation request
       if (socketRef.current) {
+        const currentTransport = (socketRef.current as any).io?.engine?.transport?.name || 'unknown';
+        console.log('Current transport before translation_request:', currentTransport);
+
         socketRef.current.emit("translation_request", {
           query,
           language: lang,
           context,
           timestamp: Date.now(),
+        });
+
+        // Listen for server fallback
+        socketRef.current.on('translation_fallback', (data) => {
+          console.log('Server fallback activated:', data.transport);
+          // Update UI to show polling mode if needed
+          setIsLoading(false); // Prevent indefinite loading
         });
       }
 
