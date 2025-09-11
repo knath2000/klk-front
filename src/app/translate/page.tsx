@@ -134,6 +134,12 @@ function TranslateContent() {
       console.log("Received translation final:", data);
 
       if (data && Array.isArray(data.definitions) && data.definitions.length > 0) {
+        // Normalize definitions to ensure 'text' property exists
+        data.definitions = data.definitions.map(def => ({
+          ...def,
+          text: def.text || (def as { text?: string; meaning?: string }).meaning || 'No definition available' // Handle both 'text' and 'meaning'
+        }));
+
         setResults(data);
         setPartialResults({});
         setIsStreaming(false);
