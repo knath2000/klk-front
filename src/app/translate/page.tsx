@@ -41,6 +41,19 @@ interface TranslationResult {
 // Add named import for Socket type only
 import { Socket } from 'socket.io-client';
 
+// Define proper type for Socket.IO transport
+interface SocketIOTransport {
+  name: string;
+}
+
+interface SocketIOEngine {
+  transport?: SocketIOTransport;
+}
+
+interface SocketIOManager {
+  engine?: SocketIOEngine;
+}
+
 function TranslateContent() {
   const { addToHistory, clearHistory, addToFavorites, removeFromFavorites, isInFavorites, state } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
@@ -164,7 +177,7 @@ function TranslateContent() {
     emitTranslationRequest();
 
     function emitTranslationRequest(retryCount = 0) {
-      const currentTransport = (socketRef.current as any)?.io?.engine?.transport?.name || 'unknown';
+      const currentTransport = (socketRef.current as unknown as { io?: SocketIOManager })?.io?.engine?.transport?.name || 'unknown';
       console.log('Current transport before translation_request:', currentTransport);
 
       socketRef.current!.emit("translation_request", {

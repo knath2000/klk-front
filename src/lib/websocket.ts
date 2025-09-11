@@ -1,5 +1,18 @@
 import { io, Socket } from 'socket.io-client';
 
+// Define proper type for Socket.IO transport
+interface SocketIOTransport {
+  name: string;
+}
+
+interface SocketIOEngine {
+  transport?: SocketIOTransport;
+}
+
+interface SocketIOManager {
+  engine?: SocketIOEngine;
+}
+
 export const getWebSocketUrl = (): string => {
   if (typeof window !== 'undefined') {
     const isProduction = process.env.NODE_ENV === 'production';
@@ -40,13 +53,13 @@ export const createWebSocketConnection = (url?: string): Socket => {
   socket.on('connect_error', (err) => {
     console.error('❌ WebSocket ERROR:', err.message, 'at', new Date().toISOString());
 
-    if (err.message.includes('websocket') && socket.io?.opts?.transports?.includes('websocket')) {
+    if (err.message.includes('websocket') && (socket.io?.opts?.transports as string[])?.includes('websocket')) {
       console.log('🔄 Auto-falling back to polling');
       socket.io!.opts.transports = ['polling'] as const;
       socket.connect();
     }
     // Exponential backoff for reconnections
-    const delay = Math.min(1000 * Math.pow(2, socket.io?.reconnectionAttempts || 0), 30000);
+    const delay = Math.min(1000 * Math.pow(2, (socket.io?.reconnectionAttempts as unknown as number) || 0), 30000);
     setTimeout(() => socket.connect(), delay);
   });
 
@@ -66,7 +79,7 @@ export const createWebSocketConnection = (url?: string): Socket => {
 
   // Add transport logging and health check
   socket.on('upgrade', () => {
-    console.log('🔄 Transport upgraded to:', (socket as any).io?.engine?.transport?.name);
+    console.log('🔄 Transport upgraded to:', (socket as unknown as { io?: SocketIOManager })?.io?.engine?.transport?.name);
   });
 
   socket.on('ping', () => {
