@@ -118,23 +118,46 @@ function TranslateContent() {
 
     socket.on("translation_delta", (data: Partial<TranslationResult>) => {
       console.log("Received translation delta:", data);
-      setPartialResults(prev => ({ ...prev, ...data }));
-      setIsStreaming(true);
+
+      if (data && typeof data === 'object' && (data.definitions || data.examples || data.conjugations)) {
+        setPartialResults(prev => ({
+          ...prev,
+          ...data
+        }));
+        setIsStreaming(true);
+      } else {
+        console.warn('Invalid partial translation data - skipping update:', data);
+      }
     });
 
     socket.on("translation_final", (data: TranslationResult) => {
       console.log("Received translation final:", data);
-      setResults(data);
-      setPartialResults({});
-      setIsStreaming(false);
-      setIsLoading(false);
 
-      // Add to history
-      addToHistory({
-        query: currentQueryRef.current,
-        language: "es",
-        result: data.definitions[0]?.text || "Translation completed",
-      });
+      if (data && Array.isArray(data.definitions) && data.definitions.length > 0) {
+        setResults(data);
+        setPartialResults({});
+        setIsStreaming(false);
+        setIsLoading(false);
+
+        // Add to history
+        addToHistory({
+          query: currentQueryRef.current,
+          language: "es",
+          result: data.definitions[0]?.text || "Translation completed",
+        });
+      } else {
+        console.error('Invalid final translation data - using fallback:', data);
+        setError('Invalid response from translation service - using fallback');
+        setIsLoading(false);
+        // Set fallback results to stop loading
+        setResults({
+          definitions: [{ text: 'Fallback translation (service unavailable)', partOfSpeech: 'unknown' }],
+          examples: [],
+          conjugations: { present: {}, past: {} },
+          audio: [],
+          related: []
+        });
+      }
     });
 
     socket.on("translation_error", (error: { message: string }) => {
