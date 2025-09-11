@@ -77,6 +77,13 @@ function TranslateContent() {
       console.log("Connected to translation WebSocket");
     });
 
+    // Add catch-all event handler for debugging
+    socket.onAny((event, ...args) => {
+      if (!['connect', 'disconnect', 'ping', 'pong'].includes(event)) {
+        console.log('🔍 CLIENT RECEIVED EVENT:', event, 'args:', args.length > 0 ? JSON.stringify(args[0]).substring(0, 200) : 'no args');
+      }
+    });
+
     socket.on("connect_error", (err: Error) => {
       console.error("WebSocket connection error:", err);
       setError("Failed to connect to translation service");
