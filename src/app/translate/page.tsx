@@ -136,7 +136,7 @@ function TranslateContent() {
     };
   }, [addToHistory]);
 
-  // Handle search submission
+  // Handle search submission with enhanced connection handling
   const handleSearch = async (query: string, lang: string, context?: string) => {
     setSearchQuery(query);
     setIsLoading(true);
@@ -145,39 +145,52 @@ function TranslateContent() {
     setPartialResults({});
     currentQueryRef.current = query;
 
-    try {
-      // Emit WebSocket event for translation request
-      if (socketRef.current) {
-        const currentTransport = (socketRef.current as any).io?.engine?.transport?.name || 'unknown';
-        console.log('Current transport before translation_request:', currentTransport);
+    if (!socketRef.current) {
+      setError('No WebSocket connection available');
+      setIsLoading(false);
+      return;
+    }
 
-        socketRef.current.emit("translation_request", {
-          query,
-          language: lang,
-          context,
-          timestamp: Date.now(),
-        });
+    // Wait for connection if not connected
+    if (!socketRef.current.connected) {
+      console.log('Waiting for WebSocket connection before translation...');
+      socketRef.current.on('connect', () => {
+        console.log('Connected - emitting translation_request');
+        emitTranslationRequest();
+      });
+      return;
+    }
 
-        // Listen for server fallback
-        socketRef.current.on('translation_fallback', (data) => {
-          console.log('Server fallback activated:', data.transport);
-          // Update UI to show polling mode if needed
-          setIsLoading(false); // Prevent indefinite loading
-        });
-      }
+    emitTranslationRequest();
 
-      // Fallback to HTTP request if WebSocket fails
+    function emitTranslationRequest(retryCount = 0) {
+      const currentTransport = (socketRef.current as any)?.io?.engine?.transport?.name || 'unknown';
+      console.log('Current transport before translation_request:', currentTransport);
+
+      socketRef.current!.emit("translation_request", {
+        query,
+        language: lang,
+        context,
+        timestamp: Date.now(),
+      });
+
+      // Listen for server fallback
+      socketRef.current!.on('translation_fallback', (data) => {
+        console.log('Server fallback activated:', data.transport);
+        setIsLoading(false); // Prevent indefinite loading
+      });
+
+      // Fallback timeout with retry (5s, exponential backoff)
+      const timeout = 5000 + (retryCount * 2000);
       setTimeout(() => {
-        if (isLoading && !isStreaming) {
-          console.log("WebSocket timeout, falling back to HTTP");
+        if (isLoading && !isStreaming && retryCount < 3) {
+          console.log(`WebSocket timeout, retrying (${retryCount + 1}/3)`);
+          emitTranslationRequest(retryCount + 1);
+        } else if (retryCount >= 3) {
+          console.log('Max retries reached, falling back to HTTP');
           fallbackToHttp(query, lang, context);
         }
-      }, 5000);
-
-    } catch (err) {
-      console.error("Search error:", err);
-      setError(err instanceof Error ? err.message : "An error occurred during translation");
-      setIsLoading(false);
+      }, timeout);
     }
   };
 

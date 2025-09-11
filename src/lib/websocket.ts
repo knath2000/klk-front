@@ -36,17 +36,18 @@ export const createWebSocketConnection = (url?: string): Socket => {
     console.log('✅ WebSocket CONNECTED:', socket.id, 'at', new Date().toISOString());
   });
 
-  // Enhanced error handling with auto-fallback
+  // Enhanced error handling with exponential backoff
   socket.on('connect_error', (err) => {
     console.error('❌ WebSocket ERROR:', err.message, 'at', new Date().toISOString());
 
-    // Auto-fallback if websocket fails
-    const transports = socket.io?.opts?.transports as string[] | undefined;
-    if (err.message.includes('websocket') && transports?.includes('websocket')) {
+    if (err.message.includes('websocket') && socket.io?.opts?.transports?.includes('websocket')) {
       console.log('🔄 Auto-falling back to polling');
-      socket.io!.opts.transports = ['polling'];
+      socket.io!.opts.transports = ['polling'] as const;
       socket.connect();
     }
+    // Exponential backoff for reconnections
+    const delay = Math.min(1000 * Math.pow(2, socket.io?.reconnectionAttempts || 0), 30000);
+    setTimeout(() => socket.connect(), delay);
   });
 
   socket.on('disconnect', (reason) => {
@@ -61,6 +62,15 @@ export const createWebSocketConnection = (url?: string): Socket => {
   socket.on('translation_fallback', (data) => {
     console.log('Server activated fallback:', data.transport);
     // Handle via polling if needed
+  });
+
+  // Add transport logging and health check
+  socket.on('upgrade', () => {
+    console.log('🔄 Transport upgraded to:', (socket as any).io?.engine?.transport?.name);
+  });
+
+  socket.on('ping', () => {
+    console.log('🏓 Ping received, connection healthy');
   });
 
   return socket;
