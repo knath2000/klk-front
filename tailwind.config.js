@@ -1,38 +1,35 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/lib/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
-        // Regional Spanish Country Accents
-        mexico: '#00A651', // Vibrant green for Mexico
-        argentina: '#6DCFF6', // Cool blue for Argentina
-        spain: '#AA1C24', // Passionate red for Spain
-        
-        // Semantic Colors
+        mexico: 'var(--mexico, #00A651)',
+        argentina: 'var(--argentina, #6DCFF6)',
+        spain: 'var(--spain, #AA1C24)',
         primary: {
-          bg: '#0F0F0F', // Dark theme base
-          text: '#FFFFFF', // High contrast text
-          accent: '#007BFF', // Interactive elements
+          bg: 'var(--primary-bg, #0F0F0F)',
+          text: 'var(--primary-text, #FFFFFF)',
+          accent: 'var(--primary-accent, #007BFF)',
         },
-        error: '#DC3545',
-        success: '#28A745',
-        warning: '#FFC107',
+        error: 'var(--error, #DC3545)',
+        success: 'var(--success, #28A745)',
+        warning: 'var(--warning, #FFC107)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'], // Readable sans-serif
+        sans: ['var(--font-sans, Inter)', 'system-ui', 'sans-serif'],
       },
       fontSize: {
-        // Scale in 4px increments
-        'xs': '12px',
-        'sm': '14px',
-        'base': '16px',
-        'lg': '18px',
-        'xl': '20px',
+        xs: '12px',
+        sm: '14px',
+        base: '16px',
+        lg: '18px',
+        xl: '20px',
         '2xl': '24px',
         '3xl': '28px',
         '4xl': '32px',
@@ -45,7 +42,6 @@ module.exports = {
         bold: '700',
       },
       spacing: {
-        // Multiples of 4px
         '1': '4px',
         '2': '8px',
         '3': '12px',
@@ -73,14 +69,14 @@ module.exports = {
         },
       },
       boxShadow: {
-        'soft': '0 2px 8px rgba(0, 0, 0, 0.1)',
-        'focus': '0 0 0 2px #007BFF',
+        soft: '0 2px 8px rgba(0, 0, 0, 0.1)',
+        focus: '0 0 0 2px #007BFF',
       },
       borderRadius: {
-        'xl': '12px',
+        xl: '12px',
       },
     },
   },
   plugins: [],
-  darkMode: 'class', // Enable dark mode via class
-}
+  darkMode: 'class',
+};

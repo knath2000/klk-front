@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "build:css": "node ./scripts/build-tailwind.js",
+    "prebuild": "node ./scripts/build-tailwind.js",
     "build": "next build",
     "build:turbo": "next build --turbopack",
     "build:dev": "next build --debug",

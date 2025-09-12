@@ -60,7 +60,7 @@ const Hero: React.FC<HeroProps> = ({ personas, onStartChat, onQuickTranslate, se
       <motion.h1
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary.text via-mexico to-argentina bg-clip-text text-transparent"
+        className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-text via-mexico to-argentina bg-clip-text text-transparent"
         aria-describedby="hero-description"
       >
         ¡Chat with Local Flavor!
