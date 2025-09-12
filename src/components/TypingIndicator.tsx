@@ -8,6 +8,9 @@ const TypingIndicator: React.FC<TypingIndicatorProps> = ({ isVisible, countryNam
     <AnimatePresence>
       {isVisible && (
         <motion.div
+          role="status"
+          aria-live="polite"
+          aria-label={countryName ? `${countryName} is typing...` : "Assistant is typing..."}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
@@ -15,7 +18,10 @@ const TypingIndicator: React.FC<TypingIndicatorProps> = ({ isVisible, countryNam
           className="flex items-center gap-3 mb-4"
         >
           {/* Avatar placeholder */}
-          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex-shrink-0 flex items-center justify-center">
+          <div
+            className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex-shrink-0 flex items-center justify-center"
+            aria-hidden="true"
+          >
             <span className="text-white text-xs font-bold">AI</span>
           </div>
 

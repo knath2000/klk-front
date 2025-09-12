@@ -30,6 +30,9 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
     <div className="relative">
       {/* Trigger Button */}
       <motion.button
+        aria-label={selectedPersona ? `Select ${selectedPersona.displayName} for slang style` : "Select country for slang style"}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={clsx(
@@ -75,6 +78,8 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
 
             {/* Dropdown Menu */}
             <motion.div
+              role="listbox"
+              id="country-listbox"
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -86,6 +91,8 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
                 .map((persona, index) => (
                   <motion.button
                     key={persona.id}
+                    role="option"
+                    aria-selected={selectedCountry === persona.country_key}
                     onClick={() => handleSelect(persona.country_key)}
                     className={clsx(
                       "w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl",

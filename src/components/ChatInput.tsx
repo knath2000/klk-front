@@ -34,6 +34,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
       <div className="flex-1 relative">
         <input
           type="text"
+          role="textbox"
+          aria-label="Chat message input"
+          aria-describedby="chat-input-help"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
@@ -49,6 +52,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             !selectedCountry && "placeholder-red-400"
           )}
         />
+        <small id="chat-input-help" className="sr-only">Press Enter to send message, Shift+Enter for new line</small>
 
         {/* Character count indicator */}
         {message.length > 0 && (
