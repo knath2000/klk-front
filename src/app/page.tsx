@@ -1,5 +1,6 @@
 'use client';
 
+import '@/app/globals.css';
 import { useState, useEffect } from 'react';
 import ChatView from '@/components/ChatView';
 import Hero from '@/components/Hero/Hero';
