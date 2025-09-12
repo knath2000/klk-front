@@ -45,6 +45,7 @@ export interface ResultsTabsProps {
   results: TranslationResult;
   query: string;
   onRelatedClick: (query: string, lang: string) => void;
+  isLoading?: boolean;
   onAddToFavorites?: (query: string, result?: string) => void;
   isInFavorites?: (query: string, language: string) => boolean;
 }

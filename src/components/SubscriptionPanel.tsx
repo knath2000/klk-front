@@ -19,7 +19,6 @@ interface SubscriptionPlan {
 }
 
 const SubscriptionPanel: React.FC = () => {
-  const [selectedPlan, setSelectedPlan] = useState<string>('free');
   const [isAnnual, setIsAnnual] = useState(false);
 
   // Mock plans data
@@ -135,7 +134,7 @@ const SubscriptionPanel: React.FC = () => {
             <div 
               key={plan.id}
               className={`rounded-2xl border p-8 text-left ${
-                selectedPlan === plan.id 
+                false 
                   ? 'border-indigo-500 ring-2 ring-indigo-500' 
                   : 'border-gray-200 dark:border-gray-700'
               }`}
@@ -171,7 +170,7 @@ const SubscriptionPanel: React.FC = () => {
               <button
                 onClick={() => handleSubscribe(plan.id)}
                 className={`w-full py-3 px-4 rounded-lg font-medium ${
-                  selectedPlan === plan.id
+                  false
                     ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                     : plan.id === 'free'
                     ? 'bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700'

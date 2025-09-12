@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Tab } from "@headlessui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ResultsTabsProps, TabData } from "./resultsTabs.types";
@@ -14,41 +14,60 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-export default function ResultsTabs({ results, query, onRelatedClick, onAddToFavorites, isInFavorites }: ResultsTabsProps) {
+// TODO: Implement favorites functionality for translation results
+export default function ResultsTabs({ 
+  results, 
+  query, 
+  onRelatedClick, 
+  isLoading = false 
+}: ResultsTabsProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   // Define available tabs based on data
-  const tabs: TabData[] = [
-    {
-      id: "definitions",
-      label: "Definitions",
-      count: results.definitions.length,
-      isAvailable: results.definitions.length > 0,
-    },
-    {
-      id: "examples",
-      label: "Examples",
-      count: results.examples.length,
-      isAvailable: results.examples.length > 0,
-    },
-    {
-      id: "conjugations",
-      label: "Conjugations",
-      isAvailable: !!results.conjugations,
-    },
-    {
-      id: "audio",
-      label: "Audio",
-      count: results.audio?.length,
-      isAvailable: !!results.audio && results.audio.length > 0,
-    },
-    {
-      id: "related",
-      label: "Related",
-      count: results.related.length,
-      isAvailable: results.related.length > 0,
-    },
-  ].filter(tab => tab.isAvailable);
+  const tabs: TabData[] = useMemo(() => {
+    const availableTabs = [];
+
+    if (results.definitions?.length > 0) {
+      availableTabs.push({ 
+        id: "definitions", 
+        label: "Definiciones", 
+        count: results.definitions.length,
+        isAvailable: true 
+      });
+    }
+    if (results.examples?.length > 0) {
+      availableTabs.push({ 
+        id: "examples", 
+        label: "Ejemplos", 
+        count: results.examples.length,
+        isAvailable: true 
+      });
+    }
+    if (results.conjugations) {
+      availableTabs.push({ 
+        id: "conjugations", 
+        label: "Conjugaciones", 
+        isAvailable: true 
+      });
+    }
+    if (results.audio && results.audio.length > 0) {
+      availableTabs.push({
+        id: "audio",
+        label: "Audio",
+        count: results.audio.length,
+        isAvailable: true
+      });
+    }    if (results.related?.length > 0) {
+      availableTabs.push({ 
+        id: "related", 
+        label: "Relacionados", 
+        count: results.related.length,
+        isAvailable: true 
+      });
+    }
+
+    return availableTabs;
+  }, [results]);
 
   const handleRelatedClick = (term: string) => {
     onRelatedClick(term, "es");
@@ -59,11 +78,23 @@ export default function ResultsTabs({ results, query, onRelatedClick, onAddToFav
     console.log("Playing audio:", audioUrl);
   };
 
+  if (tabs.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="text-center py-8"
+      >
+        <p className="text-gray-500">No translation results available yet.</p>
+      </motion.div>
+    );
+  }
+
   return (
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-0">
       <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
         <Tab.List className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-1 rounded-xl bg-blue-900/20 p-1">
-          {tabs.map((tab, index) => (
+          {tabs.map((tab) => (
             <Tab
               key={tab.id}
               className={({ selected }) =>
@@ -99,7 +130,7 @@ export default function ResultsTabs({ results, query, onRelatedClick, onAddToFav
 
         <Tab.Panels className="mt-6">
           <AnimatePresence mode="wait">
-            {tabs.map((tab, index) => (
+            {tabs.map((tab) => (
               <Tab.Panel
                 key={tab.id}
                 className="rounded-xl bg-white p-4 sm:p-6 shadow-lg"
@@ -111,23 +142,36 @@ export default function ResultsTabs({ results, query, onRelatedClick, onAddToFav
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  {tab.id === "definitions" && (
-                    <DefinitionBlock definitions={results.definitions} query={query} />
-                  )}
-                  {tab.id === "examples" && (
-                    <ExampleList examples={results.examples} onAudioPlay={handleAudioPlay} />
-                  )}
-                  {tab.id === "conjugations" && results.conjugations && (
-                    <ConjugationTable conjugations={results.conjugations} word={query} />
-                  )}
-                  {tab.id === "audio" && results.audio && (
-                    <AudioPlayer
-                      audioItems={results.audio}
-                      onPlay={handleAudioPlay}
-                    />
-                  )}
-                  {tab.id === "related" && (
-                    <RelatedTermsList terms={results.related} onTermClick={handleRelatedClick} />
+                  {isLoading ? (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-center py-8"
+                    >
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                      <p className="text-gray-500">Loading {tab.label}...</p>
+                    </motion.div>
+                  ) : (
+                    <>
+                      {tab.id === "definitions" && (
+                        <DefinitionBlock definitions={results.definitions} query={query} />
+                      )}
+                      {tab.id === "examples" && (
+                        <ExampleList examples={results.examples} onAudioPlay={handleAudioPlay} />
+                      )}
+                      {tab.id === "conjugations" && results.conjugations && (
+                        <ConjugationTable conjugations={results.conjugations} word={query} />
+                      )}
+                      {tab.id === "audio" && results.audio && (
+                        <AudioPlayer
+                          audioItems={results.audio}
+                          onPlay={handleAudioPlay}
+                        />
+                      )}
+                      {tab.id === "related" && (
+                        <RelatedTermsList terms={results.related} onTermClick={handleRelatedClick} />
+                      )}
+                    </>
                   )}
                 </motion.div>
               </Tab.Panel>

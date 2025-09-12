@@ -61,13 +61,18 @@ const fallbackPersonas: Persona[] = [
   }
 ];
 
-const ChatView: React.FC = () => {
+interface ChatViewProps {
+  initialPersonas?: Persona[];
+  initialCountry?: string | null;
+}
+
+const ChatView: React.FC<ChatViewProps> = ({ initialPersonas = [], initialCountry = null }) => {
   const [chatState, setChatState] = useState<ChatState>({
     messages: [],
-    selectedCountry: null,
+    selectedCountry: initialCountry,
     isTyping: false,
     isConnected: false,
-    personas: [],
+    personas: initialPersonas,
     currentModel: 'gpt-4o-mini' // Default model
   });
 

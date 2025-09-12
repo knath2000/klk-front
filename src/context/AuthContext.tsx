@@ -12,7 +12,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
 }
@@ -33,8 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    // Mock sign in - in real app, this would call the backend
+  const signIn = async (email: string) => {
+    // Mock sign in - in real app, this would call the backend API
     setIsLoading(true);
     try {
       // Simulate API call

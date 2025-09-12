@@ -21,13 +21,6 @@ interface UserTypingEvent {
   timestamp: string;
 }
 
-interface Collaborator {
-  id: string;
-  name: string;
-  email: string;
-  isTyping: boolean;
-  lastActive: string;
-}
 
 interface SharedUser {
   id: string;

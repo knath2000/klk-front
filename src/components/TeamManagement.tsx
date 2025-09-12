@@ -28,7 +28,9 @@ interface TeamMember {
 }
 
 const TeamManagement: React.FC = () => {
-  const [teams, setTeams] = useState<Team[]>([]);
+  // TODO: Implement team creation UI to use these state variables
+  // TODO: Implement team creation UI to use these state variables
+const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);

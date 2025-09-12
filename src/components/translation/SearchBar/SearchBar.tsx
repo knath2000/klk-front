@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { SearchBarProps, SearchSuggestion, SearchState } from "./searchBar.types";
 import SearchSuggestions from "./SearchSuggestions";
 
-export default function SearchBar({ onSubmit, suggestions, isLoading }: SearchBarProps) {
+export default function SearchBar({ onSubmit, isLoading }: SearchBarProps) {
   const [searchState, setSearchState] = useState<SearchState>({
     query: "",
     language: "es",
@@ -18,6 +18,22 @@ export default function SearchBar({ onSubmit, suggestions, isLoading }: SearchBa
   const [localSuggestions, setLocalSuggestions] = useState<SearchSuggestion[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Validation for Spanish text
+  const validateSearchQuery = useCallback((query: string): { isValid: boolean; errorMessage?: string } => {
+    if (!query.trim()) {
+      return { isValid: false, errorMessage: "Please enter a word or phrase to translate" };
+    }
+    if (query.length > 500) {
+      return { isValid: false, errorMessage: "Text too long (max 500 characters)" };
+    }
+    // Basic Spanish detection - check for Spanish characters or length
+    const hasSpanishChars = /[áéíóúüñ¿¡]/i.test(query);
+    if (!hasSpanishChars && query.split(' ').length < 2) {
+      return { isValid: false, errorMessage: "Please enter Spanish text or a longer phrase" };
+    }
+    return { isValid: true };
+  }, []);
 
   // Debounced autocomplete
   const fetchSuggestions = useCallback(async (query: string) => {
@@ -60,42 +76,32 @@ export default function SearchBar({ onSubmit, suggestions, isLoading }: SearchBa
     };
   }, [searchState.query, fetchSuggestions]);
 
-  // Validation
-  const validateQuery = (query: string): boolean => {
-    if (!query.trim()) {
-      setSearchState(prev => ({ ...prev, isValid: false, errorMessage: "Please enter a word or phrase to translate" }));
-      return false;
-    }
-    if (query.length > 100) {
-      setSearchState(prev => ({ ...prev, isValid: false, errorMessage: "Query too long (max 100 characters)" }));
-      return false;
-    }
-    setSearchState(prev => ({ ...prev, isValid: true, errorMessage: undefined }));
-    return true;
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchState(prev => ({ ...prev, query: value }));
     setShowSuggestions(true);
     setSelectedSuggestionIndex(-1);
-    validateQuery(value);
+    const validationResult = validateSearchQuery(value);
+    setSearchState(prev => ({ ...prev, ...validationResult }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateQuery(searchState.query)) return;
-
-    onSubmit(searchState.query, searchState.language, searchState.context);
-    setShowSuggestions(false);
-    setSelectedSuggestionIndex(-1);
+    const validationResult = validateSearchQuery(searchState.query);
+    setSearchState(prev => ({ ...prev, ...validationResult }));
+    if (validationResult.isValid) {
+      onSubmit(searchState.query, searchState.language, searchState.context);
+      setShowSuggestions(false);
+      setSelectedSuggestionIndex(-1);
+    }
   };
 
   const handleSuggestionSelect = (suggestion: string) => {
     setSearchState(prev => ({ ...prev, query: suggestion }));
     setShowSuggestions(false);
     setSelectedSuggestionIndex(-1);
-    validateQuery(suggestion);
+    const validationResult = validateSearchQuery(suggestion);
+    setSearchState(prev => ({ ...prev, ...validationResult }));
     inputRef.current?.focus();
   };
 
@@ -153,10 +159,10 @@ export default function SearchBar({ onSubmit, suggestions, isLoading }: SearchBa
             onBlur={handleBlur}
             placeholder="Enter a word or phrase to translate..."
             className={`w-full px-4 py-3 pr-12 text-base sm:text-lg border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
-                searchState.isValid
-                  ? "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
-                  : "border-red-300 focus:border-red-500 focus:ring-red-200"
-              }`}
+              searchState.isValid
+                ? "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                : "border-red-300 focus:border-red-500 focus:ring-red-200"
+            }`}
             aria-label="Enter text to translate"
             aria-describedby={searchState.errorMessage ? "search-error" : undefined}
             aria-expanded={showSuggestions}
@@ -173,10 +179,10 @@ export default function SearchBar({ onSubmit, suggestions, isLoading }: SearchBa
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-md transition-colors duration-200 ${
-                searchState.isValid && !isLoading
-                  ? "text-blue-600 hover:bg-blue-50"
-                  : "text-gray-400 cursor-not-allowed"
-              }`}
+              searchState.isValid && !isLoading
+                ? "text-blue-600 hover:bg-blue-50"
+                : "text-gray-400 cursor-not-allowed"
+            }`}
             aria-label={isLoading ? "Searching..." : "Search for translation"}
             aria-disabled={!searchState.isValid || isLoading}
           >
