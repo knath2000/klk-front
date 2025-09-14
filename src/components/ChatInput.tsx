@@ -50,7 +50,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           )}
         />
 
-        {/* Character count indicator */}
+        {/* Character count indicators */}
         {message.length > 0 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
