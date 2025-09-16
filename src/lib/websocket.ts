@@ -16,9 +16,10 @@ interface SocketIOManager {
 export const getWebSocketUrl = (): string => {
   if (typeof window !== 'undefined') {
     const isProduction = process.env.NODE_ENV === 'production';
-    return isProduction 
-      ? 'wss://klk-back-production.up.railway.app'
-      : 'ws://localhost:3001';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || (isProduction ? 'https://klk-back.onrender.com' : 'http://localhost:3001');
+    const protocol = isProduction ? 'wss' : 'ws';
+    const host = backendUrl.replace(/^(https?):\/\//, '');
+    return `${protocol}://${host}`;
   }
   return 'ws://localhost:3001';
 };

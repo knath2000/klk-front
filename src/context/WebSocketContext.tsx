@@ -99,11 +99,24 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       setConnectionState('error');
       setError(err.message);
 
-      // Auto-fallback to polling if websocket fails
-      if (err.message.includes('websocket') && (newSocket.io?.opts?.transports as string[])?.includes('websocket')) {
-        console.log('🔄 Auto-falling back to polling');
-        newSocket.io!.opts.transports = ['polling'] as const;
+      // Aggressive fallback to polling if websocket fails
+      if (err.message.includes('websocket') || err.message.includes('connection refused')) {
+        console.log('🔄 Falling back to polling transport');
+        newSocket.io!.opts.transports = ['polling', 'websocket']; // Prefer polling first
+        newSocket.connect();
       }
+
+      // Retry with exponential backoff
+      const attempts = typeof newSocket.io?.reconnectionAttempts === 'function'
+        ? (newSocket.io.reconnectionAttempts as () => number)()
+        : 0;
+      const retryDelay = Math.min(1000 * Math.pow(2, attempts), 30000);
+      console.log(`⏳ Retrying connection in ${retryDelay}ms`);
+      setTimeout(() => {
+        if (newSocket.disconnected) {
+          newSocket.connect();
+        }
+      }, retryDelay);
     });
 
     newSocket.on('reconnect_attempt', (attemptNumber) => {
