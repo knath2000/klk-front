@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Socket } from 'socket.io-client';
 import {
   Message,
   Persona,
@@ -14,7 +13,7 @@ import TypingIndicator from './TypingIndicator';
 import ChatInput from './ChatInput';
 import ModelSelector from './ModelSelector';
 import SearchBar from './SearchBar';
-import { createWebSocketConnection } from '../lib/websocket';
+import { useWebSocket } from '@/context/WebSocketContext';
 import clsx from 'clsx';
 
 // Fallback personas data (includes all personas including Dominican Republic)
@@ -71,7 +70,7 @@ const ChatView: React.FC = () => {
     currentModel: 'gpt-4o-mini' // Default model
   });
 
-  const socketRef = useRef<Socket | null>(null);
+  const { socket, isConnected } = useWebSocket();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch personas from API - use full backend URL
@@ -194,77 +193,30 @@ const ChatView: React.FC = () => {
     fetchPersonasWithRetry();
   }, []);
 
-  // Initialize WebSocket connection
+  // WebSocket connection is now managed by global context
   useEffect(() => {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-    
-    console.log('🔌 WEBSOCKET CONFIGURATION:');
-    console.log('   Backend URL:', backendUrl);
-    
-    // Validate backend URL for WebSocket
-    if (!backendUrl || backendUrl.includes('your-railway-app')) {
-      console.error('❌ INVALID BACKEND URL FOR WEBSOCKET:', backendUrl);
-      console.error('   WebSocket connection will fail');
-      return;
-    }
-    
-    console.log('🔌 INITIALIZING WEBSOCKET CONNECTION...');
-    const socket = createWebSocketConnection(backendUrl);
+    if (!socket) return;
 
-    socket.on('connect', () => {
-      console.log('✅ WEBSOCKET CONNECTED:', socket.id);
-      setChatState(prev => ({ ...prev, isConnected: true }));
-    });
-
-    socket.on('connect_error', (error: Error) => {
-      console.error('❌ WEBSOCKET CONNECTION ERROR:', error);
-      console.error('   This may indicate backend is unreachable or CORS issues');
-      setChatState(prev => ({ ...prev, isConnected: false }));
-      
-      // Fix: Use optional chaining and type assertion for transports
-      const transports = socket.io?.opts?.transports as string[] | undefined;
-      if (transports?.includes('websocket')) {
-        socket.io!.opts.transports = ['polling'] as const;
-        socket.connect();
-      }
-    });
-
-    socket.on('disconnect', (reason) => {
-      console.log('🔌 WEBSOCKET DISCONNECTED:', reason);
-      setChatState(prev => ({ ...prev, isConnected: false }));
-    });
-
-    socket.on('reconnect', (attemptNumber) => {
-      console.log('🔄 WEBSOCKET RECONNECTED after', attemptNumber, 'attempts');
-      setChatState(prev => ({ ...prev, isConnected: true }));
-    });
-
-    socket.on('reconnect_error', (error) => {
-      console.error('❌ WEBSOCKET RECONNECT ERROR:', error);
-      // Attempt reconnection with exponential backoff
-      const reconnectionAttempts = 5; // Use from config
-      setTimeout(() => {
-        socket.connect();
-      }, Math.min(1000 * Math.pow(2, reconnectionAttempts), 30000));
-    });
-
+    // Set up chat-specific event handlers
     socket.on('assistant_delta', (data) => {
       console.log('📨 RECEIVED assistant_delta:', data);
       updateAssistantMessage(data.message_id, data.chunk, false);
     });
-    
+
     socket.on('assistant_final', (data) => {
       console.log('📨 RECEIVED assistant_final:', data);
       updateAssistantMessage(data.message_id, data.final_content, true);
     });
 
-    socketRef.current = socket;
-    
+    // Update connection state based on global context
+    setChatState(prev => ({ ...prev, isConnected }));
+
     return () => {
-      console.log('🔌 CLEANING UP WEBSOCKET CONNECTION');
-      socket.disconnect();
+      // Only remove chat-specific listeners, don't disconnect socket
+      socket.off('assistant_delta');
+      socket.off('assistant_final');
     };
-  }, []);
+  }, [socket, isConnected]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -287,7 +239,7 @@ const ChatView: React.FC = () => {
   };
 
   const handleSendMessage = (message: string) => {
-    if (!chatState.selectedCountry || !socketRef.current) {
+    if (!chatState.selectedCountry || !socket) {
       console.error('❌ Cannot send message: no country selected or socket not connected');
       return;
     }
@@ -311,7 +263,7 @@ const ChatView: React.FC = () => {
     }));
 
     // Send to server with the base message ID
-    socketRef.current.emit('user_message', {
+    socket?.emit('user_message', {
       message,
       selected_country_key: chatState.selectedCountry,
       client_ts: Date.now(),

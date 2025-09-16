@@ -74,6 +74,7 @@ export const setupTranslationHandlers = (
   });
 
   return () => {
+    console.log('🧹 Cleaning up translation WebSocket listeners');
     socket.off('translation_delta');
     socket.off('translation_final');
     socket.off('translation_error');

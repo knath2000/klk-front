@@ -86,7 +86,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     });
 
     newSocket.on('disconnect', (reason) => {
-      console.log('🔌 WebSocket DISCONNECTED:', reason, 'at', new Date().toISOString());
+      console.log('🔌 WebSocket DISCONNECTED:', reason, 'at', new Date().toISOString(), 'Socket ID:', newSocket.id);
       setConnectionState('disconnected');
 
       if (reason === 'io client disconnect') {
