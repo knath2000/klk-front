@@ -1,75 +1,77 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 
-export default function LoadingSkeleton() {
+export function LoadingSkeleton() {
   return (
-    <div className="space-y-6">
-      {/* Header skeleton */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="h-8 bg-gray-200 rounded-lg w-3/4 mx-auto"
-      />
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="bg-white dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden"
+    >
+      {/* Tab Navigation Skeleton */}
+      <div className="border-b border-gray-200 dark:border-gray-700">
+        <div className="flex">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="px-6 py-4">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="w-16 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
-      {/* Tab navigation skeleton */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className="flex space-x-4 justify-center"
-      >
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-10 bg-gray-200 rounded-lg w-20" />
+      {/* Content Skeleton */}
+      <div className="p-6 space-y-6">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm"
+          >
+            <div className="space-y-4">
+              {/* Title skeleton */}
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse mt-2" />
+                <div className="flex-1 space-y-2">
+                  <div className="w-3/4 h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                  <div className="w-1/4 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                </div>
+              </div>
+
+              {/* Content skeleton */}
+              <div className="space-y-2 ml-5">
+                <div className="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="w-5/6 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="w-4/6 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+
+              {/* Examples skeleton */}
+              <div className="space-y-2 ml-5">
+                <div className="w-1/3 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="w-4/5 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+            </div>
+          </motion.div>
         ))}
-      </motion.div>
+      </div>
 
-      {/* Content skeleton */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="space-y-4"
-      >
-        {/* Definition blocks */}
-        <div className="space-y-3">
-          <div className="h-4 bg-gray-200 rounded w-full" />
-          <div className="h-4 bg-gray-200 rounded w-5/6" />
-          <div className="h-4 bg-gray-200 rounded w-4/6" />
-        </div>
-
-        {/* Example blocks */}
-        <div className="space-y-3 mt-6">
-          <div className="h-16 bg-gray-200 rounded-lg" />
-          <div className="h-16 bg-gray-200 rounded-lg" />
-        </div>
-
-        {/* Conjugation table skeleton */}
-        <div className="mt-6">
-          <div className="h-6 bg-gray-200 rounded w-32 mb-4" />
-          <div className="grid grid-cols-6 gap-2">
-            {Array.from({ length: 24 }).map((_, i) => (
-              <div key={i} className="h-8 bg-gray-200 rounded" />
-            ))}
+      {/* Streaming indicator */}
+      <div className="px-6 pb-6">
+        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex space-x-1">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
           </div>
+          <span>Translating...</span>
         </div>
-      </motion.div>
-
-      {/* Shimmer animation */}
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent"
-        animate={{
-          x: ["-100%", "100%"],
-        }}
-        transition={{
-          duration: 1.5,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        style={{
-          background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)",
-        }}
-      />
-    </div>
+      </div>
+    </motion.div>
   );
 }

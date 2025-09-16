@@ -30,5 +30,5 @@ export { default as HistoryList } from './HistoryFavorites/HistoryList';
 export { default as FavoritesList } from './HistoryFavorites/FavoritesList';
 
 // Utility components
-export { default as LoadingSkeleton } from './LoadingSkeleton';
-export { default as ErrorDisplay } from './ErrorDisplay';
+export { LoadingSkeleton } from './LoadingSkeleton';
+export { ErrorDisplay } from './ErrorDisplay';
