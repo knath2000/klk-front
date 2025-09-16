@@ -119,10 +119,17 @@ function TranslatePageContent() {
       return;
     }
 
+    // Reset any previous loading state
+    dispatch({ type: 'SET_LOADING', payload: false });
+    dispatch({ type: 'SET_ERROR', payload: null });
+
     setCurrentQuery(query);
     setStreamingResult('');
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'SET_ERROR', payload: null });
+
+    // Set loading after a brief delay to ensure UI updates
+    setTimeout(() => {
+      dispatch({ type: 'SET_LOADING', payload: true });
+    }, 10);
 
     try {
       const requestId = generateRequestId();

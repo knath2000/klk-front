@@ -26,6 +26,7 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
@@ -34,6 +35,23 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
 
   const watchedQuery = watch('query');
   const [debouncedQuery] = useDebounce(watchedQuery, 300);
+
+  // Local validity check for button state
+  const isValidInput = inputValue.trim().length > 0 && !state.isLoading;
+
+  // Sync local state with form state and reset loading if user is typing
+  useEffect(() => {
+    setInputValue(watchedQuery);
+    if (state.isLoading && watchedQuery.trim()) {
+      console.log('🔄 User typing detected, resetting loading state');
+      // Note: We can't directly dispatch here, but this logs the issue
+    }
+  }, [watchedQuery, state.isLoading]);
+
+  // Debug logging for button state
+  useEffect(() => {
+    console.log('🔍 Button state - isLoading:', state.isLoading, 'input:', watchedQuery?.trim(), 'isValidInput:', isValidInput, 'disabled:', state.isLoading || !watchedQuery?.trim());
+  }, [state.isLoading, watchedQuery, isValidInput]);
 
   // Fetch suggestions based on debounced query
   useEffect(() => {
@@ -156,19 +174,22 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
             className="w-full pl-12 pr-12 py-4 text-lg border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:border-blue-400 dark:focus:ring-blue-400/20 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           />
 
+          {/* Clear button - moved to avoid overlap with submit button */}
           {watchedQuery && (
             <button
               type="button"
               onClick={clearQuery}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 dark:hover:text-gray-300 transition-colors z-10"
+              title="Clear input"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
           )}
 
+          {/* Loading indicator - positioned to not interfere */}
           {state.isLoading && (
-            <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-              <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+            <div className="absolute right-16 top-1/2 transform -translate-y-1/2 z-10">
+              <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
             </div>
           )}
         </div>
@@ -183,12 +204,17 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
           </motion.p>
         )}
 
+        {/* Submit Button - Enhanced with better state management */}
         <motion.button
           type="submit"
-          disabled={state.isLoading || !watchedQuery?.trim()}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full mt-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
+          disabled={!isValidInput}
+          whileHover={{ scale: isValidInput ? 1.02 : 1 }}
+          whileTap={{ scale: isValidInput ? 0.98 : 1 }}
+          className={`w-full mt-4 font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 ${
+            isValidInput
+              ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
         >
           {state.isLoading ? (
             <>
