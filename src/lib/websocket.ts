@@ -25,6 +25,8 @@ export const getWebSocketUrl = (): string => {
 
 export const createWebSocketConnection = (url?: string): Socket => {
   const wsUrl = url || getWebSocketUrl();
+  const sessionId = typeof window !== 'undefined' ? localStorage.getItem('websocket_session_id') : null;
+
   console.log('🔌 Creating WebSocket connection to:', wsUrl);
 
   const socket = io(wsUrl, {
@@ -33,15 +35,16 @@ export const createWebSocketConnection = (url?: string): Socket => {
     secure: process.env.NODE_ENV === 'production', // Enforce wss:// in production
     upgrade: true,
     rememberUpgrade: true,
-    timeout: 20000,
-    forceNew: false,
+    timeout: 30000, // Increased for slower networks
+    forceNew: false, // Prevent multiple instances
     reconnection: true,
     reconnectionAttempts: 10, // Increased for intermittent
-    reconnectionDelay: 2000, // Delay to avoid race on tab switch
+    reconnectionDelay: 1000, // Faster initial reconnection
     reconnectionDelayMax: 5000,
     randomizationFactor: 0.5,
     autoConnect: true,
-    withCredentials: true // For CORS cookies
+    withCredentials: true, // For CORS cookies
+    query: sessionId ? { sessionId } : undefined // For server-side session tracking
   });
 
   // Enhanced logging with timing
@@ -93,9 +96,14 @@ export const createWebSocketConnection = (url?: string): Socket => {
 export const handleTabSwitch = (socket: Socket) => {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-      console.log('Tab visible - checking connection');
-      if (socket.disconnected) {
-        setTimeout(() => socket.connect(), 1000); // Delay reconnect
+      console.log('📱 Tab visible - checking connection');
+      if (socket && socket.disconnected) {
+        console.log('🔄 Reconnecting due to tab visibility change');
+        setTimeout(() => {
+          if (socket && socket.disconnected) {
+            socket.connect();
+          }
+        }, 1000); // Delay reconnect to avoid race conditions
       }
     }
   });

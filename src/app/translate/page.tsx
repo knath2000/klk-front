@@ -3,30 +3,143 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { TranslationProvider, useTranslation } from '@/context/TranslationContext';
+import { useWebSocket } from '@/context/WebSocketContext';
+import { setupTranslationHandlers, sendTranslationRequest, generateRequestId, TranslationResult, TranslationDelta } from '@/lib/translationWebSocket';
 import { SearchContainer } from '@/components/translation/SearchContainer';
 import { ResultsContainer } from '@/components/translation/ResultsContainer';
 import { LoadingSkeleton } from '@/components/translation/LoadingSkeleton';
 import { ErrorDisplay } from '@/components/translation/ErrorDisplay';
 
+// Helper function to format TranslationResult for storage
+const formatTranslationResult = (result: TranslationResult): string => {
+  let formatted = '';
+
+  // Add definitions
+  if (result.definitions && result.definitions.length > 0) {
+    formatted += 'Definitions:\n';
+    result.definitions.forEach((def, index) => {
+      formatted += `${index + 1}. ${def.text}`;
+      if (def.partOfSpeech) formatted += ` (${def.partOfSpeech})`;
+      formatted += '\n';
+      if (def.examples && def.examples.length > 0) {
+        formatted += `   Examples: ${def.examples.join(', ')}\n`;
+      }
+    });
+  }
+
+  // Add examples
+  if (result.examples && result.examples.length > 0) {
+    formatted += '\nExamples:\n';
+    result.examples.forEach((example, index) => {
+      formatted += `${index + 1}. ${example.text}`;
+      if (example.translation) formatted += ` → ${example.translation}`;
+      formatted += '\n';
+    });
+  }
+
+  // Add conjugations
+  if (result.conjugations && result.conjugations.length > 0) {
+    formatted += '\nConjugations:\n';
+    result.conjugations.forEach((conj) => {
+      formatted += `${conj.tense}:\n`;
+      Object.entries(conj.forms).forEach(([pronoun, form]) => {
+        formatted += `  ${pronoun}: ${form}\n`;
+      });
+    });
+  }
+
+  // Add audio
+  if (result.audio && result.audio.length > 0) {
+    formatted += '\nPronunciation:\n';
+    result.audio.forEach((audio, index) => {
+      formatted += `${index + 1}. ${audio.pronunciation || 'Audio available'}\n`;
+    });
+  }
+
+  // Add related words
+  if (result.related && result.related.length > 0) {
+    formatted += '\nRelated:\n';
+    result.related.forEach((related) => {
+      formatted += `- ${related.word} (${related.type})\n`;
+    });
+  }
+
+  return formatted.trim() || 'Translation completed';
+};
+
 function TranslatePageContent() {
   const { state, dispatch } = useTranslation();
+  const { socket, isConnected } = useWebSocket();
   const [currentQuery, setCurrentQuery] = useState<string>('');
   const [streamingResult, setStreamingResult] = useState<string>('');
 
   // WebSocket connection for translation streaming
   useEffect(() => {
-    // WebSocket integration will be added here
-    // Listen for translation_delta and translation_final events
-    return () => {
-      // Cleanup WebSocket listeners
+    if (!socket) return;
+
+    const handleTranslationDelta = (delta: TranslationDelta) => {
+      console.log('📄 Translation delta received:', delta.index, '/', delta.total);
+      setStreamingResult(prev => prev + delta.chunk);
     };
-  }, []);
+
+    const handleTranslationResult = (result: TranslationResult) => {
+      console.log('✅ Translation complete:', result.id);
+
+      // Convert TranslationResult to string for storage
+      const resultString = formatTranslationResult(result);
+
+      dispatch({ type: 'SET_LOADING', payload: false });
+      dispatch({ type: 'ADD_TO_HISTORY', payload: {
+        query: result.query,
+        language: 'spanish', // Default language, can be made dynamic
+        result: resultString
+      }});
+    };
+
+    const handleTranslationError = (error: string) => {
+      console.error('❌ Translation error:', error);
+      dispatch({ type: 'SET_LOADING', payload: false });
+      dispatch({ type: 'SET_ERROR', payload: error });
+    };
+
+    // Setup WebSocket handlers
+    const cleanup = setupTranslationHandlers(
+      socket,
+      handleTranslationDelta,
+      handleTranslationResult,
+      handleTranslationError
+    );
+
+    return cleanup;
+  }, [socket, dispatch]);
 
   const handleQuerySubmit = (query: string) => {
+    if (!socket || !isConnected) {
+      dispatch({ type: 'SET_ERROR', payload: 'WebSocket connection not available. Please try again.' });
+      return;
+    }
+
     setCurrentQuery(query);
     setStreamingResult('');
     dispatch({ type: 'SET_LOADING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: null });
+
+    try {
+      const requestId = generateRequestId();
+      const translationRequest = {
+        query,
+        language: 'spanish', // Default language, can be made dynamic
+        timestamp: Date.now(),
+        id: requestId
+      };
+
+      sendTranslationRequest(socket, translationRequest);
+      console.log('📤 Translation request sent:', requestId);
+    } catch (error) {
+      console.error('❌ Failed to send translation request:', error);
+      dispatch({ type: 'SET_LOADING', payload: false });
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to send translation request' });
+    }
   };
 
   const handleRetry = () => {
