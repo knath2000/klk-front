@@ -9,6 +9,7 @@ import { SearchContainer } from '@/components/translation/SearchContainer';
 import { ResultsContainer } from '@/components/translation/ResultsContainer';
 import { LoadingSkeleton } from '@/components/translation/LoadingSkeleton';
 import { ErrorDisplay } from '@/components/translation/ErrorDisplay';
+import ErrorBoundary from '@/components/translation/ErrorBoundary';
 
 // Helper function to format TranslationResult for storage
 const formatTranslationResult = (result: TranslationResult): string => {
@@ -113,25 +114,19 @@ function TranslatePageContent() {
     return cleanup;
   }, [socket, dispatch]);
 
-  const handleQuerySubmit = (query: string) => {
-    if (!socket || !isConnected) {
-      dispatch({ type: 'SET_ERROR', payload: 'WebSocket connection not available. Please try again.' });
-      return;
-    }
-
-    // Reset any previous loading state
-    dispatch({ type: 'SET_LOADING', payload: false });
-    dispatch({ type: 'SET_ERROR', payload: null });
-
-    setCurrentQuery(query);
-    setStreamingResult('');
-
-    // Set loading after a brief delay to ensure UI updates
-    setTimeout(() => {
-      dispatch({ type: 'SET_LOADING', payload: true });
-    }, 10);
-
+  const handleQuerySubmit = async (query: string) => {
     try {
+      if (!socket || !isConnected) {
+        throw new Error('WebSocket connection not available. Please try again.');
+      }
+
+      // Reset any previous error state and set loading
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+
+      setCurrentQuery(query);
+      setStreamingResult('');
+
       const requestId = generateRequestId();
       const translationRequest = {
         query,
@@ -143,9 +138,9 @@ function TranslatePageContent() {
       sendTranslationRequest(socket, translationRequest);
       console.log('📤 Translation request sent:', requestId);
     } catch (error) {
-      console.error('❌ Failed to send translation request:', error);
+      console.error('❌ Submission error:', error);
       dispatch({ type: 'SET_LOADING', payload: false });
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to send translation request' });
+      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to send translation request' });
     }
   };
 
@@ -241,7 +236,9 @@ function TranslatePageContent() {
 export default function TranslatePage() {
   return (
     <TranslationProvider>
-      <TranslatePageContent />
+      <ErrorBoundary>
+        <TranslatePageContent />
+      </ErrorBoundary>
     </TranslationProvider>
   );
 }

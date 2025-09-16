@@ -36,21 +36,21 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
   const watchedQuery = watch('query');
   const [debouncedQuery] = useDebounce(watchedQuery, 300);
 
-  // Local validity check for button state
-  const isValidInput = inputValue.trim().length > 0 && !state.isLoading;
+  // Local validity check for button state - with null safety
+  const isValidInput = (inputValue || '').trim().length > 0 && !state.isLoading;
 
   // Sync local state with form state and reset loading if user is typing
   useEffect(() => {
-    setInputValue(watchedQuery);
-    if (state.isLoading && watchedQuery.trim()) {
+    setInputValue(watchedQuery || '');
+    if (state.isLoading && (watchedQuery || '').trim()) {
       console.log('🔄 User typing detected, resetting loading state');
       // Note: We can't directly dispatch here, but this logs the issue
     }
   }, [watchedQuery, state.isLoading]);
 
-  // Debug logging for button state
+  // Debug logging for button state - with null safety
   useEffect(() => {
-    console.log('🔍 Button state - isLoading:', state.isLoading, 'input:', watchedQuery?.trim(), 'isValidInput:', isValidInput, 'disabled:', state.isLoading || !watchedQuery?.trim());
+    console.log('🔍 Button state - isLoading:', state.isLoading, 'input:', (watchedQuery || '').trim(), 'isValidInput:', isValidInput, 'disabled:', !isValidInput);
   }, [state.isLoading, watchedQuery, isValidInput]);
 
   // Fetch suggestions based on debounced query
@@ -215,6 +215,7 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
               ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           }`}
+          title={isValidInput ? 'Submit translation' : 'Enter text to translate'}
         >
           {state.isLoading ? (
             <>
