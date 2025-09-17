@@ -115,7 +115,7 @@ function TranslatePageContent() {
     };
 
     const handleTranslationResult = (result: TranslationResult) => {
-      console.log('✅ Translation complete:', result.id);
+      console.log('✅ Frontend received translation result:', result.id, 'keys:', Object.keys(result), 'definitions count:', result.definitions?.length || 0);
 
       // Convert TranslationResult to string for storage
       const resultString = formatTranslationResult(result);
