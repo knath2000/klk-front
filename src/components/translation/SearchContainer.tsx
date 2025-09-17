@@ -26,22 +26,26 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, watch, setValue, getValues, formState: { errors } } = useForm<FormData>({
     defaultValues: { query: '' },
   });
 
   const watchedQuery = watch('query');
   const [debouncedQuery] = useDebounce(watchedQuery, 300);
 
-  // Local validity check for button state - with null safety
-  const isValidInput = (inputValue || '').trim().length > 0 && !state.isLoading;
-
-  // Sync local state with form state and reset loading if user is typing
+  // Add debugging for form state
   useEffect(() => {
-    setInputValue(watchedQuery || '');
+    const formValue = getValues('query');
+    console.log('📝 Form state debug - getValues("query"):', formValue, 'watch("query"):', watchedQuery);
+  }, [watchedQuery, getValues]);
+
+  // Local validity check for button state - with null safety
+  const isValidInput = (watchedQuery || '').trim().length > 0 && !state.isLoading;
+
+  // Sync form state to local state for suggestions and reset loading if user is typing
+  useEffect(() => {
     if (state.isLoading && (watchedQuery || '').trim()) {
       console.log('🔄 User typing detected, resetting loading state');
       // Note: We can't directly dispatch here, but this logs the issue

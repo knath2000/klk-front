@@ -5,11 +5,17 @@ import { motion } from 'framer-motion';
 import { TranslationProvider, useTranslation } from '@/context/TranslationContext';
 import { useWebSocket } from '@/context/WebSocketContext';
 import { setupTranslationHandlers, sendTranslationRequest, generateRequestId, TranslationResult, TranslationDelta } from '@/lib/translationWebSocket';
-import { SearchContainer } from '@/components/translation/SearchContainer';
+import dynamic from 'next/dynamic';
 import { ResultsContainer } from '@/components/translation/ResultsContainer';
 import { LoadingSkeleton } from '@/components/translation/LoadingSkeleton';
 import { ErrorDisplay } from '@/components/translation/ErrorDisplay';
 import ErrorBoundary from '@/components/translation/ErrorBoundary';
+
+// Make SearchContainer client-only to avoid SSR hydration issues
+const SearchContainer = dynamic(() => import('@/components/translation/SearchContainer').then(mod => ({ default: mod.SearchContainer })), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-16 rounded-xl"></div>
+});
 
 // Helper function to format TranslationResult for storage
 const formatTranslationResult = (result: TranslationResult): string => {
