@@ -30,9 +30,10 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
 
   const { register, handleSubmit, watch, setValue, getValues, formState: { errors } } = useForm<FormData>({
     defaultValues: { query: '' },
+    shouldUnregister: false, // Prevent field unregistration
   });
 
-  const watchedQuery = watch('query');
+  const watchedQuery = watch('query', '');
   const [debouncedQuery] = useDebounce(watchedQuery, 300);
 
   // Add debugging for form state
@@ -42,7 +43,7 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
   }, [watchedQuery, getValues]);
 
   // Local validity check for button state - with null safety
-  const isValidInput = (watchedQuery || '').trim().length > 0 && !state.isLoading;
+  const isValidInput = Boolean(watchedQuery && watchedQuery.trim().length > 0) && !state.isLoading;
 
   // Sync form state to local state for suggestions and reset loading if user is typing
   useEffect(() => {
@@ -54,7 +55,7 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
 
   // Debug logging for button state - with null safety
   useEffect(() => {
-    console.log('🔍 Button state - isLoading:', state.isLoading, 'input:', (watchedQuery || '').trim(), 'isValidInput:', isValidInput, 'disabled:', !isValidInput);
+    console.log('🔍 Button state - isLoading:', state.isLoading, 'watchedQuery:', JSON.stringify(watchedQuery), 'watchedQuery type:', typeof watchedQuery, 'isValidInput:', isValidInput, 'disabled:', !isValidInput);
   }, [state.isLoading, watchedQuery, isValidInput]);
 
   // Fetch suggestions based on debounced query
