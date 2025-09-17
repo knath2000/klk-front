@@ -20,26 +20,37 @@ export interface TranslationResult {
   id: string;
   query: string;
   definitions?: Array<{
-    text: string;
+    text?: string;
+    meaning?: string;
     partOfSpeech?: string;
+    pos?: string;
     examples?: string[];
+    usage?: string;
   }>;
   examples?: Array<{
-    text: string;
+    text?: string;
     translation?: string;
+    spanish?: string;
+    english?: string;
+    context?: string;
   }>;
-  conjugations?: Array<{
-    tense: string;
-    forms: Record<string, string>;
-  }>;
+  conjugations?: Record<string, unknown>;
   audio?: Array<{
-    url: string;
+    url?: string;
     pronunciation?: string;
-  }>;
+    type?: string;
+    text?: string;
+  }> | {
+    ipa?: string;
+    suggestions?: string[];
+  };
   related?: Array<{
     word: string;
     type: string;
-  }>;
+  }> | {
+    synonyms?: string[];
+    antonyms?: string[];
+  };
   timestamp: number;
 }
 

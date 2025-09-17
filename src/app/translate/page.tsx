@@ -22,11 +22,12 @@ const formatTranslationResult = (result: TranslationResult): string => {
   let formatted = '';
 
   // Add definitions
-  if (result.definitions && result.definitions.length > 0) {
+  if (result.definitions && Array.isArray(result.definitions) && result.definitions.length > 0) {
     formatted += 'Definitions:\n';
     result.definitions.forEach((def, index) => {
-      formatted += `${index + 1}. ${def.text}`;
-      if (def.partOfSpeech) formatted += ` (${def.partOfSpeech})`;
+      const text = def.text || def.meaning || 'No definition available';
+      formatted += `${index + 1}. ${text}`;
+      if (def.partOfSpeech || def.pos) formatted += ` (${def.partOfSpeech || def.pos})`;
       formatted += '\n';
       if (def.examples && def.examples.length > 0) {
         formatted += `   Examples: ${def.examples.join(', ')}\n`;
@@ -35,40 +36,64 @@ const formatTranslationResult = (result: TranslationResult): string => {
   }
 
   // Add examples
-  if (result.examples && result.examples.length > 0) {
+  if (result.examples && Array.isArray(result.examples) && result.examples.length > 0) {
     formatted += '\nExamples:\n';
     result.examples.forEach((example, index) => {
-      formatted += `${index + 1}. ${example.text}`;
-      if (example.translation) formatted += ` → ${example.translation}`;
+      const text = example.text || example.spanish || 'No example';
+      formatted += `${index + 1}. ${text}`;
+      if (example.translation || example.english) formatted += ` → ${example.translation || example.english}`;
       formatted += '\n';
     });
   }
 
   // Add conjugations
-  if (result.conjugations && result.conjugations.length > 0) {
+  if (result.conjugations && typeof result.conjugations === 'object') {
     formatted += '\nConjugations:\n';
-    result.conjugations.forEach((conj) => {
-      formatted += `${conj.tense}:\n`;
-      Object.entries(conj.forms).forEach(([pronoun, form]) => {
-        formatted += `  ${pronoun}: ${form}\n`;
-      });
+    Object.entries(result.conjugations).forEach(([tense, forms]) => {
+      formatted += `${tense}:\n`;
+      if (Array.isArray(forms)) {
+        forms.forEach((form: unknown, index: number) => {
+          formatted += `  ${index + 1}: ${String(form)}\n`;
+        });
+      } else if (typeof forms === 'object' && forms !== null) {
+        Object.entries(forms as Record<string, unknown>).forEach(([pronoun, form]) => {
+          formatted += `  ${pronoun}: ${String(form)}\n`;
+        });
+      }
     });
   }
 
   // Add audio
-  if (result.audio && result.audio.length > 0) {
-    formatted += '\nPronunciation:\n';
-    result.audio.forEach((audio, index) => {
-      formatted += `${index + 1}. ${audio.pronunciation || 'Audio available'}\n`;
-    });
+  if (result.audio) {
+    if (Array.isArray(result.audio) && result.audio.length > 0) {
+      formatted += '\nPronunciation:\n';
+      result.audio.forEach((audio, index) => {
+        formatted += `${index + 1}. ${audio.pronunciation || audio.text || 'Audio available'}\n`;
+      });
+    } else if (typeof result.audio === 'object' && result.audio !== null && 'ipa' in result.audio) {
+      const audioObj = result.audio as { ipa?: string; suggestions?: string[] };
+      if (audioObj.ipa) {
+        formatted += `\nPronunciation: ${audioObj.ipa}\n`;
+      }
+    }
   }
 
   // Add related words
-  if (result.related && result.related.length > 0) {
-    formatted += '\nRelated:\n';
-    result.related.forEach((related) => {
-      formatted += `- ${related.word} (${related.type})\n`;
-    });
+  if (result.related) {
+    if (Array.isArray(result.related) && result.related.length > 0) {
+      formatted += '\nRelated:\n';
+      result.related.forEach((related) => {
+        formatted += `- ${related.word} (${related.type})\n`;
+      });
+    } else if (typeof result.related === 'object' && result.related !== null) {
+      const relatedObj = result.related as { synonyms?: string[]; antonyms?: string[] };
+      if (relatedObj.synonyms && relatedObj.synonyms.length > 0) {
+        formatted += `\nSynonyms: ${relatedObj.synonyms.join(', ')}\n`;
+      }
+      if (relatedObj.antonyms && relatedObj.antonyms.length > 0) {
+        formatted += `\nAntonyms: ${relatedObj.antonyms.join(', ')}\n`;
+      }
+    }
   }
 
   return formatted.trim() || 'Translation completed';
