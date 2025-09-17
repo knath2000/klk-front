@@ -38,6 +38,11 @@ export interface TranslationState {
   favorites: FavoriteItem[];
   isLoading: boolean;
   error: string | null;
+  serviceStatus: {
+    langdb: boolean;
+    openrouter: boolean;
+    overall: boolean;
+  };
 }
 
 export type TranslationAction =
@@ -47,7 +52,8 @@ export type TranslationAction =
   | { type: 'REMOVE_FROM_FAVORITES'; payload: string }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'LOAD_FROM_STORAGE'; payload: { history: TranslationHistoryItem[]; favorites: FavoriteItem[] } };
+  | { type: 'LOAD_FROM_STORAGE'; payload: { history: TranslationHistoryItem[]; favorites: FavoriteItem[] } }
+  | { type: 'UPDATE_SERVICE_STATUS'; payload: { langdb: boolean; openrouter: boolean; overall: boolean } };
 
 // Initial state
 const initialState: TranslationState = {
@@ -55,6 +61,7 @@ const initialState: TranslationState = {
   favorites: [],
   isLoading: false,
   error: null,
+  serviceStatus: { langdb: true, openrouter: true, overall: true },
 };
 
 // Reducer
@@ -127,6 +134,12 @@ function translationReducer(state: TranslationState, action: TranslationAction):
         favorites: action.payload.favorites,
       };
 
+    case 'UPDATE_SERVICE_STATUS':
+      return {
+        ...state,
+        serviceStatus: action.payload,
+      };
+
     default:
       return state;
   }
@@ -182,6 +195,27 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
       console.error('Failed to save translation data to localStorage:', error);
     }
   }, [state.history, state.favorites]);
+
+  // Fetch service status periodically
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const response = await fetch('/api/health');
+        const health = await response.json();
+        if (health.serviceStatus) {
+          const newStatus = health.serviceStatus;
+          // Update service status in state
+          dispatch({ type: 'UPDATE_SERVICE_STATUS', payload: newStatus });
+        }
+      } catch (error) {
+        console.warn('Failed to fetch service status:', error);
+      }
+    };
+
+    checkStatus();
+    const interval = setInterval(checkStatus, 30000); // Check every 30s
+    return () => clearInterval(interval);
+  }, []);
 
   // Helper functions
   const addToHistory = (item: Omit<TranslationHistoryItem, 'id' | 'timestamp'>) => {
