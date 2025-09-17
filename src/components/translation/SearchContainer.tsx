@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { useDebounce } from 'use-debounce';
@@ -26,7 +26,6 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const { register, handleSubmit, watch, setValue, getValues, formState: { errors } } = useForm<FormData>({
     defaultValues: { query: '' },
@@ -93,7 +92,7 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
       onQuerySubmit(data.query.trim());
       setShowSuggestions(false);
       setSelectedIndex(-1);
-      inputRef.current?.blur();
+      // Focus will be handled by form submission
     }
   };
 
@@ -122,7 +121,6 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
       case 'Escape':
         setShowSuggestions(false);
         setSelectedIndex(-1);
-        inputRef.current?.blur();
         break;
     }
   };
@@ -131,7 +129,7 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
     setValue('query', suggestion.text);
     setShowSuggestions(false);
     setSelectedIndex(-1);
-    inputRef.current?.focus();
+    // Focus will be maintained by user interaction
   };
 
   const clearQuery = () => {
@@ -139,7 +137,7 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
     setSuggestions([]);
     setShowSuggestions(false);
     setSelectedIndex(-1);
-    inputRef.current?.focus();
+    // Focus will be maintained by user interaction
   };
 
   return (
@@ -164,7 +162,6 @@ export function SearchContainer({ onQuerySubmit }: SearchContainerProps) {
                 message: 'Query must be less than 100 characters'
               }
             })}
-            ref={inputRef}
             type="text"
             placeholder="Enter Spanish word or phrase..."
             onKeyDown={handleKeyDown}
