@@ -104,6 +104,7 @@ function TranslatePageContent() {
   const { socket, isConnected } = useWebSocket();
   const [currentQuery, setCurrentQuery] = useState<string>('');
   const [streamingResult, setStreamingResult] = useState<string>('');
+  const [translationResult, setTranslationResult] = useState<TranslationResult | null>(null);
 
   // WebSocket connection for translation streaming
   useEffect(() => {
@@ -116,6 +117,9 @@ function TranslatePageContent() {
 
     const handleTranslationResult = (result: TranslationResult) => {
       console.log('✅ Frontend received translation result:', result.id, 'keys:', Object.keys(result), 'definitions count:', result.definitions?.length || 0);
+
+      // Set the translation result for display
+      setTranslationResult(result);
 
       // Convert TranslationResult to string for storage
       const resultString = formatTranslationResult(result);
@@ -224,6 +228,7 @@ function TranslatePageContent() {
                 query={currentQuery}
                 streamingResult={streamingResult}
                 onStreamingUpdate={setStreamingResult}
+                result={translationResult}
               />
             )}
           </motion.div>
