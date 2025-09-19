@@ -53,11 +53,9 @@ export default function RootLayout({
             <AuthProvider>
               {/* Floating glass navigation */}
               <Navigation />
-              {/* Spacer to reserve space for fixed Navigation plus section rhythm */}
-              <div aria-hidden className="w-full" style={{ height: 'calc(80px + var(--section-gap))' }} />
-               
-              {/* Main content with proper top spacing for floating nav */}
-              <main>
+              
+              {/* Main content with proper top spacing for fixed nav */}
+              <main style={{ paddingTop: 'calc(120px + var(--section-gap))' }}>
                 {children}
               </main>
             </AuthProvider>

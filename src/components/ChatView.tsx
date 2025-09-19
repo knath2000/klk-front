@@ -320,7 +320,7 @@ const ChatView: React.FC = () => {
   return (
     <div className="stack min-h-screen">
       {/* Header with glass design */}
-      <div className="relative z-10 p-6 pt-8">
+      <div className="relative z-10 p-6 pt-8 mt-[var(--section-gap)]">
         <div className="max-w-7xl mx-auto stack">
           <GlassCard variant="light" size="lg" hover>
             <div className="flex items-center justify-between">
