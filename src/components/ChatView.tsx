@@ -75,6 +75,13 @@ const ChatView: React.FC = () => {
   const { socket, isConnected } = useWebSocket();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Ensure initial viewport starts at the top so header/controls are visible on first paint.
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, []);
+
   // Fetch personas from API - use full backend URL
   useEffect(() => {
     const fetchPersonasWithRetry = async (retries = 3) => {
@@ -222,7 +229,10 @@ const ChatView: React.FC = () => {
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Do not auto-scroll on initial load when there are no messages and not typing,
+    // otherwise the page may jump past the header/controls.
+    if (chatState.messages.length === 0 && !chatState.isTyping) return;
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [chatState.messages, chatState.isTyping]);
 
   const handleCountrySelect = (countryKey: string) => {
