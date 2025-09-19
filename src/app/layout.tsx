@@ -31,7 +31,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-full overflow-x-hidden`}
       >
         {/* Dynamic background gradients */}
-        <div className="fixed inset-0 -z-10">
+        <div className="fixed inset-0 bg-isolation">
           {/* Base gradient */}
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800" />
           
@@ -48,14 +48,16 @@ export default function RootLayout({
         </div>
 
         {/* Main application content */}
-        <div className="relative z-10 min-h-full">
+        <div className="relative z-10 min-h-full stack">
           <WebSocketProvider>
             <AuthProvider>
               {/* Floating glass navigation */}
               <Navigation />
-              
+              {/* Spacer to reserve space for fixed Navigation plus section rhythm */}
+              <div aria-hidden className="w-full" style={{ height: 'calc(80px + var(--section-gap))' }} />
+               
               {/* Main content with proper top spacing for floating nav */}
-              <main className="pt-20">
+              <main>
                 {children}
               </main>
             </AuthProvider>
@@ -63,7 +65,7 @@ export default function RootLayout({
         </div>
 
         {/* Global glass effects overlay */}
-        <div className="fixed inset-0 pointer-events-none z-5">
+        <div className="fixed inset-0 pointer-events-none z-0">
           {/* Subtle vignette effect */}
           <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/10" />
         </div>

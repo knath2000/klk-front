@@ -24,6 +24,15 @@
   --blur-glass-sm: blur(8px) saturate(130%);
   --blur-glass-lg: blur(24px) saturate(130%);
   --blur-glass-xl: blur(40px) saturate(130%);
+
+  /* Layout Rhythm & Z-Index Tokens */
+  --section-gap: clamp(24px, 5vw, 64px);
+  --row-gap: clamp(16px, 3vw, 32px);
+  --card-pad: clamp(16px, 3vw, 28px);
+  --z-bg: 0;
+  --z-content: 10;
+  --z-nav: 20;
+  --z-modal: 50;
 }
 
 @theme inline {
@@ -223,3 +232,38 @@ html {
     -webkit-backdrop-filter: var(--blur-glass);
   }
 }
+
+/* Vertical rhythm helpers (Tailwind v4-friendly custom classes) */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--section-gap);
+}
+
+.row-gap {
+  display: grid;
+  gap: var(--row-gap);
+}
+
+/* Glass surface safety to reduce bleed/clipping and double-blur */
+.glass-light,
+.glass-dark,
+.glass-blue,
+.glass-purple,
+.glass-emerald {
+  overflow: hidden;                 /* clip blur bleed on Safari/WebKit */
+  background-clip: padding-box;     /* prevent bleed past border radius */
+  border-radius: inherit;           /* inherit rounding from container */
+}
+
+/* Background isolation utility for decorative layers (orbs/vignette) */
+.bg-isolation {
+  isolation: isolate;
+  pointer-events: none;
+  z-index: var(--z-bg);
+}
+
+/* Content elevation helpers mapped to tokens (optional usage) */
+.z-content { z-index: var(--z-content); }
+.z-nav { z-index: var(--z-nav); }
+.z-modal { z-index: var(--z-modal); }

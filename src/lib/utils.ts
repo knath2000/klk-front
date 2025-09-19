@@ -73,7 +73,7 @@ export const getGlassClasses = ({
 export const glassAnimations = {
   // Card entrance
   cardEnter: {
-    initial: { opacity: 0, y: 40, scale: 0.95 },
+    initial: { opacity: 0, y: 10, scale: 0.98 },
     animate: { opacity: 1, y: 0, scale: 1 },
     transition: { type: "spring" as const, stiffness: 70, damping: 16 }
   },
@@ -84,7 +84,7 @@ export const glassAnimations = {
   },
 
   staggerItem: {
-    initial: { opacity: 0, y: 20 },
+    initial: { opacity: 0, y: 8 },
     animate: { opacity: 1, y: 0 }
   },
 
@@ -110,7 +110,7 @@ export const glassAnimations = {
 
   // Modal/overlay animations
   modalEnter: {
-    initial: { opacity: 0, scale: 0.95, y: 20 },
+    initial: { opacity: 0, scale: 0.98, y: 10 },
     animate: { opacity: 1, scale: 1, y: 0 },
     exit: { opacity: 0, scale: 0.95, y: 20 },
     transition: { type: "spring" as const, stiffness: 300, damping: 30 }

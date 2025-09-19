@@ -318,11 +318,11 @@ const ChatView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="stack min-h-screen">
       {/* Header with glass design */}
       <div className="relative z-10 p-6 pt-8">
-        <div className="max-w-7xl mx-auto">
-          <GlassCard variant="light" size="lg" hover className="mb-6">
+        <div className="max-w-7xl mx-auto stack">
+          <GlassCard variant="light" size="lg" hover>
             <div className="flex items-center justify-between">
               {/* Title Section */}
               <div>
@@ -362,14 +362,14 @@ const ChatView: React.FC = () => {
           </GlassCard>
 
           {/* Controls Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[var(--row-gap)]">
             {/* Search */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <GlassCard variant="light" size="md" hover>
+              <GlassCard variant="light" size="md" hover className="min-h-14">
                 <SearchBar 
                   onSearch={handleSearch} 
                   onConversationSelect={handleSearch} 
@@ -383,7 +383,7 @@ const ChatView: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <GlassCard variant="blue" size="md" hover>
+              <GlassCard variant="blue" size="md" hover className="min-h-14">
                 <ModelSelector 
                   currentModel={chatState.currentModel || 'gpt-4o-mini'} 
                   onModelChange={handleModelChange} 
@@ -397,7 +397,7 @@ const ChatView: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <GlassCard variant="emerald" size="md" hover>
+              <GlassCard variant="emerald" size="md" hover className="min-h-14">
                 <CountrySelector
                   personas={chatState.personas}
                   selectedCountry={chatState.selectedCountry}
@@ -464,7 +464,7 @@ const ChatView: React.FC = () => {
       </div>
 
       {/* Input Area with glass design */}
-      <div className="relative z-10 p-6 pt-2">
+      <div className="relative z-10 p-6 pt-2 mt-[var(--section-gap)]">
         <div className="max-w-4xl mx-auto">
           <GlassCard variant="dark" size="md">
             <ChatInput
