@@ -10,11 +10,17 @@ import { ResultsContainer } from '@/components/translation/ResultsContainer';
 import { LoadingSkeleton } from '@/components/translation/LoadingSkeleton';
 import { ErrorDisplay } from '@/components/translation/ErrorDisplay';
 import ErrorBoundary from '@/components/translation/ErrorBoundary';
+import { GlassCard } from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 // Make SearchContainer client-only to avoid SSR hydration issues
 const SearchContainer = dynamic(() => import('@/components/translation/SearchContainer').then(mod => ({ default: mod.SearchContainer })), {
   ssr: false,
-  loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-16 rounded-xl"></div>
+  loading: () => (
+    <GlassCard variant="light" size="md" animate>
+      <div className="animate-pulse bg-white/10 h-16 rounded-xl" />
+    </GlassCard>
+  )
 });
 
 // Helper function to format TranslationResult for storage
@@ -186,20 +192,42 @@ function TranslatePageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="min-h-screen">
+      {/* Translation-specific background */}
+      <div className="fixed inset-0 -z-20">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-teal-900 to-cyan-900 opacity-90" />
+        
+        {/* Translation-specific floating orbs */}
+        <div className="absolute top-32 left-32 w-72 h-72 bg-emerald-400/15 rounded-full blur-3xl animate-glass-pulse" />
+        <div className="absolute bottom-32 right-32 w-96 h-96 bg-teal-400/10 rounded-full blur-3xl animate-glass-float" />
+        <div 
+          className="absolute top-2/3 left-1/4 w-64 h-64 bg-cyan-400/12 rounded-full blur-3xl animate-glass-pulse" 
+          style={{ animationDelay: '1.5s' }} 
+        />
+      </div>
+
+      <div className="relative z-10 container mx-auto px-4 py-8 max-w-4xl">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            Spanish Translation
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
-            Get instant translations with regional context and examples
-          </p>
+          <GlassCard variant="emerald" size="lg" gradient className="max-w-2xl mx-auto">
+            <motion.div
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="text-5xl mb-4"
+            >
+              📚
+            </motion.div>
+            <h1 className="text-4xl font-bold text-white mb-2">
+              Spanish Translation
+            </h1>
+            <p className="text-lg text-white/80">
+              Get instant translations with regional context and examples
+            </p>
+          </GlassCard>
         </motion.div>
 
         {/* Search Container */}
@@ -220,16 +248,22 @@ function TranslatePageContent() {
             transition={{ delay: 0.4 }}
           >
             {state.isLoading && !streamingResult ? (
-              <LoadingSkeleton />
+              <GlassCard variant="light" size="lg" animate>
+                <LoadingSkeleton />
+              </GlassCard>
             ) : state.error ? (
-              <ErrorDisplay error={state.error} onRetry={handleRetry} />
+              <GlassCard variant="purple" size="lg" animate>
+                <ErrorDisplay error={state.error} onRetry={handleRetry} />
+              </GlassCard>
             ) : (
-              <ResultsContainer
-                query={currentQuery}
-                streamingResult={streamingResult}
-                onStreamingUpdate={setStreamingResult}
-                result={translationResult}
-              />
+              <GlassCard variant="light" size="lg" animate>
+                <ResultsContainer
+                  query={currentQuery}
+                  streamingResult={streamingResult}
+                  onStreamingUpdate={setStreamingResult}
+                  result={translationResult}
+                />
+              </GlassCard>
             )}
           </motion.div>
         )}
@@ -239,31 +273,58 @@ function TranslatePageContent() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
             className="mt-12"
           >
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-              Recent Translations
-            </h2>
-            <div className="grid gap-4 md:grid-cols-2">
-              {state.history.slice(0, 6).map((item) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => handleQuerySubmit(item.query)}
-                >
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    {item.query}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    {item.timestamp.toLocaleDateString()}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
+            <GlassCard variant="dark" size="lg">
+              <h2 className="text-2xl font-semibold text-white mb-6">
+                Recent Translations
+              </h2>
+              <div className="grid gap-4 md:grid-cols-2">
+                {state.history.slice(0, 6).map((item, index) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <GlassCard 
+                      variant="light" 
+                      size="sm" 
+                      hover 
+                      className="cursor-pointer"
+                      onClick={() => handleQuerySubmit(item.query)}
+                    >
+                      <p className="font-medium text-white">
+                        {item.query}
+                      </p>
+                      <p className="text-sm text-white/60 mt-1">
+                        {item.timestamp.toLocaleDateString()}
+                      </p>
+                    </GlassCard>
+                  </motion.div>
+                ))}
+              </div>
+            </GlassCard>
           </motion.div>
         )}
+
+        {/* Floating help button */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 1 }}
+          className="fixed bottom-8 right-8"
+        >
+          <GlassCard variant="blue" size="sm" hover floating className="cursor-pointer">
+            <div className="flex items-center gap-2 text-white">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-sm font-medium">Help</span>
+            </div>
+          </GlassCard>
+        </motion.div>
       </div>
     </div>
   );

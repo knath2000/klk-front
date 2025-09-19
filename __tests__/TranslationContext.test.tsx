@@ -102,5 +102,4 @@ describe('TranslationContext', () => {
       expect(getByTestId('history-length')).toHaveTextContent('1');
     });
   });
-});</content>
-</edit_file>
+});

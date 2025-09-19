@@ -14,6 +14,8 @@ import ChatInput from './ChatInput';
 import ModelSelector from './ModelSelector';
 import SearchBar from './SearchBar';
 import { useWebSocket } from '@/context/WebSocketContext';
+import { GlassCard } from '@/components/ui';
+import { cn } from '@/lib/utils';
 import clsx from 'clsx';
 
 // Fallback personas data (includes all personas including Dominican Republic)
@@ -316,58 +318,99 @@ const ChatView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Header */}
-      <motion.header
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4"
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              🇪🇸 AI Chat con Sabor Local
-            </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Conversa con IA que habla como la gente del lugar
-            </p>
-          </div>
+    <div className="flex flex-col h-screen">
+      {/* Header with glass design */}
+      <div className="relative z-10 p-6 pt-8">
+        <div className="max-w-7xl mx-auto">
+          <GlassCard variant="light" size="lg" hover className="mb-6">
+            <div className="flex items-center justify-between">
+              {/* Title Section */}
+              <div>
+                <motion.h1 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="text-3xl font-bold text-white mb-2"
+                >
+                  🇪🇸 AI Chat con Sabor Local
+                </motion.h1>
+                <motion.p 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-white/80"
+                >
+                  Conversa con IA que habla como la gente del lugar
+                </motion.p>
+              </div>
 
-          <div className="flex items-center gap-4">
-            {/* Search Bar */}
-            <SearchBar 
-              onSearch={handleSearch} 
-              onConversationSelect={handleSearch} 
-            />
+              {/* Connection Status */}
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="flex items-center gap-2"
+              >
+                <div className={clsx(
+                  "w-3 h-3 rounded-full shadow-lg",
+                  chatState.isConnected ? "bg-emerald-400 shadow-emerald-400/50" : "bg-red-400 shadow-red-400/50"
+                )} />
+                <span className="text-sm text-white/80">
+                  {chatState.isConnected ? 'Conectado' : 'Desconectado'}
+                </span>
+              </motion.div>
+            </div>
+          </GlassCard>
+
+          {/* Controls Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {/* Search */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <GlassCard variant="light" size="md" hover>
+                <SearchBar 
+                  onSearch={handleSearch} 
+                  onConversationSelect={handleSearch} 
+                />
+              </GlassCard>
+            </motion.div>
 
             {/* Model Selector */}
-            <ModelSelector 
-              currentModel={chatState.currentModel || 'gpt-4o-mini'} 
-              onModelChange={handleModelChange} 
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <GlassCard variant="blue" size="md" hover>
+                <ModelSelector 
+                  currentModel={chatState.currentModel || 'gpt-4o-mini'} 
+                  onModelChange={handleModelChange} 
+                />
+              </GlassCard>
+            </motion.div>
 
-            {/* Connection status */}
-            <div className="flex items-center gap-2">
-              <div className={clsx(
-                "w-2 h-2 rounded-full",
-                chatState.isConnected ? "bg-green-500" : "bg-red-500"
-              )} />
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {chatState.isConnected ? 'Conectado' : 'Desconectado'}
-              </span>
-            </div>
-
-            <CountrySelector
-              personas={chatState.personas}
-              selectedCountry={chatState.selectedCountry}
-              onCountrySelect={handleCountrySelect}
-            />
+            {/* Country Selector */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <GlassCard variant="emerald" size="md" hover>
+                <CountrySelector
+                  personas={chatState.personas}
+                  selectedCountry={chatState.selectedCountry}
+                  onCountrySelect={handleCountrySelect}
+                />
+              </GlassCard>
+            </motion.div>
           </div>
         </div>
-      </motion.header>
+      </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 overflow-y-auto px-6 pb-4">
         <div className="max-w-4xl mx-auto">
           {/* Welcome message */}
           <AnimatePresence>
@@ -378,16 +421,24 @@ const ChatView: React.FC = () => {
                 exit={{ opacity: 0, y: -20 }}
                 className="text-center py-12"
               >
-                <div className="text-6xl mb-4">🌎</div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  ¡Bienvenido!
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Selecciona un país arriba y comienza a chatear con IA que habla el español local.
-                </p>
-                <div className="text-sm text-gray-500 dark:text-gray-500">
-                  Cada país tiene su propio estilo de hablar, ¡descúbrelo!
-                </div>
+                <GlassCard variant="light" size="xl" gradient className="max-w-2xl mx-auto">
+                  <motion.div
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    className="text-8xl mb-6"
+                  >
+                    🌎
+                  </motion.div>
+                  <h2 className="text-4xl font-bold text-white mb-4">
+                    ¡Bienvenido!
+                  </h2>
+                  <p className="text-xl text-white/80 mb-6">
+                    Selecciona un país arriba y comienza a chatear con IA que habla el español local.
+                  </p>
+                  <div className="text-white/60">
+                    Cada país tiene su propio estilo de hablar, ¡descúbrelo!
+                  </div>
+                </GlassCard>
               </motion.div>
             )}
           </AnimatePresence>
@@ -398,8 +449,6 @@ const ChatView: React.FC = () => {
               <MessageBubble
                 key={message.id}
                 message={message}
-                // Remove isLast prop
-                // isLast={index === chatState.messages.length - 1}
               />
             ))}
           </AnimatePresence>
@@ -414,12 +463,18 @@ const ChatView: React.FC = () => {
         </div>
       </div>
 
-      {/* Input Area */}
-      <ChatInput
-        onSendMessage={handleSendMessage}
-        disabled={!chatState.isConnected || !chatState.selectedCountry}
-        selectedCountry={chatState.selectedCountry}
-      />
+      {/* Input Area with glass design */}
+      <div className="relative z-10 p-6 pt-2">
+        <div className="max-w-4xl mx-auto">
+          <GlassCard variant="dark" size="md">
+            <ChatInput
+              onSendMessage={handleSendMessage}
+              disabled={!chatState.isConnected || !chatState.selectedCountry}
+              selectedCountry={chatState.selectedCountry}
+            />
+          </GlassCard>
+        </div>
+      </div>
     </div>
   );
 };
