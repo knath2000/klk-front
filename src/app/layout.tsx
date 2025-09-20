@@ -53,9 +53,11 @@ export default function RootLayout({
             <AuthProvider>
               {/* Floating glass navigation */}
               <Navigation />
+              {/* Spacer to reserve space for the fixed Navigation (prevents overlap with header bars) */}
+              <div aria-hidden className="w-full" style={{ height: 'clamp(56px, 8vh, 84px)' }} />
               
-              {/* Main content with even tighter responsive top spacing for fixed nav */}
-              <main style={{ paddingTop: 'clamp(28px, 4vh, 48px)' }}>
+              {/* Main content (no additional top padding; spacer handles separation) */}
+              <main>
                 {children}
               </main>
             </AuthProvider>
