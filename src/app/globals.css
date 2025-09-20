@@ -251,7 +251,7 @@ html {
 .glass-blue,
 .glass-purple,
 .glass-emerald {
-  overflow: hidden;                 /* clip blur bleed on Safari/WebKit */
+  /* Do not force overflow hidden so popovers/menus can escape card bounds */
   background-clip: padding-box;     /* prevent bleed past border radius */
   border-radius: inherit;           /* inherit rounding from container */
 }
@@ -267,3 +267,8 @@ html {
 .z-content { z-index: var(--z-content); }
 .z-nav { z-index: var(--z-nav); }
 .z-modal { z-index: var(--z-modal); }
+
+/* Optional utility to explicitly clip glass content when desired */
+.glass-clip {
+  overflow: hidden;
+}

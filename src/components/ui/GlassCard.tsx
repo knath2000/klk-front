@@ -15,6 +15,8 @@ export interface GlassCardProps extends Omit<HTMLMotionProps<'div'>, 'children'>
   gradient?: boolean;
   floating?: boolean;
   loading?: boolean;
+  /** When true, clip inner content (useful for images/shimmers). Defaults to false to allow menus/popovers. */
+  clip?: boolean;
 }
 
 /**
@@ -30,6 +32,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(({
   gradient = false,
   floating = false,
   loading = false,
+  clip = false,
   className,
   ...props
 }, ref) => {
@@ -72,7 +75,8 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(({
       whileTap={pressAnimation}
       transition={glassAnimations.cardEnter.transition}
       className={cn(
-        'relative overflow-hidden border transition-all duration-300',
+        'relative border transition-all duration-300',
+        clip ? 'overflow-hidden' : 'overflow-visible',
         variants[variant],
         sizes[size],
         hover && 'glass-hover cursor-pointer',
