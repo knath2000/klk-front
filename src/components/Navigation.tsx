@@ -5,21 +5,36 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { GlassCard } from "@/components/ui";
 import { cn, glassAnimations } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
 export default function Navigation() {
   const pathname = usePathname();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <motion.div 
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="fixed top-4 left-4 right-4 z-20"
+      className="fixed top-4 left-4 right-4 z-20 isolate"
     >
       <GlassCard 
         variant="light" 
         size="sm" 
         hover 
-        className="px-6 py-2"
+        className={cn(
+          "px-6 py-2 transition-colors",
+          // When scrolled, increase opacity to avoid visual clash with underlying hero card
+          scrolled
+            ? "bg-slate-900/60 border-white/15 backdrop-blur-md shadow-lg"
+            : ""
+        )}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo Section */}
@@ -39,7 +54,10 @@ export default function Navigation() {
 
           {/* Navigation Links */}
           <div className="flex items-center space-x-2">
-            <div className="flex bg-white/5 rounded-xl p-1 backdrop-blur-sm">
+            <div className={cn(
+              "flex rounded-xl p-1",
+              scrolled ? "bg-white/10 backdrop-blur-md" : "bg-white/5 backdrop-blur-sm"
+            )}>
               <Link
                 href="/"
                 className={cn(
