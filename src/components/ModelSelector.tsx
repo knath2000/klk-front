@@ -13,10 +13,12 @@ interface AIModel {
 
 export default function ModelSelector({ 
   currentModel, 
-  onModelChange 
+  onModelChange,
+  conversationId
 }: { 
   currentModel: string; 
   onModelChange: (modelId: string) => void;
+  conversationId?: string;
 }) {
   const [models, setModels] = useState<AIModel[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -64,17 +66,27 @@ export default function ModelSelector({
   const handleModelChange = async (modelId: string) => {
     setIsLoading(true);
     try {
-      // In a real implementation, this would call the API
-      // await fetch(`/api/models/${modelId}/switch`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ conversationId: 'current-conversation-id' })
-      // });
+      // Call the API to switch model on backend
+      const response = await fetch(`/api/models/${modelId}/switch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId: conversationId || 'default-conversation' })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to switch model: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('Model switched successfully:', result);
       
       onModelChange(modelId);
       setIsOpen(false);
     } catch (error) {
       console.error('Failed to switch model:', error);
+      // Revert the model change on frontend if backend fails
+      // Note: Since onModelChange was already called in some implementations, this might need state management adjustment
+      alert('Failed to switch model. Please try again.');
     } finally {
       setIsLoading(false);
     }

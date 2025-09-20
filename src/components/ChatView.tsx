@@ -72,8 +72,18 @@ const ChatView: React.FC = () => {
     currentModel: 'gpt-4o-mini' // Default model
   });
 
+  const [conversationId, setConversationId] = useState<string | null>(null);
+
   const { socket, isConnected } = useWebSocket();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load conversationId from localStorage on mount
+  useEffect(() => {
+    const storedId = localStorage.getItem('chatConversationId');
+    if (storedId) {
+      setConversationId(storedId);
+    }
+  }, []);
 
   // Ensure initial viewport starts at the top so header/controls are visible on first paint.
   useEffect(() => {
@@ -257,9 +267,17 @@ const ChatView: React.FC = () => {
     }
 
     console.log('📤 SENDING MESSAGE:', { message, country: chatState.selectedCountry });
-    
+
     // Generate consistent message ID that matches server expectations
     const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Generate conversationId if this is the first message
+    let currentConversationId = conversationId;
+    if (!currentConversationId) {
+      currentConversationId = `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      setConversationId(currentConversationId);
+      localStorage.setItem('chatConversationId', currentConversationId);
+    }
     
     const userMessage: Message = {
       id: `user-${messageId}`, // Clear user message ID prefix
@@ -279,7 +297,9 @@ const ChatView: React.FC = () => {
       message,
       selected_country_key: chatState.selectedCountry,
       client_ts: Date.now(),
-      message_id: messageId // Send base ID to server
+      message_id: messageId, // Send base ID to server
+      model: chatState.currentModel,
+      conversationId: currentConversationId
     });
     
     console.log('📤 MESSAGE SENT with ID:', messageId);
@@ -398,7 +418,8 @@ const ChatView: React.FC = () => {
               <GlassCard variant="blue" size="md" hover className="min-h-12 p-3">
                 <ModelSelector 
                   currentModel={chatState.currentModel || 'gpt-4o-mini'} 
-                  onModelChange={handleModelChange} 
+                  onModelChange={handleModelChange}
+                  conversationId={conversationId || undefined}
                 />
               </GlassCard>
             </motion.div>
