@@ -287,6 +287,8 @@ const ChatView: React.FC = () => {
 
   const selectedPersona = chatState.personas.find(p => p.country_key === chatState.selectedCountry);
 
+  const hasMessages = chatState.messages.length > 0;
+
   // Helper function to update assistant messages from streaming
   const updateAssistantMessage = (messageId: string, content: string, isFinal: boolean) => {
     setChatState(prev => {
@@ -420,7 +422,9 @@ const ChatView: React.FC = () => {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-6 pb-4">
+      <div className={cn(
+        hasMessages ? "flex-1 overflow-y-auto px-4 md:px-6 pb-4" : "px-4 md:px-6 pb-2"
+      )}>
         <div className="max-w-4xl mx-auto">
           {/* Welcome message */}
           <AnimatePresence>
@@ -439,10 +443,10 @@ const ChatView: React.FC = () => {
                   >
                     🌎
                   </motion.div>
-                  <h2 className="text-4xl font-bold text-white mb-3">
+                  <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
                     ¡Bienvenido!
                   </h2>
-                  <p className="text-xl text-white/80 mb-4">
+                  <p className="text-lg md:text-xl text-white/80 mb-4">
                     Selecciona un país arriba y comienza a chatear con IA que habla el español local.
                   </p>
                   <div className="text-white/60">

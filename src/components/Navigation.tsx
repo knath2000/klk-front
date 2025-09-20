@@ -19,7 +19,7 @@ export default function Navigation() {
         variant="light" 
         size="sm" 
         hover 
-        className="px-6 py-3"
+        className="px-6 py-2"
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo Section */}
