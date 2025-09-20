@@ -26,9 +26,9 @@
   --blur-glass-xl: blur(40px) saturate(130%);
 
   /* Layout Rhythm & Z-Index Tokens */
-  --section-gap: clamp(24px, 5vw, 64px);
-  --row-gap: clamp(16px, 3vw, 32px);
-  --card-pad: clamp(16px, 3vw, 28px);
+  --section-gap: clamp(12px, 2.5vw, 28px);
+  --row-gap: clamp(8px, 2vw, 16px);
+  --card-pad: clamp(10px, 2vw, 20px);
   --z-bg: 0;
   --z-content: 10;
   --z-nav: 20;

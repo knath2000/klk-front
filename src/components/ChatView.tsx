@@ -328,11 +328,11 @@ const ChatView: React.FC = () => {
   };
 
   return (
-    <div className="stack min-h-screen">
+    <div className="flex flex-col gap-[var(--row-gap)] min-h-screen">
       {/* Header with glass design */}
-      <div className="relative z-10 p-6 pt-8 mt-[var(--section-gap)]">
-        <div className="max-w-7xl mx-auto stack">
-          <GlassCard variant="light" size="lg" hover>
+      <div className="relative z-10 px-4 md:px-6 pt-4 md:pt-6 mt-0">
+        <div className="max-w-7xl mx-auto flex flex-col gap-[var(--row-gap)]">
+          <GlassCard variant="light" size="md" hover className="py-3">
             <div className="flex items-center justify-between">
               {/* Title Section */}
               <div>
@@ -379,7 +379,7 @@ const ChatView: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <GlassCard variant="light" size="md" hover className="min-h-14">
+              <GlassCard variant="light" size="md" hover className="min-h-12 p-3">
                 <SearchBar 
                   onSearch={handleSearch} 
                   onConversationSelect={handleSearch} 
@@ -393,7 +393,7 @@ const ChatView: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <GlassCard variant="blue" size="md" hover className="min-h-14">
+              <GlassCard variant="blue" size="md" hover className="min-h-12 p-3">
                 <ModelSelector 
                   currentModel={chatState.currentModel || 'gpt-4o-mini'} 
                   onModelChange={handleModelChange} 
@@ -407,7 +407,7 @@ const ChatView: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <GlassCard variant="emerald" size="md" hover className="min-h-14">
+              <GlassCard variant="emerald" size="md" hover className="min-h-12 p-3">
                 <CountrySelector
                   personas={chatState.personas}
                   selectedCountry={chatState.selectedCountry}
@@ -429,20 +429,20 @@ const ChatView: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="text-center py-12"
+                className="text-center py-4 md:py-6"
               >
-                <GlassCard variant="light" size="xl" gradient className="max-w-2xl mx-auto">
+                <GlassCard variant="light" size="lg" gradient className="max-w-2xl mx-auto">
                   <motion.div
                     animate={{ rotate: [0, 5, -5, 0] }}
                     transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    className="text-8xl mb-6"
+                    className="text-7xl mb-4"
                   >
                     🌎
                   </motion.div>
-                  <h2 className="text-4xl font-bold text-white mb-4">
+                  <h2 className="text-4xl font-bold text-white mb-3">
                     ¡Bienvenido!
                   </h2>
-                  <p className="text-xl text-white/80 mb-6">
+                  <p className="text-xl text-white/80 mb-4">
                     Selecciona un país arriba y comienza a chatear con IA que habla el español local.
                   </p>
                   <div className="text-white/60">
@@ -474,7 +474,7 @@ const ChatView: React.FC = () => {
       </div>
 
       {/* Input Area with glass design */}
-      <div className="relative z-10 p-6 pt-2 mt-[var(--section-gap)]">
+      <div className="relative z-10 p-6 pt-2 mt-[clamp(8px,1.5vh,16px)]">
         <div className="max-w-4xl mx-auto">
           <GlassCard variant="dark" size="md">
             <ChatInput

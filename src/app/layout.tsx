@@ -54,8 +54,8 @@ export default function RootLayout({
               {/* Floating glass navigation */}
               <Navigation />
               
-              {/* Main content with responsive top spacing for fixed nav (no extra section gap) */}
-              <main style={{ paddingTop: 'clamp(72px, 10vh, 112px)' }}>
+              {/* Main content with tighter responsive top spacing for fixed nav */}
+              <main style={{ paddingTop: 'clamp(40px, 5vh, 64px)' }}>
                 {children}
               </main>
             </AuthProvider>
