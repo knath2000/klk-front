@@ -105,7 +105,7 @@ const ChatView: React.FC = () => {
       // Validate backend URL
       if (!backendUrl || backendUrl.includes('your-railway-app')) {
         console.error('❌ INVALID BACKEND URL:', backendUrl);
-        console.error('   Please set NEXT_PUBLIC_BACKEND_URL to your actual Railway backend URL');
+        console.error('   Please set NEXT_PUBLIC_BACKEND_URL to your actual backend URL');
         setChatState(prev => ({ 
           ...prev, 
           personas: fallbackPersonas 
@@ -210,7 +210,7 @@ const ChatView: React.FC = () => {
     };
     
     fetchPersonasWithRetry();
-  }, []);
+  }, [socket]);
 
   // WebSocket connection is now managed by global context
   useEffect(() => {
@@ -235,7 +235,7 @@ const ChatView: React.FC = () => {
       socket.off('assistant_delta');
       socket.off('assistant_final');
     };
-  }, [socket, isConnected]);
+  }, [socket]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
