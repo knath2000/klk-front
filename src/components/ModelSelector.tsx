@@ -27,38 +27,33 @@ export default function ModelSelector({
   // Mock models data - in real app, this would come from API
   useEffect(() => {
     const mockModels: AIModel[] = [
+      // Default (cheapest, fast)
       {
-        id: 'gpt-4o',
-        name: 'GPT-4o',
-        display_name: 'GPT-4o',
-        description: 'OpenAI\'s most advanced model',
+        id: 'meta-llama-3.2-3b',
+        name: 'Llama 3.2 3B',
+        display_name: 'Llama 3.2 3B (Default)',
+        description: 'Default: fast, low cost. Good colloquial Spanish and slang for general chat.',
         inference_speed: 'fast',
-        is_available: true
+        is_available: true,
       },
+      // Mid-tier (better accuracy, moderate cost)
       {
-        id: 'claude-3-5-sonnet',
-        name: 'Claude 3.5 Sonnet',
-        display_name: 'Claude 3.5 Sonnet',
-        description: 'Anthropic\'s most intelligent model',
+        id: 'meta-llama-3.3-8b',
+        name: 'Llama 3.3 8B',
+        display_name: 'Llama 3.3 8B (Mid)',
+        description: 'Mid-tier: stronger idiom and regional nuance; slightly slower and pricier.',
         inference_speed: 'medium',
-        is_available: true
+        is_available: true,
       },
+      // Premium (highest accuracy, slowest)
       {
-        id: 'gemini-pro',
-        name: 'Gemini Pro',
-        display_name: 'Gemini Pro',
-        description: 'Google\'s advanced multimodal model',
-        inference_speed: 'fast',
-        is_available: true
+        id: 'meta-llama-3.3-70b',
+        name: 'Llama 3.3 70B',
+        display_name: 'Llama 3.3 70B (Premium)',
+        description: 'Premium: best colloquial fluency and nuance; slowest and highest cost.',
+        inference_speed: 'slow',
+        is_available: true,
       },
-      {
-        id: 'gpt-4o-mini',
-        name: 'GPT-4o Mini',
-        display_name: 'GPT-4o Mini',
-        description: 'Fast and affordable model',
-        inference_speed: 'fast',
-        is_available: true
-      }
     ];
     setModels(mockModels);
   }, []);

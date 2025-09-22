@@ -83,7 +83,7 @@ const ChatView: React.FC = () => {
     isTyping: false,
     isConnected: false,
     personas: [],
-    currentModel: 'gpt-4o-mini' // Default model
+    currentModel: 'meta-llama-3.2-3b' // Default model (cheapest, fast): Llama 3.2 3B
   });
 
   const [conversationId, setConversationId] = useState<string | null>(null);
