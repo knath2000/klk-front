@@ -29,8 +29,8 @@ export default function ModelSelector({
     const mockModels: AIModel[] = [
       // Default (cheapest, fast)
       {
-        id: 'meta-llama-3.2-3b',
-        name: 'Llama 3.2 3B',
+        id: 'meta-llama/llama-3.2-3b-instruct',
+        name: 'Llama 3.2 3B Instruct',
         display_name: 'Llama 3.2 3B (Default)',
         description: 'Default: fast, low cost. Good colloquial Spanish and slang for general chat.',
         inference_speed: 'fast',
@@ -38,8 +38,8 @@ export default function ModelSelector({
       },
       // Mid-tier (better accuracy, moderate cost)
       {
-        id: 'meta-llama-3.3-8b',
-        name: 'Llama 3.3 8B',
+        id: 'meta-llama/llama-3.3-8b-instruct:free',
+        name: 'Llama 3.3 8B Instruct (Free)',
         display_name: 'Llama 3.3 8B (Mid)',
         description: 'Mid-tier: stronger idiom and regional nuance; slightly slower and pricier.',
         inference_speed: 'medium',
@@ -47,8 +47,8 @@ export default function ModelSelector({
       },
       // Premium (highest accuracy, slowest)
       {
-        id: 'meta-llama-3.3-70b',
-        name: 'Llama 3.3 70B',
+        id: 'meta-llama/llama-3.3-70b-instruct',
+        name: 'Llama 3.3 70B Instruct',
         display_name: 'Llama 3.3 70B (Premium)',
         description: 'Premium: best colloquial fluency and nuance; slowest and highest cost.',
         inference_speed: 'slow',
