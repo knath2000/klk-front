@@ -66,27 +66,46 @@ export default function ModelSelector({
   const handleModelChange = async (modelId: string) => {
     setIsLoading(true);
     try {
-      // Call the API to switch model on backend
-      const response = await fetch(`/api/models/${modelId}/switch`, {
+      // If the user hasn't started a conversation yet, apply locally and skip backend call
+      if (!conversationId) {
+        console.warn('Model switch: no conversationId yet; applying locally without backend persistence.');
+        onModelChange(modelId);
+        setIsOpen(false);
+        // Optional UX hint: let the user know persistence happens after starting a chat
+        // alert('Model updated locally. Start a conversation to persist this setting.');
+        return;
+      }
+
+      // Resolve backend URL; fall back for local dev
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+      const url = `${backendUrl}/api/models/${modelId}/switch`;
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversationId: conversationId || 'default-conversation' })
+        // Persist with the real conversationId
+        body: JSON.stringify({ conversationId })
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to switch model: ${response.statusText}`);
+        let serverMsg = '';
+        try {
+          const err = await response.json();
+          serverMsg = err?.error || '';
+        } catch {
+          // ignore JSON parse errors from HTML responses
+        }
+        throw new Error(`Failed to switch model: ${response.status} ${response.statusText}${serverMsg ? ` — ${serverMsg}` : ''}`);
       }
 
       const result = await response.json();
       console.log('Model switched successfully:', result);
-      
+
       onModelChange(modelId);
       setIsOpen(false);
     } catch (error) {
       console.error('Failed to switch model:', error);
-      // Revert the model change on frontend if backend fails
-      // Note: Since onModelChange was already called in some implementations, this might need state management adjustment
-      alert('Failed to switch model. Please try again.');
+      alert('Failed to switch model. Please try again after starting a conversation and verifying your backend URL.');
     } finally {
       setIsLoading(false);
     }
