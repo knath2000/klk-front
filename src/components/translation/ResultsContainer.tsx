@@ -44,44 +44,191 @@ export function ResultsContainer({ query, streamingResult, onStreamingUpdate, re
       case 'definitions':
         return (
           <div className="space-y-4">
-            {result.definitions && result.definitions.length > 0 ? (
-              result.definitions.map((def, index) => (
+            {/* Prefer rich dictionary entry if present */}
+            {result.entry && result.entry.senses && result.entry.senses.length > 0 ? (
+              <>
+                {/* Headword header */}
                 <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
                   className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        {def.text || def.meaning || 'No definition'}
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div className="flex items-baseline gap-3">
+                      <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                        {result.entry.headword}
                       </h3>
-                      {(def.partOfSpeech || def.pos) && (
-                        <span className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full mb-3">
-                          {def.partOfSpeech || def.pos}
+                      {result.entry.pronunciation?.ipa && (
+                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                          [{result.entry.pronunciation.ipa}]
                         </span>
                       )}
-                      {def.examples && def.examples.length > 0 && (
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Examples:
-                          </h4>
-                          {def.examples.map((example, exIndex) => (
-                            <p key={exIndex} className="text-gray-600 dark:text-gray-400 italic">
-                              &ldquo;{example}&rdquo;
-                            </p>
-                          ))}
-                        </div>
+                      {result.entry.pronunciation?.syllabification && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {result.entry.pronunciation.syllabification}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {result.entry.part_of_speech && (
+                        <span className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                          {result.entry.part_of_speech}
+                        </span>
+                      )}
+                      {typeof result.entry.gender !== 'undefined' && result.entry.gender !== null && (
+                        <span className="inline-block px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs rounded-full">
+                          {result.entry.gender}
+                        </span>
+                      )}
+                      {Array.isArray(result.entry.inflections) && result.entry.inflections.length > 0 && (
+                        <span className="inline-block px-2 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs rounded-full">
+                          {result.entry.inflections.join(', ')}
+                        </span>
                       )}
                     </div>
                   </div>
                 </motion.div>
-              ))
+
+                {/* Senses list (already sorted slang/colloquial first by server) */}
+                {result.entry.senses.map((sense, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 mt-0.5 flex items-center justify-center rounded-full bg-blue-500 text-white text-xs flex-shrink-0">
+                        {(sense.sense_number ?? index + 1)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {/* Registers chips */}
+                          {(sense.registers || []).map((reg, i) => (
+                            <span
+                              key={`reg-${i}`}
+                              className="inline-block px-2 py-0.5 rounded-full text-xs bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200"
+                            >
+                              {reg}
+                            </span>
+                          ))}
+                          {/* Regions chips */}
+                          {(sense.regions || []).map((r, i) => (
+                            <span
+                              key={`regn-${i}`}
+                              className="inline-block px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                            >
+                              {r}
+                            </span>
+                          ))}
+                        </div>
+
+                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                          {sense.gloss}
+                        </h4>
+
+                        {sense.usage_notes && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                            {sense.usage_notes}
+                          </p>
+                        )}
+
+                        {/* Examples (es/en pairs) */}
+                        {Array.isArray(sense.examples) && sense.examples.length > 0 && (
+                          <div className="space-y-2 mt-2">
+                            <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Examples:</h5>
+                            {sense.examples.map((ex, exIdx) => (
+                              <div key={exIdx} className="text-sm">
+                                <p className="text-gray-900 dark:text-white italic">“{ex.es}”</p>
+                                <p className="text-gray-600 dark:text-gray-400">“{ex.en}”</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Synonyms / Antonyms */}
+                        {(sense.synonyms && sense.synonyms.length > 0) || (sense.antonyms && sense.antonyms.length > 0) ? (
+                          <div className="flex flex-wrap gap-3 mt-3">
+                            {sense.synonyms && sense.synonyms.length > 0 && (
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="text-gray-700 dark:text-gray-300">Syn:</span>
+                                <div className="flex flex-wrap gap-1">
+                                  {sense.synonyms.map((s, si) => (
+                                    <span key={si} className="px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded">
+                                      {s}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {sense.antonyms && sense.antonyms.length > 0 && (
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="text-gray-700 dark:text-gray-300">Ant:</span>
+                                <div className="flex flex-wrap gap-1">
+                                  {sense.antonyms.map((a, ai) => (
+                                    <span key={ai} className="px-2 py-0.5 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded">
+                                      {a}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </>
             ) : (
-              <p>No definitions available</p>
+              // Fallback: legacy definitions renderer
+              <>
+                {result.definitions && result.definitions.length > 0 ? (
+                  result.definitions.map((def, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                            {def.text || def.meaning || 'No definition'}
+                          </h3>
+                          {(def.partOfSpeech || def.pos) && (
+                            <span className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full mb-3">
+                              {def.partOfSpeech || def.pos}
+                            </span>
+                          )}
+                          {def.usage && (
+                            <span className="inline-block ml-2 px-2 py-1 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-xs rounded-full mb-3">
+                              {def.usage}
+                            </span>
+                          )}
+                          {def.examples && def.examples.length > 0 && (
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Examples:
+                              </h4>
+                              {def.examples.map((example, exIndex) => (
+                                <p key={exIndex} className="text-gray-600 dark:text-gray-400 italic">
+                                  &ldquo;{example}&rdquo;
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <p>No definitions available</p>
+                )}
+              </>
             )}
           </div>
         );

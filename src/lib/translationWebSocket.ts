@@ -51,7 +51,35 @@ export interface TranslationResult {
     synonyms?: string[];
     antonyms?: string[];
   };
+  // New: full dictionary entry (SpanishDict-style) for richer UI. Optional for backward compatibility.
+  entry?: DictionaryEntry;
   timestamp: number;
+}
+
+// New: SpanishDict-style dictionary entry schema (mirrors server)
+export interface DictionaryEntry {
+  headword: string;
+  pronunciation: {
+    ipa: string;
+    syllabification?: string;
+  };
+  part_of_speech: string; // e.g., "n", "v", "adj"
+  gender: 'm' | 'f' | 'mf' | null;
+  inflections: string[];
+  frequency?: number;
+  senses: Array<DictionarySense>;
+}
+
+export interface DictionarySense {
+  sense_number: number;
+  registers?: string[]; // ["slang","colloquial","pejorative","vulgar","figurative","technical","archaic"]
+  regions?: string[];   // ["Mexico","Caribbean","Venezuela","Guatemala","Latin America","Spain",...]
+  gloss: string;        // English gloss
+  usage_notes?: string;
+  examples: Array<{ es: string; en: string }>;
+  synonyms?: string[];
+  antonyms?: string[];
+  cross_references?: string[];
 }
 
 // Translation event handlers
