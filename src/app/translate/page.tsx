@@ -157,8 +157,47 @@ function TranslatePageContent() {
 
   const handleQuerySubmit = async (query: string) => {
     try {
-      if (!socket || !isConnected) {
+      // Ensure we have a socket instance
+      if (!socket) {
         throw new Error('WebSocket connection not available. Please try again.');
+      }
+
+      // If the socket is not connected, try a quick reconnect and await connect
+      if (!socket.connected) {
+        console.log('🔄 Socket not connected, attempting quick reconnect before sending...');
+        try {
+          // Initiate connect if needed
+          socket.connect();
+
+          // Await a short connect window (up to 3 seconds)
+          await new Promise<void>((resolve, reject) => {
+            if (socket.connected) return resolve();
+            const onConnect = () => {
+              socket.off('connect_error', onError);
+              resolve();
+            };
+            const onError = () => {
+              // do not reject immediately; allow fallback to timeout
+            };
+            socket.once('connect', onConnect);
+            socket.once('connect_error', onError);
+            const timer = setTimeout(() => {
+              socket.off('connect', onConnect);
+              socket.off('connect_error', onError);
+              reject(new Error('WebSocket connection timeout'));
+            }, 3000);
+            // If already connected by the time we schedule, resolve
+            if (socket.connected) {
+              clearTimeout(timer);
+              socket.off('connect', onConnect);
+              socket.off('connect_error', onError);
+              resolve();
+            }
+          });
+        } catch (e) {
+          console.error('❌ Reconnect attempt failed before send:', e);
+          throw new Error('WebSocket connection not available. Please try again.');
+        }
       }
 
       // Reset any previous error state and set loading

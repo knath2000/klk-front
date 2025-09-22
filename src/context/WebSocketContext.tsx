@@ -35,6 +35,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Guard to differentiate intentional disconnects vs. unexpected ones
+  const manualDisconnectRef = useRef<boolean>(false);
 
   const getSessionId = useCallback((): string | null => {
     if (typeof window !== 'undefined') {
@@ -83,6 +85,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       if (newSocket.id) {
         setSessionId(newSocket.id);
       }
+      // Any successful connect implies we are no longer in a manual disconnect state
+      manualDisconnectRef.current = false;
     });
 
     newSocket.on('disconnect', (reason) => {
@@ -91,6 +95,21 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
       if (reason === 'io client disconnect') {
         console.log('🔌 Client initiated disconnect - will not auto-reconnect');
+        // If this was NOT an intentional disconnect from our code, immediately attempt to reconnect
+        if (!manualDisconnectRef.current) {
+          console.log('⚠️ Detected unexpected client disconnect; attempting auto-reconnect');
+          setConnectionState('connecting');
+          try {
+            newSocket.connect();
+          } catch {
+            // Schedule a short retry if immediate connect throws
+            setTimeout(() => {
+              if (newSocket.disconnected) {
+                newSocket.connect();
+              }
+            }, 500);
+          }
+        }
       }
     });
 
@@ -171,6 +190,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const connect = useCallback(() => {
     if (!socketRef.current || socketRef.current.disconnected) {
       console.log('🔌 Initiating WebSocket connection');
+      // Reset manual disconnect guard before creating a new connection
+      manualDisconnectRef.current = false;
       const newSocket = createSocket();
       socketRef.current = newSocket;
       setSocket(newSocket);
@@ -181,6 +202,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const disconnect = useCallback(() => {
     if (socketRef.current) {
       console.log('🔌 Disconnecting WebSocket');
+      // Mark as intentional so we don't auto-reconnect on purpose
+      manualDisconnectRef.current = true;
       const cleanup = (socketRef.current as Socket & { _cleanup?: () => void })._cleanup;
       if (cleanup) cleanup();
 
@@ -198,19 +221,27 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
     // Cleanup on unmount
     return () => {
-      console.log('🧹 Cleaning up WebSocket connection');
+      console.log('🧹 Cleaning up WebSocket connection (provider unmount)');
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
-      disconnect();
+      // Do NOT hard-disconnect here to avoid client-initiated disconnects during route re-mounts.
+      // Just remove visibility listeners and leave the socket to be re-used or GC'd by the browser.
+      const s = socketRef.current as (Socket & { _cleanup?: () => void }) | null;
+      if (s?._cleanup) {
+        try { s._cleanup(); } catch {}
+      }
+      // We intentionally do not call disconnect() here to prevent "io client disconnect" during mount lifecycles.
     };
-  }, [connect, disconnect]);
+  }, [connect]);
 
   // Handle window beforeunload
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (socketRef.current) {
         console.log('🔌 Cleaning up WebSocket before page unload');
+        // Intentional disconnect on unload
+        manualDisconnectRef.current = true;
         socketRef.current.disconnect();
       }
     };

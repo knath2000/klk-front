@@ -62,6 +62,20 @@ const fallbackPersonas: Persona[] = [
   }
 ];
 
+// Payload types for Socket.IO events
+type AssistantDeltaPayload = {
+  message_id: string;
+  chunk: string;
+  index?: number;
+  total?: number | null;
+};
+
+type AssistantFinalPayload = {
+  message_id: string;
+  final_content: string;
+  timestamp?: string;
+};
+
 const ChatView: React.FC = () => {
   const [chatState, setChatState] = useState<ChatState>({
     messages: [],
@@ -74,7 +88,9 @@ const ChatView: React.FC = () => {
 
   const [conversationId, setConversationId] = useState<string | null>(null);
 
-  const { socket, isConnected } = useWebSocket();
+  const { socket, isConnected, connect } = useWebSocket() as unknown as {
+    socket: any; isConnected: boolean; connect?: () => void;
+  };
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load conversationId from localStorage on mount
@@ -217,12 +233,12 @@ const ChatView: React.FC = () => {
     if (!socket) return;
 
     // Set up chat-specific event handlers
-    socket.on('assistant_delta', (data) => {
+    socket.on('assistant_delta', (data: AssistantDeltaPayload) => {
       console.log('📨 RECEIVED assistant_delta:', data);
       updateAssistantMessage(data.message_id, data.chunk, false);
     });
 
-    socket.on('assistant_final', (data) => {
+    socket.on('assistant_final', (data: AssistantFinalPayload) => {
       console.log('📨 RECEIVED assistant_final:', data);
       updateAssistantMessage(data.message_id, data.final_content, true);
     });
@@ -235,7 +251,7 @@ const ChatView: React.FC = () => {
       socket.off('assistant_delta');
       socket.off('assistant_final');
     };
-  }, [socket]);
+  }, [socket, isConnected]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -260,10 +276,50 @@ const ChatView: React.FC = () => {
     console.log('Searching for:', query);
   };
 
-  const handleSendMessage = (message: string) => {
+  const handleSendMessage = async (message: string) => {
     if (!chatState.selectedCountry || !socket) {
       console.error('❌ Cannot send message: no country selected or socket not connected');
       return;
+    }
+
+    // If socket exists but is not connected, try a quick reconnect window
+    if (!socket.connected) {
+      console.log('🔄 Socket not connected, attempting quick reconnect before sending...');
+      try {
+        // Attempt to trigger context connect (if exposed)
+        if (typeof connect === 'function') {
+          connect();
+        } else {
+          socket.connect();
+        }
+
+        await new Promise<void>((resolve, reject) => {
+          if (socket.connected) return resolve();
+          const onConnect = () => {
+            socket.off('connect_error', onError);
+            resolve();
+          };
+          const onError = () => {
+            // swallow; rely on timeout
+          };
+          socket.once('connect', onConnect);
+          socket.once('connect_error', onError);
+          const timer = setTimeout(() => {
+            socket.off('connect', onConnect);
+            socket.off('connect_error', onError);
+            reject(new Error('WebSocket connection timeout'));
+          }, 3000);
+          if (socket.connected) {
+            clearTimeout(timer);
+            socket.off('connect', onConnect);
+            socket.off('connect_error', onError);
+            resolve();
+          }
+        });
+      } catch (e) {
+        console.error('❌ Reconnect attempt failed before send:', e);
+        return;
+      }
     }
 
     console.log('📤 SENDING MESSAGE:', { message, country: chatState.selectedCountry });
