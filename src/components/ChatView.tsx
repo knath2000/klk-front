@@ -88,9 +88,7 @@ const ChatView: React.FC = () => {
 
   const [conversationId, setConversationId] = useState<string | null>(null);
 
-  const { socket, isConnected, connect } = useWebSocket() as unknown as {
-    socket: any; isConnected: boolean; connect?: () => void;
-  };
+  const { socket, isConnected, connect } = useWebSocket();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load conversationId from localStorage on mount
