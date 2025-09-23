@@ -71,26 +71,54 @@ export default function ModelSelector({
         return;
       }
 
-      // Resolve backend URL; fall back for local dev
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-      const url = `${backendUrl}/api/models/${modelId}/switch`;
+      // Resolve backend URL with safe production/dev fallbacks and absolute origin enforcement
+      const isProduction = process.env.NODE_ENV === 'production';
+      const envUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+      const fallbackProd = 'https://klk-back-production.up.railway.app'; // deployment status reference
+      const fallbackDev = 'http://localhost:3001';
+
+      // Normalize and validate absolute URL
+      const normalizeBase = (u: string) => u.replace(/\/+$/, '');
+      const isAbsoluteHttp = (u?: string) => !!u && /^https?:\/\//i.test(u);
+
+      const base = isAbsoluteHttp(envUrl)
+        ? normalizeBase(envUrl as string)
+        : normalizeBase(isProduction ? fallbackProd : fallbackDev);
+
+      const url = `${base}/api/models/${encodeURIComponent(modelId)}/switch`;
+
+      console.log('[ModelSelector] Switching model via:', url, 'conversationId:', conversationId);
 
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // Persist with the real conversationId
-        body: JSON.stringify({ conversationId })
+        body: JSON.stringify({ conversationId }),
+        credentials: 'include',
+        mode: 'cors',
       });
 
       if (!response.ok) {
+        // Attempt to parse JSON; if HTML (Next.js 404), also capture text snippet
         let serverMsg = '';
+        let textSnippet = '';
         try {
-          const err = await response.json();
-          serverMsg = err?.error || '';
+          const ct = response.headers.get('Content-Type') || '';
+          if (ct.includes('application/json')) {
+            const err = await response.json();
+            serverMsg = err?.error || '';
+          } else {
+            const txt = await response.text();
+            textSnippet = txt.slice(0, 200);
+          }
         } catch {
-          // ignore JSON parse errors from HTML responses
+          // ignore parsing errors
         }
-        throw new Error(`Failed to switch model: ${response.status} ${response.statusText}${serverMsg ? ` — ${serverMsg}` : ''}`);
+        throw new Error(
+          `Failed to switch model: ${response.status} ${response.statusText}` +
+          (serverMsg ? ` — ${serverMsg}` : '') +
+          (textSnippet ? ` — BODY: ${textSnippet}` : '')
+        );
       }
 
       const result = await response.json();
@@ -100,7 +128,7 @@ export default function ModelSelector({
       setIsOpen(false);
     } catch (error) {
       console.error('Failed to switch model:', error);
-      alert('Failed to switch model. Please try again after starting a conversation and verifying your backend URL.');
+      alert('Failed to switch model. Please verify your backend URL (NEXT_PUBLIC_BACKEND_URL) points to the server and try again after starting a conversation.');
     } finally {
       setIsLoading(false);
     }
