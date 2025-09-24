@@ -404,12 +404,12 @@ const ChatView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-[var(--row-gap)] min-h-screen">
+    <div className="flex flex-col gap-[var(--row-gap)] min-h-[100svh] h-[100vh] h-[100lvh]">
       {/* Header with glass design */}
-      <div className="relative z-10 px-4 md:px-6 pt-4 md:pt-6 mt-0">
+      <div className="relative z-10 px-4 md:px-6 pl-safe-l pr-safe-r pt-4 md:pt-6 mt-0">
         <div className="max-w-7xl mx-auto flex flex-col gap-[var(--row-gap)]">
           <GlassCard variant="light" size="md" hover className="py-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-3 xs:flex-nowrap">
               {/* Title Section */}
               <div>
                 <motion.h1 
@@ -498,7 +498,7 @@ const ChatView: React.FC = () => {
 
       {/* Messages Area */}
       <div className={cn(
-        hasMessages ? "flex-1 overflow-y-auto px-4 md:px-6 pb-4" : "px-4 md:px-6 pb-2"
+        hasMessages ? "flex-1 overflow-y-auto px-4 md:px-6 pl-safe-l pr-safe-r pb-4" : "px-4 md:px-6 pl-safe-l pr-safe-r pb-2"
       )}>
         <div className="max-w-4xl mx-auto">
           {/* Welcome message */}
@@ -553,7 +553,7 @@ const ChatView: React.FC = () => {
       </div>
 
       {/* Input Area with glass design */}
-      <div className="relative z-10 p-6 pt-2 mt-[clamp(8px,1.5vh,16px)]">
+      <div className="relative z-10 p-6 pt-2 pl-safe-l pr-safe-r mt-[clamp(8px,1.5vh,16px)]">
         <div className="max-w-4xl mx-auto">
           <GlassCard variant="dark" size="md">
             <ChatInput

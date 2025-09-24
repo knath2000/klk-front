@@ -22,7 +22,8 @@ export default function Navigation() {
     <motion.div 
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="fixed top-4 left-4 right-4 z-20 isolate"
+      className="fixed left-4 right-4 z-20 isolate pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
+      style={{ top: "calc(env(safe-area-inset-top, 0px) + 1rem)" }}
     >
       <GlassCard 
         variant="light" 

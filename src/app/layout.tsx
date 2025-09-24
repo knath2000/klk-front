@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-full overflow-x-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden min-h-[100svh] h-[100vh] h-[100lvh]`}
       >
         {/* Dynamic background gradients */}
         <div className="fixed inset-0 bg-isolation">
@@ -53,8 +53,12 @@ export default function RootLayout({
             <AuthProvider>
               {/* Floating glass navigation */}
               <Navigation />
-              {/* Spacer to reserve space for the fixed Navigation (prevents overlap with header bars) */}
-              <div aria-hidden className="w-full" style={{ height: 'clamp(56px, 8vh, 84px)' }} />
+              {/* Spacer to reserve space for the fixed Navigation (prevents overlap with header bars + iOS notch) */}
+              <div
+                aria-hidden
+                className="w-full"
+                style={{ height: 'calc(clamp(56px, 8vh, 84px) + env(safe-area-inset-top, 0px))' }}
+              />
               
               {/* Main content (no additional top padding; spacer handles separation) */}
               <main>

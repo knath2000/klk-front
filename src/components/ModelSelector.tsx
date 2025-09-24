@@ -24,6 +24,7 @@ export default function ModelSelector({
   const [models, setModels] = useState<AIModel[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Mock models data - in real app, this would come from API
   useEffect(() => {
@@ -58,6 +59,19 @@ export default function ModelSelector({
     ];
     setModels(mockModels);
   }, []);
+  // Portal mount guard
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  // Body scroll lock when menu is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen]);
 
   const handleModelChange = async (modelId: string) => {
     setIsLoading(true);
@@ -148,26 +162,27 @@ export default function ModelSelector({
     return speedClasses[speed as keyof typeof speedClasses] || 'bg-gray-100 text-gray-800';
   };
 
-  // Portal the dropdown to body to escape stacking context issues
+  const listboxId = 'model-selector-listbox';
+
+  // Portal-rendered dropdown content (safe-area aware, mobile friendly)
   const dropdownContent = isOpen ? (
     <>
+      {/* Overlay below panel; safe-area notches are inherently respected by fixed positioning */}
       <div
-        className="fixed inset-0 z-[9999]"
+        className="fixed inset-0 z-[9999] bg-black/0"
         onClick={() => setIsOpen(false)}
         aria-hidden="true"
       />
       <div
-        className="fixed z-[10000] bg-white rounded-md shadow-lg ring-1 ring-black/10 pointer-events-auto"
+        className="fixed z-[10000] bg-white rounded-md shadow-lg ring-1 ring-black/10 pointer-events-auto w-[90vw] max-w-[320px] max-h-[80vh] overflow-y-auto"
         style={{
-          position: 'fixed',
-          top: '50%',
+          top: 'calc(env(safe-area-inset-top, 0px) + 64px)',
           left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '320px',
-          maxHeight: '80vh',
-          overflowY: 'auto'
+          transform: 'translateX(-50%)'
         }}
         role="listbox"
+        id={listboxId}
+        aria-label="Available Models"
       >
         <div className="py-1">
           <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -177,6 +192,8 @@ export default function ModelSelector({
             <button
               key={model.id}
               onClick={() => handleModelChange(model.id)}
+              role="option"
+              aria-selected={currentModel === model.id}
               className={`w-full px-4 py-3 text-left hover:bg-gray-50 flex items-start justify-between ${
                 currentModel === model.id ? 'bg-indigo-50 border-l-4 border-indigo-500' : ''
               }`}
@@ -202,31 +219,33 @@ export default function ModelSelector({
   ) : null;
 
   return (
-    <>
-      <div className="relative">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          disabled={isLoading}
-          aria-expanded={isOpen}
-        >
-          {isLoading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-              Switching...
-            </>
-          ) : (
-            <>
-              <span className="text-xs">🤖</span>
-              {getCurrentModel()?.display_name || 'Select Model'}
-              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </>
-          )}
-        </button>
-      </div>
-      {dropdownContent && createPortal(dropdownContent, document.body)}
-    </>
+    <div className="relative z-30">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        disabled={isLoading}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? listboxId : undefined}
+      >
+        {isLoading ? (
+          <>
+            <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            Switching...
+          </>
+        ) : (
+          <>
+            <span className="text-xs">🤖</span>
+            {getCurrentModel()?.display_name || 'Select Model'}
+            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </>
+        )}
+      </button>
+
+      {/* Portal dropdown */}
+      {mounted && dropdownContent ? createPortal(dropdownContent, document.body) : null}
+    </div>
   );
 }

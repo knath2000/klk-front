@@ -10,6 +10,15 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      screens: {
+        xs: '360px',
+      },
+      spacing: {
+        'safe-t': 'env(safe-area-inset-top)',
+        'safe-b': 'env(safe-area-inset-bottom)',
+        'safe-l': 'env(safe-area-inset-left)',
+        'safe-r': 'env(safe-area-inset-right)',
+      },
       colors: {
         'glass-light': 'rgba(255, 255, 255, 0.15)',
         'glass-medium': 'rgba(255, 255, 255, 0.25)',
