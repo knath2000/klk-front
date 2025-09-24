@@ -148,11 +148,12 @@ export default function ModelSelector({
   };
 
   return (
-    <div className="relative">
+    <div className="relative z-30">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
         disabled={isLoading}
+        aria-expanded={isOpen}
       >
         {isLoading ? (
           <>
@@ -171,7 +172,10 @@ export default function ModelSelector({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-10 mt-1 w-64 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
+        <div
+          className="absolute right-0 z-50 mt-1 w-64 bg-white rounded-md shadow-lg ring-1 ring-black/10 pointer-events-auto"
+          role="listbox"
+        >
           <div className="py-1">
             <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Available Models
@@ -205,9 +209,10 @@ export default function ModelSelector({
 
       {/* Click outside to close */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 z-0" 
+        <div
+          className="fixed inset-0 z-40"
           onClick={() => setIsOpen(false)}
+          aria-hidden="true"
         />
       )}
     </div>
