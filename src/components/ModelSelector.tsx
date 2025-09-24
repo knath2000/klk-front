@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface AIModel {
   id: string;
@@ -147,74 +148,85 @@ export default function ModelSelector({
     return speedClasses[speed as keyof typeof speedClasses] || 'bg-gray-100 text-gray-800';
   };
 
-  return (
-    <div className="relative z-30">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-        disabled={isLoading}
-        aria-expanded={isOpen}
+  // Portal the dropdown to body to escape stacking context issues
+  const dropdownContent = isOpen ? (
+    <>
+      <div
+        className="fixed inset-0 z-[9999]"
+        onClick={() => setIsOpen(false)}
+        aria-hidden="true"
+      />
+      <div
+        className="fixed z-[10000] bg-white rounded-md shadow-lg ring-1 ring-black/10 pointer-events-auto"
+        style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '320px',
+          maxHeight: '80vh',
+          overflowY: 'auto'
+        }}
+        role="listbox"
       >
-        {isLoading ? (
-          <>
-            <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-            Switching...
-          </>
-        ) : (
-          <>
-            <span className="text-xs">🤖</span>
-            {getCurrentModel()?.display_name || 'Select Model'}
-            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </>
-        )}
-      </button>
-
-      {isOpen && (
-        <div
-          className="absolute right-0 z-50 mt-1 w-64 bg-white rounded-md shadow-lg ring-1 ring-black/10 pointer-events-auto"
-          role="listbox"
-        >
-          <div className="py-1">
-            <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Available Models
-            </div>
-            {models.map((model) => (
-              <button
-                key={model.id}
-                onClick={() => handleModelChange(model.id)}
-                className={`w-full px-4 py-3 text-left hover:bg-gray-50 flex items-start justify-between ${
-                  currentModel === model.id ? 'bg-indigo-50 border-l-4 border-indigo-500' : ''
-                }`}
-                disabled={!model.is_available || isLoading}
-              >
-                <div>
-                  <div className="font-medium text-gray-900">{model.display_name}</div>
-                  <div className="text-xs text-gray-500 mt-1">{model.description}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 text-xs rounded-full ${getSpeedBadge(model.inference_speed)}`}>
-                    {model.inference_speed}
-                  </span>
-                  {!model.is_available && (
-                    <span className="text-xs text-red-500">Unavailable</span>
-                  )}
-                </div>
-              </button>
-            ))}
+        <div className="py-1">
+          <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Available Models
           </div>
+          {models.map((model) => (
+            <button
+              key={model.id}
+              onClick={() => handleModelChange(model.id)}
+              className={`w-full px-4 py-3 text-left hover:bg-gray-50 flex items-start justify-between ${
+                currentModel === model.id ? 'bg-indigo-50 border-l-4 border-indigo-500' : ''
+              }`}
+              disabled={!model.is_available || isLoading}
+            >
+              <div>
+                <div className="font-medium text-gray-900">{model.display_name}</div>
+                <div className="text-xs text-gray-500 mt-1">{model.description}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-1 text-xs rounded-full ${getSpeedBadge(model.inference_speed)}`}>
+                  {model.inference_speed}
+                </span>
+                {!model.is_available && (
+                  <span className="text-xs text-red-500">Unavailable</span>
+                )}
+              </div>
+            </button>
+          ))}
         </div>
-      )}
+      </div>
+    </>
+  ) : null;
 
-      {/* Click outside to close */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-    </div>
+  return (
+    <>
+      <div className="relative">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          disabled={isLoading}
+          aria-expanded={isOpen}
+        >
+          {isLoading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+              Switching...
+            </>
+          ) : (
+            <>
+              <span className="text-xs">🤖</span>
+              {getCurrentModel()?.display_name || 'Select Model'}
+              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </>
+          )}
+        </button>
+      </div>
+      {dropdownContent && createPortal(dropdownContent, document.body)}
+    </>
   );
 }
