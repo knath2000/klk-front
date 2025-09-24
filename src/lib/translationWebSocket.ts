@@ -80,6 +80,8 @@ export interface DictionarySense {
   synonyms?: string[];
   antonyms?: string[];
   cross_references?: string[];
+  // New: explicit Spanish translation for this sense (server-provided for EN→ES visibility)
+  translation_es?: string;
 }
 
 // Translation event handlers
