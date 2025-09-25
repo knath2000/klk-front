@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { getWebSocketUrl, handleTabSwitch } from '@/lib/websocket';
+import { getNeonAuthToken } from '@/lib/neonAuth';
 
 export type ConnectionState = 'connecting' | 'connected' | 'disconnected' | 'error';
 
@@ -27,6 +28,12 @@ export const useWebSocket = (): WebSocketContextType => {
 
 interface WebSocketProviderProps {
   children: React.ReactNode;
+}
+
+// Define proper types for Socket.IO auth
+interface SocketAuth {
+  token?: string;
+  [key: string]: unknown;
 }
 
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }) => {
@@ -70,10 +77,26 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       randomizationFactor: 0.5,
-      autoConnect: true,
+      // Important: do NOT auto-connect; set auth token first, then connect
+      autoConnect: false,
       withCredentials: true,
       query: sessionId ? { sessionId } : undefined,
     });
+
+    /* Get Neon Auth token and connect */
+    (async () => {
+      try {
+        const token = await getNeonAuthToken();
+        if (token) {
+          (newSocket as Socket & { auth?: SocketAuth }).auth = { ...(newSocket as Socket & { auth?: SocketAuth }).auth, token };
+        }
+      } catch {
+        // No token available yet; allow anonymous connection (server may allow optional auth)
+      } finally {
+        // Now initiate the connection
+        try { newSocket.connect(); } catch {}
+      }
+    })();
 
     // Connection events
     newSocket.on('connect', () => {
@@ -133,7 +156,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       console.log(`⏳ Retrying connection in ${retryDelay}ms`);
       setTimeout(() => {
         if (newSocket.disconnected) {
-          newSocket.connect();
+          // Refresh token before retrying connect
+          getNeonAuthToken()
+            .then((token) => {
+              if (token) (newSocket as Socket & { auth?: SocketAuth }).auth = { ...(newSocket as Socket & { auth?: SocketAuth }).auth, token };
+            })
+            .finally(() => {
+              newSocket.connect();
+            });
         }
       }, retryDelay);
     });
@@ -141,6 +171,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     newSocket.on('reconnect_attempt', (attemptNumber) => {
       console.log('🔄 Reconnect attempt:', attemptNumber);
       setConnectionState('connecting');
+      // Refresh token for the next handshake
+      getNeonAuthToken().then((token) => {
+        if (token) (newSocket as Socket & { auth?: SocketAuth }).auth = { ...(newSocket as Socket & { auth?: SocketAuth }).auth, token };
+      }).catch(() => {});
     });
 
     newSocket.on('reconnect', (attemptNumber) => {
