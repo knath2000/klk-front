@@ -30,6 +30,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden min-h-[100svh] h-[100vh] h-[100lvh]`}
       >
+        {/* Inject publishable key for client-side Stack Auth runtime */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY = ${JSON.stringify(process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY || '')};`,
+          }}
+        />
+
         {/* Dynamic background gradients */}
         <div className="fixed inset-0 bg-isolation">
           {/* Base gradient */}

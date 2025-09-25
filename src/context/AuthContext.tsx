@@ -1,8 +1,10 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
+import { StackSignIn, StackSignUp } from '@/components/StackAuthClient';
 
-// Define simple placeholder components for SignIn/SignUp so pages can render without Stack Auth
+// Remove previous runtime/dynamic placeholder logic and keep simple wiring
+// Define simple placeholder components in case something goes wrong
 const PlaceholderSignIn: React.FC = () => (
   <div className="text-white/80">
     <p>Authentication is not configured. Set NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY to enable Stack Auth.</p>
@@ -28,7 +30,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
-  // Replace Stack Auth component types with generic React.FC placeholders
+  // Use runtime-aware components
   signInComponent: React.FC;
   signUpComponent: React.FC;
 }
@@ -36,21 +38,16 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Without Stack Auth configured, expose null user
+  const [isLoading] = useState(false);
   const user: User | null = null;
 
-  // No-op methods to keep API stable
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, _password: string) => {
     console.log('Sign in (no-op):', email);
   };
-
   const signOut = async () => {
     console.log('Sign out (no-op)');
   };
-
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (email: string, _password: string, name: string) => {
     console.log('Sign up (no-op):', email, name);
   };
 
@@ -60,9 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signIn,
     signOut,
     signUp,
-    // Provide placeholders; when Stack Auth is re-enabled, swap these with real components
-    signInComponent: PlaceholderSignIn,
-    signUpComponent: PlaceholderSignUp,
+    // Always use client-only wrappers; they internally show a placeholder only if the key is truly missing
+    signInComponent: StackSignIn,
+    signUpComponent: StackSignUp,
   };
 
   return (
