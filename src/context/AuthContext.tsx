@@ -27,9 +27,9 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password?: string) => Promise<void>;
   signOut: () => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
+  signUp: (email: string, password?: string, name?: string) => Promise<void>;
   // Use runtime-aware components
   signInComponent: React.FC;
   signUpComponent: React.FC;
@@ -41,14 +41,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading] = useState(false);
   const user: User | null = null;
 
-  const signIn = async (email: string, _password: string) => {
+  const signIn = async (email: string, password?: string) => {
+    void password; // prevent unused param warning without logging
     console.log('Sign in (no-op):', email);
   };
   const signOut = async () => {
     console.log('Sign out (no-op)');
   };
-  const signUp = async (email: string, _password: string, name: string) => {
-    console.log('Sign up (no-op):', email, name);
+  const signUp = async (email: string, password?: string, name?: string) => {
+    void password;
+    void name;
+    console.log('Sign up (no-op):', email);
   };
 
   const value = {
