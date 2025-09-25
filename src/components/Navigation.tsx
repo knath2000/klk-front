@@ -4,12 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { GlassCard } from "@/components/ui";
-import { cn, glassAnimations } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { LogOut, User, Settings } from "lucide-react";
 
 export default function Navigation() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
+  const { user, signOut, isLoading } = useAuth();
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -17,6 +21,15 @@ export default function Navigation() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      setShowUserMenu(false);
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
 
   return (
     <motion.div 
@@ -104,28 +117,94 @@ export default function Navigation() {
               </Link>
             </div>
 
-            {/* Feature Button */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Link
-                href="/enterprise"
-                className={cn(
-                  "flex items-center space-x-2 px-3 py-2 rounded-lg",
-                  "bg-gradient-to-r from-purple-500/20 to-pink-500/20",
-                  "border border-purple-400/30 text-white/90 hover:text-white",
-                  "hover:from-purple-500/30 hover:to-pink-500/30",
-                  "transition-all duration-200",
-                  "focus:outline-none focus:ring-2 focus:ring-purple-400/50"
-                )}
+            {/* Auth Section */}
+            <div className="flex items-center space-x-2">
+              {isLoading ? (
+                <div className="w-8 h-8 animate-spin rounded-full border-2 border-white/20 border-t-white/60"></div>
+              ) : user ? (
+                /* User Menu */
+                <div className="relative">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center">
+                      <User className="w-3 h-3 text-white" />
+                    </div>
+                    <span className="text-sm font-medium hidden sm:block">
+                      {user.name || user.email}
+                    </span>
+                  </motion.button>
+
+                  {/* User Dropdown Menu */}
+                  {showUserMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50"
+                    >
+                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {user.name || 'User'}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {user.email}
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Sign Out</span>
+                      </button>
+                    </motion.div>
+                  )}
+                </div>
+              ) : (
+                /* Sign In/Up Buttons */
+                <div className="flex items-center space-x-2">
+                  <Link
+                    href="/auth/signin"
+                    className="px-4 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/auth/signup"
+                    className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                  >
+                    Sign Up
+                  </Link>
+                </div>
+              )}
+
+              {/* Feature Button */}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span className="text-sm font-medium">T3 Features</span>
-              </Link>
-            </motion.div>
+                <Link
+                  href="/enterprise"
+                  className={cn(
+                    "flex items-center space-x-2 px-3 py-2 rounded-lg",
+                    "bg-gradient-to-r from-purple-500/20 to-pink-500/20",
+                    "border border-purple-400/30 text-white/90 hover:text-white",
+                    "hover:from-purple-500/30 hover:to-pink-500/30",
+                    "transition-all duration-200",
+                    "focus:outline-none focus:ring-2 focus:ring-purple-400/50"
+                  )}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span className="text-sm font-medium">T3 Features</span>
+                </Link>
+              </motion.div>
+            </div>
           </div>
         </div>
 
@@ -138,6 +217,14 @@ export default function Navigation() {
           />
         </div>
       </GlassCard>
+
+      {/* Click outside to close user menu */}
+      {showUserMenu && (
+        <div
+          className="fixed inset-0 z-10"
+          onClick={() => setShowUserMenu(false)}
+        />
+      )}
     </motion.div>
   );
 }

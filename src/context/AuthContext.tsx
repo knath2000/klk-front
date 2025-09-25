@@ -2,6 +2,19 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+// Define simple placeholder components for SignIn/SignUp so pages can render without Stack Auth
+const PlaceholderSignIn: React.FC = () => (
+  <div className="text-white/80">
+    <p>Authentication is not configured. Set NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY to enable Stack Auth.</p>
+  </div>
+);
+
+const PlaceholderSignUp: React.FC = () => (
+  <div className="text-white/80">
+    <p>Authentication is not configured. Set NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY to enable Stack Auth.</p>
+  </div>
+);
+
 interface User {
   id: string;
   email: string;
@@ -15,75 +28,30 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
+  // Replace Stack Auth component types with generic React.FC placeholders
+  signInComponent: React.FC;
+  signUpComponent: React.FC;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Mock authentication - in real app, this would call the backend API
-  useEffect(() => {
-    // Check for existing session
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
-  }, []);
+  // Without Stack Auth configured, expose null user
+  const user: User | null = null;
 
+  // No-op methods to keep API stable
   const signIn = async (email: string, password: string) => {
-    // Mock sign in - in real app, this would call the backend
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockUser = {
-        id: 'mock-user-id',
-        email,
-        name: 'Test User'
-      };
-      
-      setUser(mockUser);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-    } finally {
-      setIsLoading(false);
-    }
+    console.log('Sign in (no-op):', email);
   };
 
   const signOut = async () => {
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setUser(null);
-      localStorage.removeItem('user');
-    } finally {
-      setIsLoading(false);
-    }
+    console.log('Sign out (no-op)');
   };
 
   const signUp = async (email: string, password: string, name: string) => {
-    // Mock sign up - in real app, this would call the backend
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockUser = {
-        id: 'mock-user-id',
-        email,
-        name
-      };
-      
-      setUser(mockUser);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-    } finally {
-      setIsLoading(false);
-    }
+    console.log('Sign up (no-op):', email, name);
   };
 
   const value = {
@@ -91,7 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     signIn,
     signOut,
-    signUp
+    signUp,
+    // Provide placeholders; when Stack Auth is re-enabled, swap these with real components
+    signInComponent: PlaceholderSignIn,
+    signUpComponent: PlaceholderSignUp,
   };
 
   return (

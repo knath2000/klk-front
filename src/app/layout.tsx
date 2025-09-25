@@ -49,6 +49,7 @@ export default function RootLayout({
 
         {/* Main application content */}
         <div className="relative z-10 min-h-full stack">
+          {/* StackProvider and StackTheme removed due to build issues */}
           <WebSocketProvider>
             <AuthProvider>
               {/* Floating glass navigation */}

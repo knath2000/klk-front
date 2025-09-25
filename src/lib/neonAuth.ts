@@ -35,21 +35,8 @@ export async function getNeonAuthToken(): Promise<string | null> {
     // ignore and try next strategy
   }
 
-  // Attempt 2: dynamic import of @stackframe/react (if available) and probing a token accessor
-  try {
-    const mod = await import('@stackframe/react') as StackModule;
-    // Some SDK versions may expose a singleton or helper; gracefully handle absence
-    if (mod?.stack?.getToken) {
-      const t = await mod.stack.getToken();
-      if (typeof t === 'string') return t;
-      if (t && typeof (t as StackAuthToken)?.token === 'string') {
-        const token = (t as StackAuthToken).token;
-        return token || null;
-      }
-    }
-  } catch {
-    // ignore
-  }
+  // Attempt 2 removed: avoid importing @stackframe/react to prevent "useStackApp must be used within a StackProvider" during prerender
+  // If needed in the future, re-enable with a safe runtime-only import guard.
 
   // Fallback: allow apps to set a global provider (useful during initial wiring)
   try {
