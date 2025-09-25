@@ -3,16 +3,25 @@
 import React from 'react';
 import { StackProvider, StackClientApp, SignIn, SignUp } from '@stackframe/react';
 
+// Declare typed window property to avoid any-casts
+declare global {
+  interface Window {
+    NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY?: string;
+  }
+}
+
 type CommonProps = {
   publishableKey?: string;
 };
 
 function BaseAuth({ mode, publishableKey }: { mode: 'signin' | 'signup' } & CommonProps) {
-  // Use direct, static references so Next/Vercel inlines at build time
+  // Use direct, static references so Next/Vercel inlines at build time and fallback to typed window runtime.
+  const runtimeKey = typeof window !== 'undefined' ? window.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY : undefined;
   const key =
     publishableKey ||
     process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY ||
-    (typeof window !== 'undefined' ? (window as any).NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY : '');
+    runtimeKey ||
+    '';
 
   if (!key) {
     return (
