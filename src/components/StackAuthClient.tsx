@@ -7,6 +7,7 @@ import { StackProvider, StackClientApp, SignIn, SignUp } from '@stackframe/react
 declare global {
   interface Window {
     NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY?: string;
+    NEXT_PUBLIC_STACK_PROJECT_ID?: string;
   }
 }
 
@@ -17,10 +18,15 @@ type CommonProps = {
 function BaseAuth({ mode, publishableKey }: { mode: 'signin' | 'signup' } & CommonProps) {
   // Use direct, static references so Next/Vercel inlines at build time and fallback to typed window runtime.
   const runtimeKey = typeof window !== 'undefined' ? window.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY : undefined;
+  const runtimeProject = typeof window !== 'undefined' ? window.NEXT_PUBLIC_STACK_PROJECT_ID : undefined;
   const key =
     publishableKey ||
     process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY ||
     runtimeKey ||
+    '';
+  const projectId =
+    process.env.NEXT_PUBLIC_STACK_PROJECT_ID ||
+    runtimeProject ||
     '';
 
   if (!key) {
@@ -35,6 +41,7 @@ function BaseAuth({ mode, publishableKey }: { mode: 'signin' | 'signup' } & Comm
   const app = new StackClientApp({
     tokenStore: 'memory',
     publishableClientKey: key,
+    projectId,
   });
 
   return (

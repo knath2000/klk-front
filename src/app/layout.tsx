@@ -36,6 +36,12 @@ export default function RootLayout({
             __html: `window.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY = ${JSON.stringify(process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY || '')};`,
           }}
         />
+        {/* Inject project id for client-side Stack Auth runtime */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.NEXT_PUBLIC_STACK_PROJECT_ID = ${JSON.stringify(process.env.NEXT_PUBLIC_STACK_PROJECT_ID || '')};`,
+          }}
+        />
 
         {/* Dynamic background gradients */}
         <div className="fixed inset-0 bg-isolation">
