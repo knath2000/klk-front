@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { StackProvider, StackClientApp, StackTheme, useUser } from '@stackframe/react';
-import { useAuth } from '@/context/AuthContext';
 import type { StackClientApp as StackClientAppTyped } from '@stackframe/react';
+import { useAuth } from '@/context/AuthContext';
 
 // Keys are injected in layout.tsx into window.* and also available via NEXT_PUBLIC_* at build time
 declare global {
@@ -58,6 +58,13 @@ function UserSync() {
 }
 
 export default function StackAuthBridge({ children }: { children: React.ReactNode }) {
+  // Prevent SSR by only rendering on client
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // Resolve keys from process.env or runtime window (covers Vercel and client-side hydration)
   const publishableKey =
     process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY ||
@@ -70,22 +77,22 @@ export default function StackAuthBridge({ children }: { children: React.ReactNod
   // Avoid calling hooks conditionally; compute app via useMemo and render conditionally below
   const hasKeys = Boolean(publishableKey && projectId);
 
-  const app = useMemo<StackClientAppTyped<true, string> | null>(() => {
+  const app = useMemo<StackClientAppTyped | null>(() => {
     if (!hasKeys) return null;
     return new StackClientApp({
-      tokenStore: 'memory' as const,
+      tokenStore: 'memory',
       publishableClientKey: publishableKey as string,
       projectId: projectId as string,
     }) as unknown as StackClientAppTyped<true, string>;
   }, [hasKeys, publishableKey, projectId]);
 
-  // Conditionally render provider based on key availability (hooks above always run)
-  if (!hasKeys || !app) {
+  // Don't render anything during SSR or if keys are missing
+  if (!isClient || !hasKeys || !app) {
     return <>{children}</>;
   }
 
   return (
-    <StackProvider app={app}>
+    <StackProvider app={app as any}> {/* eslint-disable-line @typescript-eslint/no-explicit-any */}
       <StackTheme>
         <UserSync />
         {children}
