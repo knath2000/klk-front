@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion';
 import { InputHTMLAttributes, ReactNode, forwardRef, useState } from 'react';
 import { cn, glassAnimations, type GlassVariant, getGlassTextColor } from '@/lib/utils';
-import { useProgressiveGlass } from '@/hooks/useGlassSupport';
 
 export interface GlassInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'onDrag'> {
   variant?: GlassVariant;
@@ -35,29 +34,16 @@ export const GlassInput = forwardRef<HTMLInputElement, GlassInputProps>(({
   value,
   ...props
 }, ref) => {
-  const { hasSupport } = useProgressiveGlass();
   const [isFocused, setIsFocused] = useState(false);
   const [hasValue, setHasValue] = useState(!!value);
 
   const variants = {
-    light: hasSupport 
-      ? 'glass-light focus:bg-white/20 focus:border-white/30' 
-      : 'bg-white/90 focus:bg-white border-white/20 focus:border-white/40',
-    dark: hasSupport 
-      ? 'glass-dark focus:bg-gray-900/20 focus:border-gray-700/40' 
-      : 'bg-gray-900/90 focus:bg-gray-900 border-gray-700/30 focus:border-gray-700/50',
-    blue: hasSupport 
-      ? 'glass-blue focus:bg-blue-500/20 focus:border-blue-400/40' 
-      : 'bg-blue-900/90 focus:bg-blue-900 border-blue-400/30 focus:border-blue-400/50',
-    purple: hasSupport 
-      ? 'glass-purple focus:bg-purple-500/20 focus:border-purple-400/40' 
-      : 'bg-purple-900/90 focus:bg-purple-900 border-purple-400/30 focus:border-purple-400/50',
-    emerald: hasSupport 
-      ? 'glass-emerald focus:bg-emerald-500/20 focus:border-emerald-400/40' 
-      : 'bg-emerald-900/90 focus:bg-emerald-900 border-emerald-400/30 focus:border-emerald-400/50',
-    gradient: hasSupport
-      ? 'glass-blue bg-gradient-to-r from-blue-500/15 via-purple-500/15 to-pink-500/15 focus:from-blue-500/25 focus:via-purple-500/25 focus:to-pink-500/25'
-      : 'bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 focus:from-blue-700 focus:via-purple-700 focus:to-pink-700'
+    light: 'bg-white/90 focus:bg-white border-white/20 focus:border-white/40 glass-light',
+    dark: 'bg-gray-900/90 focus:bg-gray-900 border-gray-700/30 focus:border-gray-700/50 glass-dark',
+    blue: 'bg-blue-900/90 focus:bg-blue-900 border-blue-400/30 focus:border-blue-400/50 glass-blue',
+    purple: 'bg-purple-900/90 focus:bg-purple-900 border-purple-400/30 focus:border-purple-400/50 glass-purple',
+    emerald: 'bg-emerald-900/90 focus:bg-emerald-900 border-emerald-400/30 focus:border-emerald-400/50 glass-emerald',
+    gradient: 'bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 focus:from-blue-700 focus:via-purple-700 focus:to-pink-700 glass-blue'
   };
 
   const sizes = {
