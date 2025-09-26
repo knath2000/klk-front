@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { WebSocketProvider } from "@/context/WebSocketContext";
 import Navigation from "@/components/Navigation";
+import StackAuthBridge from "@/components/StackAuthBridge";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,19 +66,20 @@ export default function RootLayout({
           {/* StackProvider and StackTheme removed due to build issues */}
           <WebSocketProvider>
             <AuthProvider>
-              {/* Floating glass navigation */}
-              <Navigation />
-              {/* Spacer to reserve space for the fixed Navigation (prevents overlap with header bars + iOS notch) */}
-              <div
-                aria-hidden
-                className="w-full"
-                style={{ height: 'calc(clamp(56px, 8vh, 84px) + env(safe-area-inset-top, 0px))' }}
-              />
-              
-              {/* Main content (no additional top padding; spacer handles separation) */}
-              <main>
-                {children}
-              </main>
+              <StackAuthBridge>
+                <Navigation />
+                {/* Spacer to reserve space for the fixed Navigation (prevents overlap with header bars + iOS notch) */}
+                <div
+                  aria-hidden
+                  className="w-full"
+                  style={{ height: 'calc(clamp(56px, 8vh, 84px) + env(safe-area-inset-top, 0px))' }}
+                />
+                
+                {/* Main content (no additional top padding; spacer handles separation) */}
+                <main>
+                  {children}
+                </main>
+              </StackAuthBridge>
             </AuthProvider>
           </WebSocketProvider>
         </div>

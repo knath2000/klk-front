@@ -1,21 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { StackSignIn, StackSignUp } from '@/components/StackAuthClient';
-
-// Remove previous runtime/dynamic placeholder logic and keep simple wiring
-// Define simple placeholder components in case something goes wrong
-const PlaceholderSignIn: React.FC = () => (
-  <div className="text-white/80">
-    <p>Authentication is not configured. Set NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY to enable Stack Auth.</p>
-  </div>
-);
-
-const PlaceholderSignUp: React.FC = () => (
-  <div className="text-white/80">
-    <p>Authentication is not configured. Set NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY to enable Stack Auth.</p>
-  </div>
-);
+import { getNeonAuthToken } from '@/lib/neonAuth';
 
 interface User {
   id: string;
@@ -26,11 +13,11 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   isLoading: boolean;
   signIn: (email: string, password?: string) => Promise<void>;
   signOut: () => Promise<void>;
   signUp: (email: string, password?: string, name?: string) => Promise<void>;
-  // Use runtime-aware components
   signInComponent: React.FC;
   signUpComponent: React.FC;
 }
@@ -38,16 +25,75 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isLoading] = useState(false);
-  const user: User | null = null;
+  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  // Bridge: detect Stack Auth token on the client and reflect it into our header state
+  useEffect(() => {
+    let cancelled = false;
+    let tries = 0;
+    const interval = window.setInterval(() => {
+      tries += 1;
+      // Poll up to ~5 seconds total
+      if (tries >= 4) {
+        window.clearInterval(interval);
+        setIsLoading(false);
+        return;
+      }
+      void syncFromStack();
+    }, 1200);
+
+    const syncFromStack = async () => {
+      try {
+        const token = await getNeonAuthToken();
+        if (cancelled) return;
+
+        if (token && !user) {
+          // We don't have profile fields without using the SDK; present a generic signed-in identity
+          setUser({
+            id: 'stack-auth-user',
+            email: '',
+            name: 'Account',
+          });
+          // Once set, stop polling
+          window.clearInterval(interval);
+        } else if (!token && user) {
+          // Token disappeared; reflect signed-out state
+          setUser(null);
+        }
+      } catch {
+        // Ignore transient errors
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Quick burst polling for first few seconds after navigation from SignIn/SignUp
+    setIsLoading(true);
+    syncFromStack();
+
+    // Also resync on visibility changes (e.g., after redirect back)
+    const onVisible = () => void syncFromStack();
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [user]);
 
   const signIn = async (email: string, password?: string) => {
     void password; // prevent unused param warning without logging
     console.log('Sign in (no-op):', email);
   };
+
   const signOut = async () => {
     console.log('Sign out (no-op)');
+    // Soft sign-out locally; tokens (if any) remain and bridge will restore on next load
+    setUser(null);
   };
+
   const signUp = async (email: string, password?: string, name?: string) => {
     void password;
     void name;
@@ -56,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = {
     user,
+    setUser,
     isLoading,
     signIn,
     signOut,

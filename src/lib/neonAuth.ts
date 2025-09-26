@@ -1,6 +1,12 @@
 'use client';
 
-// Define types for Stack Auth
+//
+// Lightweight client-side token probe for Stack Auth.
+// We use this only to detect "signed-in" state for header UI.
+// No SSR usage; all logic is browser-only.
+//
+
+// Define types for Stack Auth (runtime optional)
 interface StackAuthToken {
   token?: string;
   [key: string]: unknown;
@@ -15,12 +21,92 @@ interface WindowWithStack extends Window {
   __getAuthToken?: () => Promise<string>;
 }
 
-interface StackModule {
-  stack?: StackAuthInstance;
+// Best-effort cookie reader
+function readCookieMap(): Record<string, string> {
+  const map: Record<string, string> = {};
+  if (typeof document === 'undefined') return map;
+  const parts = document.cookie ? document.cookie.split(';') : [];
+  for (const part of parts) {
+    const idx = part.indexOf('=');
+    if (idx > -1) {
+      const key = decodeURIComponent(part.slice(0, idx).trim());
+      const val = decodeURIComponent(part.slice(idx + 1).trim());
+      map[key] = val;
+    }
+  }
+  return map;
+}
+
+function findStackTokenFromCookies(): string | null {
+  const cookies = readCookieMap();
+  // Heuristic: look for cookie names that contain both "stack" and one of "token" or "session"
+  const candidates = Object.keys(cookies).filter((name) => {
+    const n = name.toLowerCase();
+    return n.includes('stack') && (n.includes('token') || n.includes('session'));
+  });
+
+  for (const name of candidates) {
+    const val = cookies[name];
+    if (val && val.length > 0) {
+      return val; // return actual cookie value (not used by server, only truthy detection for client header)
+    }
+  }
+  return null;
+}
+
+function findStackTokenFromLocalStorage(): string | null {
+  if (typeof window === 'undefined' || !window.localStorage) return null;
+  try {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i) || '';
+      const low = key.toLowerCase();
+      if (
+        // broaden heuristics
+        low.includes('stack') ||
+        low.includes('stackauth') ||
+        low.includes('stack-auth') ||
+        low.includes('session') ||
+        low.includes('token')
+      ) {
+        const val = window.localStorage.getItem(key);
+        if (val && val.length > 0) {
+          return val;
+        }
+      }
+    }
+  } catch {
+    // ignore storage access issues
+  }
+  return null;
+}
+
+function findStackTokenFromSessionStorage(): string | null {
+  if (typeof window === 'undefined' || !window.sessionStorage) return null;
+  try {
+    for (let i = 0; i < window.sessionStorage.length; i++) {
+      const key = window.sessionStorage.key(i) || '';
+      const low = key.toLowerCase();
+      if (
+        low.includes('stack') ||
+        low.includes('stackauth') ||
+        low.includes('stack-auth') ||
+        low.includes('session') ||
+        low.includes('token')
+      ) {
+        const val = window.sessionStorage.getItem(key);
+        if (val && val.length > 0) {
+          return val;
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return null;
 }
 
 export async function getNeonAuthToken(): Promise<string | null> {
-  // Attempt 1: global Stack Auth object on window
+  // Attempt 1: global Stack Auth object on window (preferred if available)
   try {
     const win = typeof window !== 'undefined' ? (window as WindowWithStack) : undefined;
     if (win?.stack?.getToken) {
@@ -35,16 +121,37 @@ export async function getNeonAuthToken(): Promise<string | null> {
     // ignore and try next strategy
   }
 
-  // Attempt 2 removed: avoid importing @stackframe/react to prevent "useStackApp must be used within a StackProvider" during prerender
-  // If needed in the future, re-enable with a safe runtime-only import guard.
-
-  // Fallback: allow apps to set a global provider (useful during initial wiring)
+  // Attempt 2: a project-specific hook for exposing tokens at runtime
   try {
     const win = typeof window !== 'undefined' ? (window as WindowWithStack) : undefined;
     if (typeof win?.__getAuthToken === 'function') {
       const t = await win.__getAuthToken();
-      if (typeof t === 'string') return t;
+      if (typeof t === 'string' && t.length > 0) return t;
     }
+  } catch {
+    // ignore
+  }
+
+  // Attempt 3: Inspect cookies (common providers store access/session tokens in cookies)
+  try {
+    const cookieToken = findStackTokenFromCookies();
+    if (cookieToken) return cookieToken;
+  } catch {
+    // ignore
+  }
+
+  // Attempt 4: Inspect localStorage for common token/session keys
+  try {
+    const lsToken = findStackTokenFromLocalStorage();
+    if (lsToken) return lsToken;
+  } catch {
+    // ignore
+  }
+
+  // Attempt 5: Inspect sessionStorage for token/session keys (Stack SDKs commonly use session storage)
+  try {
+    const ssToken = findStackTokenFromSessionStorage();
+    if (ssToken) return ssToken;
   } catch {
     // ignore
   }
