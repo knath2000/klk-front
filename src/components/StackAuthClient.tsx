@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { StackProvider, StackClientApp, SignIn, SignUp } from '@stackframe/react';
+import { StackProvider, StackClientApp, SignIn, SignUp, StackTheme } from '@stackframe/react';
+import { TooltipProvider } from '@radix-ui/react-tooltip';
 
 // Declare typed window property to avoid any-casts
 declare global {
@@ -29,10 +30,10 @@ function BaseAuth({ mode, publishableKey }: { mode: 'signin' | 'signup' } & Comm
     runtimeProject ||
     '';
 
-  if (!key) {
+  if (!key || !projectId) {
     return (
       <div className="text-white/80">
-        <p>Authentication is not configured. Set NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY to enable Stack Auth.</p>
+        <p>Authentication is not configured. Ensure NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY and NEXT_PUBLIC_STACK_PROJECT_ID are set.</p>
       </div>
     );
   }
@@ -46,7 +47,11 @@ function BaseAuth({ mode, publishableKey }: { mode: 'signin' | 'signup' } & Comm
 
   return (
     <StackProvider app={app}>
-      {mode === 'signin' ? <SignIn /> : <SignUp />}
+      <StackTheme>
+        <TooltipProvider>
+          {mode === 'signin' ? <SignIn /> : <SignUp />}
+        </TooltipProvider>
+      </StackTheme>
     </StackProvider>
   );
 }
