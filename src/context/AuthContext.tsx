@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // 2. Call backend logout endpoint to clear server session/cookies
-      await fetch('/api/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', { method: 'POST' });
 
       // 3. Clear local state
       setUser(null);
