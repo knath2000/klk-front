@@ -7,7 +7,7 @@ import { GlassCard } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { LogOut, User, Settings } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 
 export default function Navigation() {
   const pathname = usePathname();

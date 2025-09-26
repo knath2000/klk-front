@@ -1,65 +1,31 @@
 'use client';
 
 import React from 'react';
-import { StackProvider, StackClientApp, SignIn, SignUp, StackTheme } from '@stackframe/react';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
+import { SignIn, SignUp } from '@stackframe/react';
 
-// Declare typed window property to avoid any-casts
-declare global {
-  interface Window {
-    NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY?: string;
-    NEXT_PUBLIC_STACK_PROJECT_ID?: string;
-  }
+type Mode = 'signin' | 'signup';
+
+interface StackAuthClientProps {
+  mode: Mode;
 }
 
-type CommonProps = {
-  publishableKey?: string;
-};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function StackSignIn(props: unknown) {
+  return <SignIn {...(props as any)} />; // eslint-disable-line @typescript-eslint/no-explicit-any
+}
 
-function BaseAuth({ mode, publishableKey }: { mode: 'signin' | 'signup' } & CommonProps) {
-  // Use direct, static references so Next/Vercel inlines at build time and fallback to typed window runtime.
-  const runtimeKey = typeof window !== 'undefined' ? window.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY : undefined;
-  const runtimeProject = typeof window !== 'undefined' ? window.NEXT_PUBLIC_STACK_PROJECT_ID : undefined;
-  const key =
-    publishableKey ||
-    process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY ||
-    runtimeKey ||
-    '';
-  const projectId =
-    process.env.NEXT_PUBLIC_STACK_PROJECT_ID ||
-    runtimeProject ||
-    '';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function StackSignUp(props: unknown) {
+  return <SignUp {...(props as any)} />; // eslint-disable-line @typescript-eslint/no-explicit-any
+}
 
-  if (!key || !projectId) {
-    return (
-      <div className="text-white/80">
-        <p>Authentication is not configured. Ensure NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY and NEXT_PUBLIC_STACK_PROJECT_ID are set.</p>
-      </div>
-    );
-  }
-
-  // Client-side Stack app instance
-  const app = new StackClientApp({
-    tokenStore: 'memory',
-    publishableClientKey: key,
-    projectId,
-  });
+export function StackAuthClient({ mode }: StackAuthClientProps) {
+  const Component = mode === 'signin' ? StackSignIn : StackSignUp;
 
   return (
-    <StackProvider app={app}>
-      <StackTheme>
-        <TooltipProvider>
-          {mode === 'signin' ? <SignIn /> : <SignUp />}
-        </TooltipProvider>
-      </StackTheme>
-    </StackProvider>
+    <TooltipProvider>
+      <Component />
+    </TooltipProvider>
   );
-}
-
-export function StackSignIn(props: CommonProps) {
-  return <BaseAuth mode="signin" {...props} />;
-}
-
-export function StackSignUp(props: CommonProps) {
-  return <BaseAuth mode="signup" {...props} />;
 }

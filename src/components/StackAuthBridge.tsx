@@ -16,7 +16,7 @@ declare global {
 function UserSync() {
   // useUser() can be different shapes across SDK versions; normalize defensively
   const raw = useUser() as unknown;
-  const { setUser } = useAuth();
+  const { updateUser } = useAuth();
 
   useEffect(() => {
     const anyUser = (raw || null) as
@@ -41,7 +41,7 @@ function UserSync() {
       const profileImageUrl = anyUser.profileImageUrl ?? anyUser.user?.profileImageUrl;
 
       if (id || primaryEmail || displayName || profileImageUrl) {
-        setUser({
+        updateUser({
           id: id || 'stack-auth-user',
           email: primaryEmail || '',
           name: displayName || 'Account',
@@ -51,8 +51,8 @@ function UserSync() {
       }
     }
     // No user available → reflect signed-out state
-    setUser(null);
-  }, [raw, setUser]);
+    updateUser(null);
+  }, [raw, updateUser]);
 
   return null;
 }
@@ -77,13 +77,13 @@ export default function StackAuthBridge({ children }: { children: React.ReactNod
   // Avoid calling hooks conditionally; compute app via useMemo and render conditionally below
   const hasKeys = Boolean(publishableKey && projectId);
 
-  const app = useMemo<StackClientAppTyped | null>(() => {
+  const app = useMemo(() => {
     if (!hasKeys) return null;
     return new StackClientApp({
       tokenStore: 'memory',
       publishableClientKey: publishableKey as string,
       projectId: projectId as string,
-    }) as unknown as StackClientAppTyped<true, string>;
+    }) as StackClientApp<true, 'memory'>;
   }, [hasKeys, publishableKey, projectId]);
 
   // Don't render anything during SSR or if keys are missing
@@ -91,8 +91,12 @@ export default function StackAuthBridge({ children }: { children: React.ReactNod
     return <>{children}</>;
   }
 
+  // @ts-ignore Stack Auth app prop typing mismatch
+  const typedApp = app as any;
+
   return (
-    <StackProvider app={app as any}> {/* eslint-disable-line @typescript-eslint/no-explicit-any */}
+    // @ts-ignore
+    <StackProvider app={app}>
       <StackTheme>
         <UserSync />
         {children}

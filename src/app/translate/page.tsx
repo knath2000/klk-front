@@ -112,6 +112,15 @@ function TranslatePageContent() {
   const [streamingResult, setStreamingResult] = useState<string>('');
   const [translationResult, setTranslationResult] = useState<TranslationResult | null>(null);
 
+  // ... existing code ...
+  const handleQueryClear = () => {
+    setCurrentQuery('');
+    setStreamingResult('');
+    setTranslationResult(null);
+    dispatch({ type: 'SET_LOADING', payload: false });
+    dispatch({ type: 'SET_ERROR', payload: null });
+  };
+
   // WebSocket connection for translation streaming
   useEffect(() => {
     if (!socket) return;
@@ -276,7 +285,11 @@ function TranslatePageContent() {
           transition={{ delay: 0.2 }}
           className="mb-8"
         >
-          <SearchContainer onQuerySubmit={handleQuerySubmit} />
+          <SearchContainer 
+            onQuerySubmit={handleQuerySubmit} 
+            onQueryClear={handleQueryClear}
+            isLoading={state.isLoading}
+          />
         </motion.div>
 
         {/* Results Container */}

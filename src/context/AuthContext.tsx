@@ -1,8 +1,6 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { StackSignIn, StackSignUp } from '@/components/StackAuthClient';
-import { getNeonAuthToken } from '@/lib/neonAuth';
 
 interface User {
   id: string;
@@ -13,103 +11,88 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   isLoading: boolean;
   signIn: (email: string, password?: string) => Promise<void>;
   signOut: () => Promise<void>;
   signUp: (email: string, password?: string, name?: string) => Promise<void>;
-  signInComponent: React.FC;
-  signUpComponent: React.FC;
+  updateUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isLoading, setIsLoading] = useState(false);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Bridge: detect Stack Auth token on the client and reflect it into our header state
-  useEffect(() => {
-    let cancelled = false;
-    let tries = 0;
-    const interval = window.setInterval(() => {
-      tries += 1;
-      // Poll up to ~5 seconds total
-      if (tries >= 4) {
-        window.clearInterval(interval);
-        setIsLoading(false);
-        return;
-      }
-      void syncFromStack();
-    }, 1200);
-
-    const syncFromStack = async () => {
-      try {
-        const token = await getNeonAuthToken();
-        if (cancelled) return;
-
-        if (token && !user) {
-          // We don't have profile fields without using the SDK; present a generic signed-in identity
-          setUser({
-            id: 'stack-auth-user',
-            email: '',
-            name: 'Account',
-          });
-          // Once set, stop polling
-          window.clearInterval(interval);
-        } else if (!token && user) {
-          // Token disappeared; reflect signed-out state
+  // Fetch user data from backend API
+  const fetchUser = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/user');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.user) {
+          setUser(data.user);
+        } else {
           setUser(null);
         }
-      } catch {
-        // Ignore transient errors
-      } finally {
-        setIsLoading(false);
+      } else {
+        setUser(null);
       }
-    };
+    } catch (error) {
+      console.error('Fetch user error:', error);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    // Quick burst polling for first few seconds after navigation from SignIn/SignUp
-    setIsLoading(true);
-    syncFromStack();
-
-    // Also resync on visibility changes (e.g., after redirect back)
-    const onVisible = () => void syncFromStack();
-    document.addEventListener('visibilitychange', onVisible);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-      document.removeEventListener('visibilitychange', onVisible);
-    };
-  }, [user]);
+  useEffect(() => {
+    fetchUser();
+  }, []);
 
   const signIn = async (email: string, password?: string) => {
-    void password; // prevent unused param warning without logging
-    console.log('Sign in (no-op):', email);
+    // Stack Auth handles the actual sign in via its UI components
+    console.log('Sign in initiated:', email);
+    // After sign in, fetch user data from backend
+    await fetchUser();
   };
 
   const signOut = async () => {
-    console.log('Sign out (no-op)');
-    // Soft sign-out locally; tokens (if any) remain and bridge will restore on next load
-    setUser(null);
+    try {
+      // Call backend logout endpoint to clear server session
+      await fetch('/api/logout', { method: 'POST' });
+      // Clear local state
+      setUser(null);
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Always clear local state
+      setUser(null);
+    }
   };
 
   const signUp = async (email: string, password?: string, name?: string) => {
-    void password;
-    void name;
-    console.log('Sign up (no-op):', email);
+    // Stack Auth handles the actual sign up via its UI components
+    console.log('Sign up initiated:', email, name);
+    // After sign up, fetch user data from backend
+    await fetchUser();
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
-    setUser,
     isLoading,
     signIn,
     signOut,
     signUp,
-    // Always use client-only wrappers; they internally show a placeholder only if the key is truly missing
-    signInComponent: StackSignIn,
-    signUpComponent: StackSignUp,
+    updateUser: setUser,
   };
 
   return (
@@ -117,12 +100,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+};
