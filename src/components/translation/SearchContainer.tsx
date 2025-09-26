@@ -5,7 +5,6 @@ import React from 'react';
 import { useState, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 import { GlassInput } from '@/components/ui';
-import { useTranslation } from '@/context/TranslationContext';
 
 interface SearchContainerProps {
   onQuerySubmit: (query: string) => void;
@@ -14,7 +13,6 @@ interface SearchContainerProps {
 }
 
 export function SearchContainer({ onQuerySubmit, onQueryClear, isLoading }: SearchContainerProps) {
-  const { state, dispatch } = useTranslation();
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
