@@ -14,7 +14,7 @@ declare global {
 }
 
 interface WindowWithStackApp extends Window {
-  stackAppInstance?: StackClientApp<true, 'memory'>;
+  stackAppInstance?: StackClientApp<true, 'cookie'>;
 }
 
 function UserSync() {
@@ -84,10 +84,10 @@ export default function StackAuthBridge({ children }: { children: React.ReactNod
   const app = useMemo(() => {
     if (!hasKeys) return null;
     return new StackClientApp({
-      tokenStore: 'memory',
+      tokenStore: 'cookie',
       publishableClientKey: publishableKey as string,
       projectId: projectId as string,
-    }) as StackClientApp<true, 'memory'>;
+    }) as StackClientApp<true, 'cookie'>;
   }, [hasKeys, publishableKey, projectId]);
 
   useEffect(() => {
