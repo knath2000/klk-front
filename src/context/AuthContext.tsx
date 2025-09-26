@@ -69,17 +69,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    const win = typeof window !== 'undefined' ? (window as any) : undefined;
     try {
-      // Call backend logout endpoint to clear server session
+      // 1. Explicitly sign out of the SDK instance (clears memory store)
+      if (win?.stackAppInstance?.signOut) {
+        await win.stackAppInstance.signOut();
+      }
+
+      // 2. Call backend logout endpoint to clear server session/cookies
       await fetch('/api/logout', { method: 'POST' });
-      // Clear local state
-      setUser(null);
+      
+      // 3. Clear client-side storage artifacts
       await clearClientTokens();
+
+      // 4. Clear local state
+      setUser(null);
     } catch (error) {
       console.error('Sign out error:', error);
-      // Always clear local state
+      // Always clear local state, storage, and SDK state on failure
       setUser(null);
       await clearClientTokens();
+      if (win?.stackAppInstance?.signOut) {
+        await win.stackAppInstance.signOut();
+      }
     }
   };
 

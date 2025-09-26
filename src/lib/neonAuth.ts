@@ -14,11 +14,13 @@ interface StackAuthToken {
 
 interface StackAuthInstance {
   getToken(): Promise<string | StackAuthToken>;
+  signOut?(): Promise<void>;
 }
 
 interface WindowWithStack extends Window {
   stack?: StackAuthInstance;
   __getAuthToken?: () => Promise<string>;
+  stackAppInstance?: any;
 }
 
 // Best-effort cookie reader

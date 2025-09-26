@@ -13,6 +13,10 @@ declare global {
   }
 }
 
+interface WindowWithStackApp extends Window {
+  stackAppInstance?: StackClientApp<true, 'memory'>;
+}
+
 function UserSync() {
   // useUser() can be different shapes across SDK versions; normalize defensively
   const raw = useUser() as unknown;
@@ -85,6 +89,12 @@ export default function StackAuthBridge({ children }: { children: React.ReactNod
       projectId: projectId as string,
     }) as StackClientApp<true, 'memory'>;
   }, [hasKeys, publishableKey, projectId]);
+
+  useEffect(() => {
+    if (app) {
+      (window as WindowWithStackApp).stackAppInstance = app;
+    }
+  }, [app]);
 
   // Don't render anything during SSR or if keys are missing
   if (!isClient || !hasKeys || !app) {
