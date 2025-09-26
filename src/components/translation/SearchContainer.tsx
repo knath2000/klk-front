@@ -28,6 +28,21 @@ export function SearchContainer({ onQuerySubmit, onQueryClear, isLoading }: Sear
     onQueryClear();
   };
 
+  const rightIcon = isLoading ? (
+    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900/25" />
+    </div>
+  ) : query ? (
+    <button
+      type="button"
+      onClick={handleClear}
+      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+      aria-label="Clear search"
+    >
+      <X className="h-4 w-4" />
+    </button>
+  ) : null;
+
   return (
     <div className="relative w-full max-w-md">
       <form onSubmit={handleSubmit} className="relative">
@@ -40,24 +55,9 @@ export function SearchContainer({ onQuerySubmit, onQueryClear, isLoading }: Sear
           className="pr-10 pl-10"
           role="searchbox"
           aria-label="Search input"
-        >
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          {isLoading && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900/25" />
-            </div>
-          )}
-          {query && !isLoading && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              aria-label="Clear search"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </GlassInput>
+          leftIcon={<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />}
+          rightIcon={rightIcon}
+        />
       </form>
     </div>
   );

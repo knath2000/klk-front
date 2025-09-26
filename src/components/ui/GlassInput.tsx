@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { InputHTMLAttributes, ReactNode, forwardRef, useState } from 'react';
+import { InputHTMLAttributes, ReactNode, forwardRef, useState, useEffect } from 'react';
 import { cn, glassAnimations, type GlassVariant, getGlassTextColor } from '@/lib/utils';
 
 export interface GlassInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'onDrag'> {
@@ -35,7 +35,12 @@ export const GlassInput = forwardRef<HTMLInputElement, GlassInputProps>(({
   ...props
 }, ref) => {
   const [isFocused, setIsFocused] = useState(false);
-  const [hasValue, setHasValue] = useState(!!value);
+  const [hasValue, setHasValue] = useState(false);
+
+  // Sync hasValue with controlled value prop
+  useEffect(() => {
+    setHasValue(!!value);
+  }, [value]);
 
   const variants = {
     light: 'bg-white/90 focus:bg-white border-white/20 focus:border-white/40 glass-light',
@@ -56,7 +61,6 @@ export const GlassInput = forwardRef<HTMLInputElement, GlassInputProps>(({
   const placeholderColor = variant === 'light' ? 'placeholder:text-gray-500' : 'placeholder:text-white/50';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setHasValue(!!e.target.value);
     props.onChange?.(e);
   };
 

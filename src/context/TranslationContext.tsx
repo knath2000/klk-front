@@ -200,7 +200,8 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const response = await fetch('/api/health');
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+        const response = await fetch(`${backendUrl}/api/health`);
         const health = await response.json();
         if (health.serviceStatus) {
           const newStatus = health.serviceStatus;
