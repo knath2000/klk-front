@@ -78,17 +78,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // 2. Call backend logout endpoint to clear server session/cookies
       await fetch('/api/logout', { method: 'POST' });
-      
-      // 3. Clear client-side storage artifacts
-      await clearClientTokens();
 
-      // 4. Clear local state
+      // 3. Clear local state
       setUser(null);
     } catch (error) {
       console.error('Sign out error:', error);
-      // Always clear local state, storage, and SDK state on failure
+      // Always clear local state
       setUser(null);
-      await clearClientTokens();
       if (win?.stackAppInstance?.signOut) {
         await win.stackAppInstance.signOut();
       }
