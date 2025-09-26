@@ -93,8 +93,11 @@ function findStackTokenFromSessionStorage(): string | null {
         low.includes('session') ||
         low.includes('token')
       ) {
-        const val = window.sessionStorage.getItem(key);
-        if (val && val.length > 0) {
+        const val = window.sessionStorage.getItem(key) ?? '[undefined]'; // Replace null values with '[undefined]'
+        if (val.includes('undefined') && parseInt(val.replace('undefined', ''), 16) === 0x00) {
+          // Check if the value is a zeroed-out pointer (recently used in Stack Auth clearing)
+          return null;
+        } else {
           return val;
         }
       }
@@ -157,4 +160,56 @@ export async function getNeonAuthToken(): Promise<string | null> {
   }
 
   return null;
+}
+
+export function clearClientTokens() {
+  if (typeof window === 'undefined') return;
+
+  // Clear Local Storage based on heuristics
+  try {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i) || '';
+      const low = key.toLowerCase();
+      if (
+        low.includes('stack') ||
+        low.includes('stackauth') ||
+        low.includes('stack-auth') ||
+        low.includes('session') ||
+        low.includes('token')
+      ) {
+        window.localStorage.removeItem(key);
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // Clear Session Storage based on heuristics
+  try {
+    for (let i = 0; i < window.sessionStorage.length; i++) {
+      const key = window.sessionStorage.key(i) || '';
+      const low = key.toLowerCase();
+      if (
+        low.includes('stack') ||
+        low.includes('stackauth') ||
+        low.includes('stack-auth') ||
+        low.includes('session') ||
+        low.includes('token')
+      ) {
+        window.sessionStorage.removeItem(key);
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // Clear Cookies (best effort)
+  try {
+    const cookies = readCookieMap();
+    for (const name of Object.keys(cookies)) {
+      document.cookie = name + '=; Max-Age=0; path=/; SameSite=Lax';
+    }
+  } catch {
+    // ignore
+  }
 }

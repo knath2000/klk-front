@@ -28,6 +28,8 @@ export const useAuth = () => {
   return context;
 };
 
+import { clearClientTokens } from '@/lib/neonAuth';
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,10 +74,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await fetch('/api/logout', { method: 'POST' });
       // Clear local state
       setUser(null);
+      await clearClientTokens();
     } catch (error) {
       console.error('Sign out error:', error);
       // Always clear local state
       setUser(null);
+      await clearClientTokens();
     }
   };
 
