@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { getNeonAuthToken } from '@/lib/neonAuth';
 
 interface AIModel {
   id: string;
@@ -59,10 +60,12 @@ export default function ModelSelector({
     ];
     setModels(mockModels);
   }, []);
+
   // Portal mount guard
   useEffect(() => {
     setMounted(true);
   }, []);
+
   // Body scroll lock when menu is open
   useEffect(() => {
     if (!isOpen) return;
@@ -104,9 +107,16 @@ export default function ModelSelector({
 
       console.log('[ModelSelector] Switching model via:', url, 'conversationId:', conversationId);
 
+      // Get auth token for protected endpoint
+      const token = await getNeonAuthToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         // Persist with the real conversationId
         body: JSON.stringify({ conversationId }),
         credentials: 'include',
@@ -143,7 +153,14 @@ export default function ModelSelector({
       setIsOpen(false);
     } catch (error) {
       console.error('Failed to switch model:', error);
-      alert('Failed to switch model. Please verify your backend URL (NEXT_PUBLIC_BACKEND_URL) points to the server and try again after starting a conversation.');
+      // If no token, proceed with local update but warn
+      if (error instanceof Error && error.message.includes('Authentication')) {
+        console.warn('No auth token; model updated locally only');
+        onModelChange(modelId);
+        setIsOpen(false);
+      } else {
+        alert('Failed to switch model. Please verify your backend URL (NEXT_PUBLIC_BACKEND_URL) points to the server and try again after starting a conversation.');
+      }
     } finally {
       setIsLoading(false);
     }

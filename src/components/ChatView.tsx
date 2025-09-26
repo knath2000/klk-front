@@ -74,6 +74,13 @@ type AssistantFinalPayload = {
   message_id: string;
   final_content: string;
   timestamp?: string;
+  conversationId?: string;
+};
+
+type HistoryLoadedPayload = {
+  conversationId: string;
+  messages: Message[];
+  timestamp: string;
 };
 
 const ChatView: React.FC = () => {
@@ -87,6 +94,7 @@ const ChatView: React.FC = () => {
   });
 
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   const { socket, isConnected, connect } = useWebSocket();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -105,6 +113,55 @@ const ChatView: React.FC = () => {
       window.scrollTo({ top: 0, behavior: 'auto' });
     }
   }, []);
+
+  // Load history when conversationId is available and socket is connected
+  useEffect(() => {
+    if (conversationId && socket && isConnected && !isLoadingHistory) {
+      console.log('📚 Loading history for conversation:', conversationId);
+      setIsLoadingHistory(true);
+      socket.emit('load_history', { conversationId });
+    }
+  }, [conversationId, socket, isConnected, isLoadingHistory]);
+
+  // Handle history loaded event
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleHistoryLoaded = (data: HistoryLoadedPayload) => {
+      console.log('📚 History loaded:', data.messages.length, 'messages');
+      setChatState(prev => ({
+        ...prev,
+        messages: data.messages
+      }));
+      setIsLoadingHistory(false);
+      // Ensure conversationId is set
+      setConversationId(data.conversationId);
+      localStorage.setItem('chatConversationId', data.conversationId);
+    };
+
+    socket.on('history_loaded', handleHistoryLoaded);
+
+    return () => {
+      socket.off('history_loaded', handleHistoryLoaded);
+    };
+  }, [socket]);
+
+  // Handle conversation created event from server
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleConversationCreated = (data: { conversationId: string; userId: string }) => {
+      console.log('🆕 Conversation created:', data.conversationId);
+      setConversationId(data.conversationId);
+      localStorage.setItem('chatConversationId', data.conversationId);
+    };
+
+    socket.on('conversation_created', handleConversationCreated);
+
+    return () => {
+      socket.off('conversation_created', handleConversationCreated);
+    };
+  }, [socket]);
 
   // Fetch personas from API - use full backend URL
   useEffect(() => {
@@ -239,6 +296,11 @@ const ChatView: React.FC = () => {
     socket.on('assistant_final', (data: AssistantFinalPayload) => {
       console.log('📨 RECEIVED assistant_final:', data);
       updateAssistantMessage(data.message_id, data.final_content, true);
+      // Handle conversationId if provided in final response
+      if (data.conversationId) {
+        setConversationId(data.conversationId);
+        localStorage.setItem('chatConversationId', data.conversationId);
+      }
     });
 
     // Update connection state based on global context
@@ -501,9 +563,23 @@ const ChatView: React.FC = () => {
         hasMessages ? "flex-1 overflow-y-auto px-4 md:px-6 pl-safe-l pr-safe-r pb-4" : "px-4 md:px-6 pl-safe-l pr-safe-r pb-2"
       )}>
         <div className="max-w-4xl mx-auto">
+          {/* Loading History Indicator */}
+          {isLoadingHistory && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-4"
+            >
+              <div className="inline-flex items-center gap-2 text-white/80">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Loading conversation history...
+              </div>
+            </motion.div>
+          )}
+
           {/* Welcome message */}
           <AnimatePresence>
-            {chatState.messages.length === 0 && (
+            {chatState.messages.length === 0 && !isLoadingHistory && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
