@@ -119,7 +119,27 @@ const ChatView: React.FC = () => {
     if (conversationId && socket && isConnected && !isLoadingHistory) {
       console.log('📚 Loading history for conversation:', conversationId);
       setIsLoadingHistory(true);
+      const timeoutId = setTimeout(() => {
+        console.error('⏰ History load timeout after 5s - clearing loading state');
+        setIsLoadingHistory(false);
+      }, 5000); // 5 second timeout
+
       socket.emit('load_history', { conversationId });
+      
+      // Also listen for error to clear loading
+      const handleError = (errData: { message: string }) => {
+        console.error('❌ History load error:', errData.message);
+        setIsLoadingHistory(false);
+        clearTimeout(timeoutId);
+      };
+      
+      socket.once('error', handleError);
+
+      // Cleanup timeout on unmount or if loading completes
+      return () => {
+        clearTimeout(timeoutId);
+        socket.off('error', handleError);
+      };
     }
   }, [conversationId, socket, isConnected, isLoadingHistory]);
 
@@ -499,7 +519,7 @@ const ChatView: React.FC = () => {
                 className="flex items-center gap-2"
               >
                 <div className={clsx(
-                  "w-3 h-3 rounded-full shadow-lg",
+                  "w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin",
                   chatState.isConnected ? "bg-emerald-400 shadow-emerald-400/50" : "bg-red-400 shadow-red-400/50"
                 )} />
                 <span className="text-sm text-white/80">
