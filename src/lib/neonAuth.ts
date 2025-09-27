@@ -41,18 +41,39 @@ function readCookieMap(): Record<string, string> {
 
 function findStackTokenFromCookies(): string | null {
   const cookies = readCookieMap();
-  // Heuristic: look for cookie names that contain both "stack" and one of "token" or "session"
+  // Stack Auth specific cookie patterns
+  const stackAuthPatterns = [
+    'stack-auth-token',
+    'stack_auth_token',
+    'stackAuthToken',
+    'stack-token',
+    'stack_token',
+    'stackToken'
+  ];
+
+  // Check for exact matches first
+  for (const pattern of stackAuthPatterns) {
+    if (cookies[pattern]) {
+      console.log('🔍 [findStackTokenFromCookies] Found exact match:', pattern);
+      return cookies[pattern];
+    }
+  }
+
+  // Fallback: look for cookie names that contain both "stack" and one of "token" or "session"
   const candidates = Object.keys(cookies).filter((name) => {
     const n = name.toLowerCase();
-    return n.includes('stack') && (n.includes('token') || n.includes('session'));
+    return n.includes('stack') && (n.includes('token') || n.includes('session') || n.includes('auth'));
   });
 
   for (const name of candidates) {
     const val = cookies[name];
     if (val && val.length > 0) {
-      return val; // return actual cookie value (not used by server, only truthy detection for client header)
+      console.log('🔍 [findStackTokenFromCookies] Found candidate:', name);
+      return val;
     }
   }
+
+  console.log('🔍 [findStackTokenFromCookies] No Stack Auth cookies found');
   return null;
 }
 
@@ -113,34 +134,63 @@ function findStackTokenFromSessionStorage(): string | null {
 export async function getNeonAuthToken(): Promise<string | null> {
   console.log('🔍 [getNeonAuthToken] Starting token retrieval...');
 
-  // Attempt 1: Stack Auth client app instance (preferred - set by StackAuthBridge)
+  // Primary: Try cookies first (Stack Auth stores tokens in cookies)
+  try {
+    const cookieToken = findStackTokenFromCookies();
+    if (cookieToken) {
+      console.log('🔍 [getNeonAuthToken] Found token in cookies (length:', cookieToken.length, ')');
+      return cookieToken;
+    }
+    console.log('🔍 [getNeonAuthToken] No token found in cookies');
+  } catch (error) {
+    console.warn('⚠️ [getNeonAuthToken] Cookie check failed:', error);
+  }
+
+  // Fallback: Try localStorage
+  try {
+    const lsToken = findStackTokenFromLocalStorage();
+    if (lsToken) {
+      console.log('🔍 [getNeonAuthToken] Found token in localStorage (length:', lsToken.length, ')');
+      return lsToken;
+    }
+  } catch (error) {
+    console.warn('⚠️ [getNeonAuthToken] localStorage check failed:', error);
+  }
+
+  // Fallback: Try sessionStorage
+  try {
+    const ssToken = findStackTokenFromSessionStorage();
+    if (ssToken) {
+      console.log('🔍 [getNeonAuthToken] Found token in sessionStorage (length:', ssToken.length, ')');
+      return ssToken;
+    }
+  } catch (error) {
+    console.warn('⚠️ [getNeonAuthToken] sessionStorage check failed:', error);
+  }
+
+  // Last resort: Try Stack Auth client app (if available)
   try {
     const win = typeof window !== 'undefined' ? (window as WindowWithStack) : undefined;
-    console.log('🔍 [getNeonAuthToken] Checking for stackAppInstance:', !!win?.stackAppInstance);
-
     if (win?.stackAppInstance?.getToken) {
-      console.log('🔍 [getNeonAuthToken] Found stackAppInstance.getToken, calling...');
+      console.log('🔍 [getNeonAuthToken] Trying stackAppInstance.getToken...');
       const t = await win.stackAppInstance.getToken();
-      console.log('🔍 [getNeonAuthToken] stackAppInstance.getToken returned:', typeof t, t ? 'non-null' : 'null');
-
-      if (typeof t === 'string') {
-        console.log('🔍 [getNeonAuthToken] Returning string token (length:', t.length, ')');
+      if (typeof t === 'string' && t.length > 0) {
+        console.log('🔍 [getNeonAuthToken] Got token from stackAppInstance (length:', t.length, ')');
         return t;
       }
       if (t && typeof (t as StackAuthToken)?.token === 'string') {
         const token = (t as StackAuthToken).token;
-        console.log('🔍 [getNeonAuthToken] Returning token from object (length:', token?.length || 0, ')');
-        return token || null;
+        if (token) {
+          console.log('🔍 [getNeonAuthToken] Got token from stackAppInstance object (length:', token.length, ')');
+          return token;
+        }
       }
-      console.log('🔍 [getNeonAuthToken] Token from stackAppInstance was not a valid string');
-    } else {
-      console.log('🔍 [getNeonAuthToken] stackAppInstance.getToken not available');
     }
   } catch (error) {
-    console.warn('⚠️ [getNeonAuthToken] Attempt 1 failed:', error);
+    console.warn('⚠️ [getNeonAuthToken] Stack app check failed:', error);
   }
 
-  // Attempt 2: global Stack Auth object on window (fallback)
+  // Final fallback: Try global Stack Auth object
   try {
     const win = typeof window !== 'undefined' ? (window as WindowWithStack) : undefined;
     if (win?.stack?.getToken) {
@@ -152,44 +202,10 @@ export async function getNeonAuthToken(): Promise<string | null> {
       }
     }
   } catch {
-    // ignore and try next strategy
-  }
-
-  // Attempt 3: a project-specific hook for exposing tokens at runtime
-  try {
-    const win = typeof window !== 'undefined' ? (window as WindowWithStack) : undefined;
-    if (typeof win?.__getAuthToken === 'function') {
-      const t = await win.__getAuthToken();
-      if (typeof t === 'string' && t.length > 0) return t;
-    }
-  } catch {
     // ignore
   }
 
-  // Attempt 4: Inspect cookies (common providers store access/session tokens in cookies)
-  try {
-    const cookieToken = findStackTokenFromCookies();
-    if (cookieToken) return cookieToken;
-  } catch {
-    // ignore
-  }
-
-  // Attempt 5: Inspect localStorage for common token/session keys
-  try {
-    const lsToken = findStackTokenFromLocalStorage();
-    if (lsToken) return lsToken;
-  } catch {
-    // ignore
-  }
-
-  // Attempt 6: Inspect sessionStorage for token/session keys (Stack SDKs commonly use session storage)
-  try {
-    const ssToken = findStackTokenFromSessionStorage();
-    if (ssToken) return ssToken;
-  } catch {
-    // ignore
-  }
-
+  console.log('🔍 [getNeonAuthToken] No token found in any location');
   return null;
 }
 
