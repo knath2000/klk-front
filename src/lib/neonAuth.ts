@@ -111,19 +111,33 @@ function findStackTokenFromSessionStorage(): string | null {
 }
 
 export async function getNeonAuthToken(): Promise<string | null> {
+  console.log('🔍 [getNeonAuthToken] Starting token retrieval...');
+
   // Attempt 1: Stack Auth client app instance (preferred - set by StackAuthBridge)
   try {
     const win = typeof window !== 'undefined' ? (window as WindowWithStack) : undefined;
+    console.log('🔍 [getNeonAuthToken] Checking for stackAppInstance:', !!win?.stackAppInstance);
+
     if (win?.stackAppInstance?.getToken) {
+      console.log('🔍 [getNeonAuthToken] Found stackAppInstance.getToken, calling...');
       const t = await win.stackAppInstance.getToken();
-      if (typeof t === 'string') return t;
+      console.log('🔍 [getNeonAuthToken] stackAppInstance.getToken returned:', typeof t, t ? 'non-null' : 'null');
+
+      if (typeof t === 'string') {
+        console.log('🔍 [getNeonAuthToken] Returning string token (length:', t.length, ')');
+        return t;
+      }
       if (t && typeof (t as StackAuthToken)?.token === 'string') {
         const token = (t as StackAuthToken).token;
+        console.log('🔍 [getNeonAuthToken] Returning token from object (length:', token?.length || 0, ')');
         return token || null;
       }
+      console.log('🔍 [getNeonAuthToken] Token from stackAppInstance was not a valid string');
+    } else {
+      console.log('🔍 [getNeonAuthToken] stackAppInstance.getToken not available');
     }
-  } catch {
-    // ignore and try next strategy
+  } catch (error) {
+    console.warn('⚠️ [getNeonAuthToken] Attempt 1 failed:', error);
   }
 
   // Attempt 2: global Stack Auth object on window (fallback)
