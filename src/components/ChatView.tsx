@@ -14,6 +14,7 @@ import ChatInput from './ChatInput';
 import ModelSelector from './ModelSelector';
 import SearchBar from './SearchBar';
 import { useWebSocket } from '@/context/WebSocketContext';
+import { useAuth } from '@/context/AuthContext';
 import { GlassCard } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import clsx from 'clsx';
@@ -97,6 +98,7 @@ const ChatView: React.FC = () => {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   const { socket, isConnected, connect } = useWebSocket();
+  const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load conversationId from localStorage on mount
@@ -107,6 +109,15 @@ const ChatView: React.FC = () => {
     }
   }, []);
 
+  // Clear stale conversationId if user is not authenticated
+  useEffect(() => {
+    if (!user && conversationId) {
+      console.log('🔐 No auth user; clearing stale conversationId from localStorage');
+      setConversationId(null);
+      localStorage.removeItem('chatConversationId');
+    }
+  }, [user, conversationId]);
+
   // Ensure initial viewport starts at the top so header/controls are visible on first paint.
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -114,9 +125,9 @@ const ChatView: React.FC = () => {
     }
   }, []);
 
-  // Load history when conversationId is available and socket is connected
+  // Load history when conversationId is available, socket is connected, and user is authenticated
   useEffect(() => {
-    if (conversationId && socket && isConnected && !isLoadingHistory) {
+    if (conversationId && socket && isConnected && user && !isLoadingHistory) {
       console.log('📚 Loading history for conversation:', conversationId);
       setIsLoadingHistory(true);
       const timeoutId = setTimeout(() => {
@@ -141,7 +152,7 @@ const ChatView: React.FC = () => {
         socket.off('error', handleError);
       };
     }
-  }, [conversationId, socket, isConnected, isLoadingHistory]);
+  }, [conversationId, socket, isConnected, user, isLoadingHistory]);
 
   // Handle history loaded event
   useEffect(() => {
@@ -519,7 +530,7 @@ const ChatView: React.FC = () => {
                 className="flex items-center gap-2"
               >
                 <div className={clsx(
-                  "w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin",
+                  "w-3 h-3 rounded-full shadow-lg",
                   chatState.isConnected ? "bg-emerald-400 shadow-emerald-400/50" : "bg-red-400 shadow-red-400/50"
                 )} />
                 <span className="text-sm text-white/80">
