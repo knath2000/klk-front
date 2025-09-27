@@ -111,7 +111,22 @@ function findStackTokenFromSessionStorage(): string | null {
 }
 
 export async function getNeonAuthToken(): Promise<string | null> {
-  // Attempt 1: global Stack Auth object on window (preferred if available)
+  // Attempt 1: Stack Auth client app instance (preferred - set by StackAuthBridge)
+  try {
+    const win = typeof window !== 'undefined' ? (window as WindowWithStack) : undefined;
+    if (win?.stackAppInstance?.getToken) {
+      const t = await win.stackAppInstance.getToken();
+      if (typeof t === 'string') return t;
+      if (t && typeof (t as StackAuthToken)?.token === 'string') {
+        const token = (t as StackAuthToken).token;
+        return token || null;
+      }
+    }
+  } catch {
+    // ignore and try next strategy
+  }
+
+  // Attempt 2: global Stack Auth object on window (fallback)
   try {
     const win = typeof window !== 'undefined' ? (window as WindowWithStack) : undefined;
     if (win?.stack?.getToken) {
@@ -126,7 +141,7 @@ export async function getNeonAuthToken(): Promise<string | null> {
     // ignore and try next strategy
   }
 
-  // Attempt 2: a project-specific hook for exposing tokens at runtime
+  // Attempt 3: a project-specific hook for exposing tokens at runtime
   try {
     const win = typeof window !== 'undefined' ? (window as WindowWithStack) : undefined;
     if (typeof win?.__getAuthToken === 'function') {
@@ -137,7 +152,7 @@ export async function getNeonAuthToken(): Promise<string | null> {
     // ignore
   }
 
-  // Attempt 3: Inspect cookies (common providers store access/session tokens in cookies)
+  // Attempt 4: Inspect cookies (common providers store access/session tokens in cookies)
   try {
     const cookieToken = findStackTokenFromCookies();
     if (cookieToken) return cookieToken;
@@ -145,7 +160,7 @@ export async function getNeonAuthToken(): Promise<string | null> {
     // ignore
   }
 
-  // Attempt 4: Inspect localStorage for common token/session keys
+  // Attempt 5: Inspect localStorage for common token/session keys
   try {
     const lsToken = findStackTokenFromLocalStorage();
     if (lsToken) return lsToken;
@@ -153,7 +168,7 @@ export async function getNeonAuthToken(): Promise<string | null> {
     // ignore
   }
 
-  // Attempt 5: Inspect sessionStorage for token/session keys (Stack SDKs commonly use session storage)
+  // Attempt 6: Inspect sessionStorage for token/session keys (Stack SDKs commonly use session storage)
   try {
     const ssToken = findStackTokenFromSessionStorage();
     if (ssToken) return ssToken;
