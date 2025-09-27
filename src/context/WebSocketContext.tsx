@@ -83,7 +83,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       query: sessionId ? { sessionId } : undefined,
     });
 
-    /* Wait for Stack Auth client app and get Neon Auth token */
+    /* Wait for Stack Auth client app and valid token before connecting */
     const initializeAuthAndConnect = async () => {
       try {
         // Wait for Stack Auth client app to be available (with timeout)
@@ -107,19 +107,50 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         const stackAuthReady = await waitForStackAuth();
         if (!stackAuthReady) {
           console.warn('⚠️ Stack Auth client app not available within timeout, proceeding without auth token');
+          // Connect without auth token
+          try { newSocket.connect(); } catch (connectError) {
+            console.error('❌ Failed to connect WebSocket:', connectError);
+          }
+          return;
         }
 
-        const token = await getNeonAuthToken();
+        // Now wait for a valid token (user must be authenticated)
+        const waitForValidToken = (timeoutMs = 10000): Promise<string | null> => {
+          return new Promise(async (resolve) => {
+            const checkToken = async () => {
+              try {
+                const token = await getNeonAuthToken();
+                if (token && token.length > 10) { // Basic validation
+                  resolve(token);
+                  return;
+                }
+              } catch (error) {
+                console.warn('⚠️ Token check failed:', error);
+              }
+              // Check again in 200ms
+              setTimeout(checkToken, 200);
+            };
+            checkToken();
+            // Timeout after specified time
+            setTimeout(() => resolve(null), timeoutMs);
+          });
+        };
+
+        const token = await waitForValidToken();
         if (token) {
           (newSocket as Socket & { auth?: SocketAuth }).auth = { ...(newSocket as Socket & { auth?: SocketAuth }).auth, token };
           console.log('🔐 WebSocket auth token set successfully');
         } else {
-          console.log('⚠️ No auth token available, proceeding with anonymous connection');
+          console.warn('⚠️ No valid auth token available within timeout, proceeding with anonymous connection');
+        }
+
+        // Now initiate the connection
+        try { newSocket.connect(); } catch (connectError) {
+          console.error('❌ Failed to connect WebSocket:', connectError);
         }
       } catch (error) {
-        console.warn('⚠️ Failed to get auth token:', error);
-      } finally {
-        // Now initiate the connection regardless of token status
+        console.warn('⚠️ Failed to initialize auth for WebSocket:', error);
+        // Still try to connect without auth
         try { newSocket.connect(); } catch (connectError) {
           console.error('❌ Failed to connect WebSocket:', connectError);
         }
