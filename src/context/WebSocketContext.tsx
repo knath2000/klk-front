@@ -83,20 +83,51 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       query: sessionId ? { sessionId } : undefined,
     });
 
-    /* Get Neon Auth token and connect */
-    (async () => {
+    /* Wait for Stack Auth client app and get Neon Auth token */
+    const initializeAuthAndConnect = async () => {
       try {
+        // Wait for Stack Auth client app to be available (with timeout)
+        const waitForStackAuth = (timeoutMs = 5000): Promise<boolean> => {
+          return new Promise((resolve) => {
+            const checkStackAuth = () => {
+              const win = typeof window !== 'undefined' ? (window as any) : undefined;
+              if (win?.stackAppInstance) {
+                resolve(true);
+                return;
+              }
+              // Check again in 100ms
+              setTimeout(checkStackAuth, 100);
+            };
+            checkStackAuth();
+            // Timeout after specified time
+            setTimeout(() => resolve(false), timeoutMs);
+          });
+        };
+
+        const stackAuthReady = await waitForStackAuth();
+        if (!stackAuthReady) {
+          console.warn('⚠️ Stack Auth client app not available within timeout, proceeding without auth token');
+        }
+
         const token = await getNeonAuthToken();
         if (token) {
           (newSocket as Socket & { auth?: SocketAuth }).auth = { ...(newSocket as Socket & { auth?: SocketAuth }).auth, token };
+          console.log('🔐 WebSocket auth token set successfully');
+        } else {
+          console.log('⚠️ No auth token available, proceeding with anonymous connection');
         }
-      } catch {
-        // No token available yet; allow anonymous connection (server may allow optional auth)
+      } catch (error) {
+        console.warn('⚠️ Failed to get auth token:', error);
       } finally {
-        // Now initiate the connection
-        try { newSocket.connect(); } catch {}
+        // Now initiate the connection regardless of token status
+        try { newSocket.connect(); } catch (connectError) {
+          console.error('❌ Failed to connect WebSocket:', connectError);
+        }
       }
-    })();
+    };
+
+    // Start the async initialization
+    initializeAuthAndConnect();
 
     // Connection events
     newSocket.on('connect', () => {
