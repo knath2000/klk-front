@@ -127,7 +127,7 @@ const ChatView: React.FC = () => {
 
   // Load history when conversationId is available, socket is connected, and user is authenticated
   useEffect(() => {
-    if (conversationId && socket && isConnected && user && !isLoadingHistory) {
+    if (conversationId && socket && isConnected && user) {
       console.log('📚 Loading history for conversation:', conversationId);
       setIsLoadingHistory(true);
       const timeoutId = setTimeout(() => {
@@ -152,7 +152,7 @@ const ChatView: React.FC = () => {
         socket.off('error', handleError);
       };
     }
-  }, [conversationId, socket, isConnected, user, isLoadingHistory]);
+  }, [conversationId, socket, isConnected, user]);
 
   // Handle history loaded event
   useEffect(() => {
@@ -530,7 +530,7 @@ const ChatView: React.FC = () => {
                 className="flex items-center gap-2"
               >
                 <div className={clsx(
-                  "w-3 h-3 rounded-full shadow-lg",
+                  "w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin",
                   chatState.isConnected ? "bg-emerald-400 shadow-emerald-400/50" : "bg-red-400 shadow-red-400/50"
                 )} />
                 <span className="text-sm text-white/80">
