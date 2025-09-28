@@ -138,6 +138,99 @@ function findStackTokenFromSessionStorage(): string | null {
 export async function getNeonAuthToken(): Promise<string | null> {
   console.log('🔍 [getNeonAuthToken] Starting token retrieval...');
 
+  // Add comprehensive cookie debugging
+  if (typeof document !== 'undefined') {
+    console.log('🔍 [getNeonAuthToken] ALL document cookies:', document.cookie);
+    const allCookies = readCookieMap();
+    console.log('🔍 [getNeonAuthToken] Parsed cookies:', Object.keys(allCookies));
+    Object.entries(allCookies).forEach(([key, value]) => {
+      console.log(`🔍 [getNeonAuthToken] Cookie "${key}": length=${value.length}, preview="${value.substring(0, 20)}..."`);
+    });
+  }
+
+  // Try to get token directly from Stack Auth app instance FIRST
+  try {
+    const win = typeof window !== 'undefined' ? (window as WindowWithStack) : undefined;
+    if (win?.stackAppInstance) {
+      console.log('🔍 [getNeonAuthToken] Found stackAppInstance, trying to get token directly...');
+
+      // Try the most direct method first - getAccessToken or similar
+      const app = win.stackAppInstance;
+      console.log('🔍 [getNeonAuthToken] Stack app instance methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(app)));
+      console.log('🔍 [getNeonAuthToken] Stack app instance properties:', Object.keys(app));
+
+      // Try getAccessToken method (common in auth libraries)
+      if (typeof (app as any).getAccessToken === 'function') {
+        console.log('🔍 [getNeonAuthToken] Trying getAccessToken method...');
+        try {
+          const token = await (app as any).getAccessToken();
+          if (token && typeof token === 'string' && token.length > 50) {
+            console.log('🔍 [getNeonAuthToken] SUCCESS: Got token from getAccessToken (length:', token.length, ')');
+            console.log('🔍 [getNeonAuthToken] Token preview (first 20):', token.substring(0, 20) + '...');
+            console.log('🔍 [getNeonAuthToken] Token format analysis:', {
+              startsWithEyJ: token.startsWith('eyJ'),
+              containsDots: token.includes('.'),
+              dotCount: token.split('.').length,
+              totalLength: token.length,
+              firstChars: token.substring(0, 10),
+              lastChars: token.substring(token.length - 10)
+            });
+            return token;
+          }
+        } catch (error) {
+          console.warn('⚠️ [getNeonAuthToken] getAccessToken failed:', error);
+        }
+      }
+
+      // Try getToken method
+      if (typeof (app as any).getToken === 'function') {
+        console.log('🔍 [getNeonAuthToken] Trying getToken method...');
+        try {
+          const token = await (app as any).getToken();
+          if (token && typeof token === 'string' && token.length > 50) {
+            console.log('🔍 [getNeonAuthToken] SUCCESS: Got token from getToken (length:', token.length, ')');
+            console.log('🔍 [getNeonAuthToken] Token preview (first 20):', token.substring(0, 20) + '...');
+            console.log('🔍 [getNeonAuthToken] Token format analysis:', {
+              startsWithEyJ: token.startsWith('eyJ'),
+              containsDots: token.includes('.'),
+              dotCount: token.split('.').length,
+              totalLength: token.length,
+              firstChars: token.substring(0, 10),
+              lastChars: token.substring(token.length - 10)
+            });
+            return token;
+          }
+        } catch (error) {
+          console.warn('⚠️ [getNeonAuthToken] getToken failed:', error);
+        }
+      }
+
+      // Check for token property directly
+      if ((app as any).token && typeof (app as any).token === 'string') {
+        const token = (app as any).token;
+        if (token.length > 50) {
+          console.log('🔍 [getNeonAuthToken] SUCCESS: Got token from .token property (length:', token.length, ')');
+          return token;
+        }
+      }
+
+      // Check for accessToken property
+      if ((app as any).accessToken && typeof (app as any).accessToken === 'string') {
+        const token = (app as any).accessToken;
+        if (token.length > 50) {
+          console.log('🔍 [getNeonAuthToken] SUCCESS: Got token from .accessToken property (length:', token.length, ')');
+          return token;
+        }
+      }
+
+      console.log('🔍 [getNeonAuthToken] No token found in Stack Auth app instance');
+    } else {
+      console.log('🔍 [getNeonAuthToken] No stackAppInstance found on window');
+    }
+  } catch (error) {
+    console.warn('⚠️ [getNeonAuthToken] Stack Auth app instance check failed:', error);
+  }
+
   // Primary: Try cookies first (Stack Auth stores tokens in cookies)
   try {
     const cookieToken = findStackTokenFromCookies();
