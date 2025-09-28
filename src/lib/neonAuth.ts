@@ -61,6 +61,32 @@ function findStackTokenFromCookies(): string | null {
     }
   }
 
+  // Special handling for Stack Auth's stack-access cookie (URL-encoded JSON array)
+  if (cookies['stack-access']) {
+    try {
+      const encodedValue = cookies['stack-access'];
+      console.log('🔍 [findStackTokenFromCookies] Found stack-access cookie, attempting to decode...');
+
+      // URL decode the value
+      const decodedValue = decodeURIComponent(encodedValue);
+      console.log('🔍 [findStackTokenFromCookies] Decoded value:', decodedValue.substring(0, 50) + '...');
+
+      // Parse as JSON array
+      const tokenArray = JSON.parse(decodedValue);
+      if (Array.isArray(tokenArray) && tokenArray.length >= 2) {
+        // Stack Auth format: [refresh_token, access_token]
+        const accessToken = tokenArray[1];
+        if (typeof accessToken === 'string' && accessToken.startsWith('eyJ')) {
+          console.log('🔍 [findStackTokenFromCookies] SUCCESS: Extracted JWT from stack-access array, length:', accessToken.length);
+          console.log('🔍 [findStackTokenFromCookies] JWT preview:', accessToken.substring(0, 20) + '...');
+          return accessToken;
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ [findStackTokenFromCookies] Failed to parse stack-access cookie:', error);
+    }
+  }
+
   // Fallback: look for cookie names that contain both "stack" and one of "token" or "session"
   const candidates = Object.keys(cookies).filter((name) => {
     const n = name.toLowerCase();
