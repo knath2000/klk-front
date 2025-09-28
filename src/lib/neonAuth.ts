@@ -41,6 +41,8 @@ function readCookieMap(): Record<string, string> {
 
 function findStackTokenFromCookies(): string | null {
   const cookies = readCookieMap();
+  console.log('🔍 [findStackTokenFromCookies] All cookies:', Object.keys(cookies));
+
   // Stack Auth specific cookie patterns
   const stackAuthPatterns = [
     'stack-auth-token',
@@ -54,7 +56,7 @@ function findStackTokenFromCookies(): string | null {
   // Check for exact matches first
   for (const pattern of stackAuthPatterns) {
     if (cookies[pattern]) {
-      console.log('🔍 [findStackTokenFromCookies] Found exact match:', pattern);
+      console.log('🔍 [findStackTokenFromCookies] Found exact match:', pattern, 'value length:', cookies[pattern].length);
       return cookies[pattern];
     }
   }
@@ -65,10 +67,12 @@ function findStackTokenFromCookies(): string | null {
     return n.includes('stack') && (n.includes('token') || n.includes('session') || n.includes('auth'));
   });
 
+  console.log('🔍 [findStackTokenFromCookies] Candidate cookies:', candidates);
+
   for (const name of candidates) {
     const val = cookies[name];
     if (val && val.length > 0) {
-      console.log('🔍 [findStackTokenFromCookies] Found candidate:', name);
+      console.log('🔍 [findStackTokenFromCookies] Found candidate:', name, 'value length:', val.length);
       return val;
     }
   }
@@ -139,6 +143,15 @@ export async function getNeonAuthToken(): Promise<string | null> {
     const cookieToken = findStackTokenFromCookies();
     if (cookieToken) {
       console.log('🔍 [getNeonAuthToken] Found token in cookies (length:', cookieToken.length, ')');
+      console.log('🔍 [getNeonAuthToken] Cookie token preview (first 20):', cookieToken.substring(0, 20) + '...');
+      console.log('🔍 [getNeonAuthToken] Cookie token format analysis:', {
+        startsWithEyJ: cookieToken.startsWith('eyJ'),
+        containsDots: cookieToken.includes('.'),
+        dotCount: cookieToken.split('.').length,
+        totalLength: cookieToken.length,
+        firstChars: cookieToken.substring(0, 10),
+        lastChars: cookieToken.substring(cookieToken.length - 10)
+      });
       return cookieToken;
     }
     console.log('🔍 [getNeonAuthToken] No token found in cookies');
@@ -151,6 +164,15 @@ export async function getNeonAuthToken(): Promise<string | null> {
     const lsToken = findStackTokenFromLocalStorage();
     if (lsToken) {
       console.log('🔍 [getNeonAuthToken] Found token in localStorage (length:', lsToken.length, ')');
+      console.log('🔍 [getNeonAuthToken] localStorage token preview (first 20):', lsToken.substring(0, 20) + '...');
+      console.log('🔍 [getNeonAuthToken] localStorage token format analysis:', {
+        startsWithEyJ: lsToken.startsWith('eyJ'),
+        containsDots: lsToken.includes('.'),
+        dotCount: lsToken.split('.').length,
+        totalLength: lsToken.length,
+        firstChars: lsToken.substring(0, 10),
+        lastChars: lsToken.substring(lsToken.length - 10)
+      });
       return lsToken;
     }
   } catch (error) {
@@ -162,6 +184,15 @@ export async function getNeonAuthToken(): Promise<string | null> {
     const ssToken = findStackTokenFromSessionStorage();
     if (ssToken) {
       console.log('🔍 [getNeonAuthToken] Found token in sessionStorage (length:', ssToken.length, ')');
+      console.log('🔍 [getNeonAuthToken] sessionStorage token preview (first 20):', ssToken.substring(0, 20) + '...');
+      console.log('🔍 [getNeonAuthToken] sessionStorage token format analysis:', {
+        startsWithEyJ: ssToken.startsWith('eyJ'),
+        containsDots: ssToken.includes('.'),
+        dotCount: ssToken.split('.').length,
+        totalLength: ssToken.length,
+        firstChars: ssToken.substring(0, 10),
+        lastChars: ssToken.substring(ssToken.length - 10)
+      });
       return ssToken;
     }
   } catch (error) {
@@ -171,18 +202,101 @@ export async function getNeonAuthToken(): Promise<string | null> {
   // Last resort: Try Stack Auth client app (if available)
   try {
     const win = typeof window !== 'undefined' ? (window as WindowWithStack) : undefined;
-    if (win?.stackAppInstance?.getToken) {
-      console.log('🔍 [getNeonAuthToken] Trying stackAppInstance.getToken...');
-      const t = await win.stackAppInstance.getToken();
-      if (typeof t === 'string' && t.length > 0) {
-        console.log('🔍 [getNeonAuthToken] Got token from stackAppInstance (length:', t.length, ')');
-        return t;
+    if (win?.stackAppInstance) {
+      console.log('🔍 [getNeonAuthToken] Found stackAppInstance, inspecting it...');
+      console.log('🔍 [getNeonAuthToken] stackAppInstance type:', typeof win.stackAppInstance);
+      console.log('🔍 [getNeonAuthToken] stackAppInstance keys:', Object.keys(win.stackAppInstance));
+      console.log('🔍 [getNeonAuthToken] stackAppInstance prototype:', Object.getPrototypeOf(win.stackAppInstance));
+      console.log('🔍 [getNeonAuthToken] stackAppInstance constructor:', win.stackAppInstance.constructor?.name);
+
+      // Try different possible methods to get the token
+      const possibleMethods = ['getToken', 'getAccessToken', 'getIdToken', 'token', 'accessToken', 'getUser', 'user'];
+      for (const method of possibleMethods) {
+        if (typeof (win.stackAppInstance as any)[method] === 'function') {
+          console.log('🔍 [getNeonAuthToken] Trying method:', method);
+          try {
+            const t = await (win.stackAppInstance as any)[method]();
+            console.log('🔍 [getNeonAuthToken] Method', method, 'returned:', typeof t, 'length:', typeof t === 'string' ? t.length : 'N/A');
+            if (typeof t === 'string' && t.length > 50) { // JWTs are typically much longer than 50 chars
+              console.log('🔍 [getNeonAuthToken] Got potential JWT from method:', method, 'length:', t.length);
+              console.log('🔍 [getNeonAuthToken] JWT preview (first 20):', t.substring(0, 20) + '...');
+              console.log('🔍 [getNeonAuthToken] JWT format analysis:', {
+                startsWithEyJ: t.startsWith('eyJ'),
+                containsDots: t.includes('.'),
+                dotCount: t.split('.').length,
+                totalLength: t.length,
+                firstChars: t.substring(0, 10),
+                lastChars: t.substring(t.length - 10)
+              });
+              return t;
+            }
+            if (t && typeof (t as StackAuthToken)?.token === 'string') {
+              const token = (t as StackAuthToken).token;
+              if (token && token.length > 50) {
+                console.log('🔍 [getNeonAuthToken] Got token from method object:', method, 'length:', token.length);
+                console.log('🔍 [getNeonAuthToken] Token preview (first 20):', token.substring(0, 20) + '...');
+                console.log('🔍 [getNeonAuthToken] Token format analysis:', {
+                  startsWithEyJ: token.startsWith('eyJ'),
+                  containsDots: token.includes('.'),
+                  dotCount: token.split('.').length,
+                  totalLength: token.length,
+                  firstChars: token.substring(0, 10),
+                  lastChars: token.substring(token.length - 10)
+                });
+                return token;
+              }
+            }
+            if (t && typeof t === 'object' && (t as any).accessToken) {
+              console.log('🔍 [getNeonAuthToken] Found accessToken in object from method:', method, 'length:', (t as any).accessToken.length);
+              console.log('🔍 [getNeonAuthToken] accessToken preview (first 20):', (t as any).accessToken.substring(0, 20) + '...');
+              console.log('🔍 [getNeonAuthToken] accessToken format analysis:', {
+                startsWithEyJ: (t as any).accessToken.startsWith('eyJ'),
+                containsDots: (t as any).accessToken.includes('.'),
+                dotCount: (t as any).accessToken.split('.').length,
+                totalLength: (t as any).accessToken.length,
+                firstChars: (t as any).accessToken.substring(0, 10),
+                lastChars: (t as any).accessToken.substring((t as any).accessToken.length - 10)
+              });
+              return (t as any).accessToken;
+            }
+          } catch (methodError) {
+            console.warn('⚠️ [getNeonAuthToken] Method', method, 'failed:', methodError);
+          }
+        }
       }
-      if (t && typeof (t as StackAuthToken)?.token === 'string') {
-        const token = (t as StackAuthToken).token;
-        if (token) {
-          console.log('🔍 [getNeonAuthToken] Got token from stackAppInstance object (length:', token.length, ')');
-          return token;
+
+      // Try accessing token as a property
+      const possibleProps = ['token', 'accessToken', 'idToken', 'user', 'currentUser'];
+      for (const prop of possibleProps) {
+        if ((win.stackAppInstance as any)[prop]) {
+          const val = (win.stackAppInstance as any)[prop];
+          console.log('🔍 [getNeonAuthToken] Found property:', prop, 'type:', typeof val, 'length:', typeof val === 'string' ? val.length : 'N/A');
+          if (typeof val === 'string' && val.length > 50) {
+            console.log('🔍 [getNeonAuthToken] Got potential JWT from property:', prop, 'length:', val.length);
+            console.log('🔍 [getNeonAuthToken] Property token preview (first 20):', val.substring(0, 20) + '...');
+            console.log('🔍 [getNeonAuthToken] Property token format analysis:', {
+              startsWithEyJ: val.startsWith('eyJ'),
+              containsDots: val.includes('.'),
+              dotCount: val.split('.').length,
+              totalLength: val.length,
+              firstChars: val.substring(0, 10),
+              lastChars: val.substring(val.length - 10)
+            });
+            return val;
+          }
+          if (val && typeof val === 'object' && (val as any).accessToken) {
+            console.log('🔍 [getNeonAuthToken] Found accessToken in property object:', prop, 'length:', (val as any).accessToken.length);
+            console.log('🔍 [getNeonAuthToken] Property accessToken preview (first 20):', (val as any).accessToken.substring(0, 20) + '...');
+            console.log('🔍 [getNeonAuthToken] Property accessToken format analysis:', {
+              startsWithEyJ: (val as any).accessToken.startsWith('eyJ'),
+              containsDots: (val as any).accessToken.includes('.'),
+              dotCount: (val as any).accessToken.split('.').length,
+              totalLength: (val as any).accessToken.length,
+              firstChars: (val as any).accessToken.substring(0, 10),
+              lastChars: (val as any).accessToken.substring((val as any).accessToken.length - 10)
+            });
+            return (val as any).accessToken;
+          }
         }
       }
     }
@@ -195,10 +309,34 @@ export async function getNeonAuthToken(): Promise<string | null> {
     const win = typeof window !== 'undefined' ? (window as WindowWithStack) : undefined;
     if (win?.stack?.getToken) {
       const t = await win.stack.getToken();
-      if (typeof t === 'string') return t;
+      if (typeof t === 'string') {
+        console.log('🔍 [getNeonAuthToken] Got token from global stack.getToken() (length:', t.length, ')');
+        console.log('🔍 [getNeonAuthToken] Global token preview (first 20):', t.substring(0, 20) + '...');
+        console.log('🔍 [getNeonAuthToken] Global token format analysis:', {
+          startsWithEyJ: t.startsWith('eyJ'),
+          containsDots: t.includes('.'),
+          dotCount: t.split('.').length,
+          totalLength: t.length,
+          firstChars: t.substring(0, 10),
+          lastChars: t.substring(t.length - 10)
+        });
+        return t;
+      }
       if (t && typeof (t as StackAuthToken)?.token === 'string') {
         const token = (t as StackAuthToken).token;
-        return token || null;
+        if (token) {
+          console.log('🔍 [getNeonAuthToken] Got token from global stack.getToken() object (length:', token.length, ')');
+          console.log('🔍 [getNeonAuthToken] Global object token preview (first 20):', token.substring(0, 20) + '...');
+          console.log('🔍 [getNeonAuthToken] Global object token format analysis:', {
+            startsWithEyJ: token.startsWith('eyJ'),
+            containsDots: token.includes('.'),
+            dotCount: token.split('.').length,
+            totalLength: token.length,
+            firstChars: token.substring(0, 10),
+            lastChars: token.substring(token.length - 10)
+          });
+          return token;
+        }
       }
     }
   } catch {

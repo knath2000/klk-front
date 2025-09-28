@@ -141,6 +141,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
           (newSocket as Socket & { auth?: SocketAuth }).auth = { ...(newSocket as Socket & { auth?: SocketAuth }).auth, token };
           console.log('🔐 [WebSocket] Auth token set successfully (length:', token.length, ')');
           console.log('🔐 [WebSocket] Socket auth object:', (newSocket as Socket & { auth?: SocketAuth }).auth);
+          console.log('🔐 [WebSocket] Token preview (first 20 chars):', token.substring(0, 20) + '...');
         } else {
           console.warn('⚠️ [WebSocket] No valid auth token available within timeout, proceeding with anonymous connection');
         }
