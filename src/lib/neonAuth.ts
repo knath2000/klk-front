@@ -159,6 +159,34 @@ export async function getNeonAuthToken(): Promise<string | null> {
       console.log('🔍 [getNeonAuthToken] Stack app instance methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(app)));
       console.log('🔍 [getNeonAuthToken] Stack app instance properties:', Object.keys(app));
 
+      // Check if user is signed in
+      let isSignedIn = false;
+      try {
+        if (typeof (app as any).getUser === 'function') {
+          const user = await (app as any).getUser();
+          isSignedIn = !!user;
+          console.log('🔍 [getNeonAuthToken] User authentication status:', isSignedIn, 'User:', user);
+        } else if (typeof (app as any).isAuthenticated === 'function') {
+          isSignedIn = await (app as any).isAuthenticated();
+          console.log('🔍 [getNeonAuthToken] isAuthenticated result:', isSignedIn);
+        } else if (typeof (app as any).signedIn === 'function') {
+          isSignedIn = await (app as any).signedIn();
+          console.log('🔍 [getNeonAuthToken] signedIn result:', isSignedIn);
+        } else if ((app as any).user) {
+          isSignedIn = true;
+          console.log('🔍 [getNeonAuthToken] User found in app.user property');
+        }
+      } catch (authCheckError) {
+        console.warn('⚠️ [getNeonAuthToken] Authentication check failed:', authCheckError);
+      }
+
+      if (!isSignedIn) {
+        console.log('🔍 [getNeonAuthToken] User is not authenticated, skipping token retrieval');
+        return null;
+      }
+
+      console.log('🔍 [getNeonAuthToken] User is authenticated, trying to get token...');
+
       // Try getAccessToken method (common in auth libraries)
       if (typeof (app as any).getAccessToken === 'function') {
         console.log('🔍 [getNeonAuthToken] Trying getAccessToken method...');
@@ -490,4 +518,75 @@ export function clearClientTokens() {
   } catch {
     // ignore
   }
+}
+
+export async function debugStackAuth() {
+  console.log('🔍 [debugStackAuth] Starting Stack Auth inspection...');
+
+  const win = typeof window !== 'undefined' ? (window as WindowWithStack) : undefined;
+  if (!win) {
+    console.log('🔍 [debugStackAuth] No window object');
+    return;
+  }
+
+  console.log('🔍 [debugStackAuth] Window properties:', Object.keys(win));
+  console.log('🔍 [debugStackAuth] stackAppInstance exists:', !!win.stackAppInstance);
+
+  if (win.stackAppInstance) {
+    const app = win.stackAppInstance;
+    console.log('🔍 [debugStackAuth] Stack app instance type:', typeof app);
+    console.log('🔍 [debugStackAuth] Stack app instance constructor:', app.constructor?.name);
+    console.log('🔍 [debugStackAuth] Stack app instance properties:', Object.keys(app));
+    console.log('🔍 [debugStackAuth] Stack app instance prototype methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(app)));
+
+    // Try to get user
+    try {
+      if (typeof (app as any).getUser === 'function') {
+        const user = await (app as any).getUser();
+        console.log('🔍 [debugStackAuth] getUser() result:', user);
+      }
+    } catch (error) {
+      console.warn('🔍 [debugStackAuth] getUser() failed:', error);
+    }
+
+    // Try to get token
+    try {
+      if (typeof (app as any).getToken === 'function') {
+        const token = await (app as any).getToken();
+        console.log('🔍 [debugStackAuth] getToken() result:', typeof token, 'length:', typeof token === 'string' ? token.length : 'N/A');
+        if (typeof token === 'string' && token.length > 10) {
+          console.log('🔍 [debugStackAuth] Token preview:', token.substring(0, 20) + '...');
+        }
+      }
+    } catch (error) {
+      console.warn('🔍 [debugStackAuth] getToken() failed:', error);
+    }
+
+    // Check for direct properties
+    const propsToCheck = ['token', 'accessToken', 'user', 'currentUser'];
+    for (const prop of propsToCheck) {
+      if ((app as any)[prop]) {
+        console.log(`🔍 [debugStackAuth] Property ${prop}:`, (app as any)[prop]);
+      }
+    }
+  }
+
+  // Check cookies
+  if (typeof document !== 'undefined') {
+    console.log('🔍 [debugStackAuth] All cookies:', document.cookie);
+    const allCookies = readCookieMap();
+    console.log('🔍 [debugStackAuth] Parsed cookies:', Object.keys(allCookies));
+    Object.entries(allCookies).forEach(([key, value]) => {
+      if (key.toLowerCase().includes('stack') || key.toLowerCase().includes('auth') || key.toLowerCase().includes('token')) {
+        console.log(`🔍 [debugStackAuth] Relevant cookie "${key}": length=${value.length}, preview="${value.substring(0, 20)}..."`);
+      }
+    });
+  }
+
+  console.log('🔍 [debugStackAuth] Inspection complete');
+}
+
+// Make it available globally for console debugging
+if (typeof window !== 'undefined') {
+  (window as any).debugStackAuth = debugStackAuth;
 }
