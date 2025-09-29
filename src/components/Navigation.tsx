@@ -5,15 +5,40 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { GlassCard } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { LogOut, User } from "lucide-react";
+import { createPortal } from "react-dom";
 
 export default function Navigation() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const { user, signOut, isLoading } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  // Reposition menu when opened or on viewport changes
+  useEffect(() => {
+    if (!showUserMenu) return;
+    const update = () => {
+      const el = triggerRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      // Align right edge of 12rem (w-48) panel to trigger's right, with 8px gap
+      const width = 192; // 48 * 4
+      setMenuPos({
+        top: Math.max(0, r.bottom + 8),
+        left: Math.max(8, Math.round(r.right - width)),
+      });
+    };
+    update();
+    window.addEventListener("resize", update, { passive: true });
+    window.addEventListener("scroll", update, { passive: true });
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update);
+    };
+  }, [showUserMenu]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -128,6 +153,7 @@ export default function Navigation() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setShowUserMenu(!showUserMenu)}
+                    ref={triggerRef}
                     className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
                   >
                     <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center">
@@ -138,34 +164,51 @@ export default function Navigation() {
                     </span>
                   </motion.button>
 
-                  {/* User Dropdown Menu */}
-                  {showUserMenu && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50"
-                    >
-                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {user.name || 'User'}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {user.email}
-                        </p>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSignOut();
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>Sign Out</span>
-                      </button>
-                    </motion.div>
-                  )}
+                  {/* User Dropdown Menu (Portalized) */}
+                  {showUserMenu && typeof document !== "undefined" &&
+                    createPortal(
+                      <>
+                        {/* Overlay below panel, above page */}
+                        <div
+                          className="fixed inset-0 z-[9999]"
+                          onClick={() => setShowUserMenu(false)}
+                          aria-hidden="true"
+                        />
+                        {/* Panel */}
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                          className="fixed z-[10000] w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 pointer-events-auto"
+                          style={{ top: menuPos.top, left: menuPos.left }}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              {user.name || 'User'}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {user.email}
+                            </p>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Prevent overlay from catching the click before this runs
+                              handleSignOut();
+                            }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span>Sign Out</span>
+                          </button>
+                        </motion.div>
+                      </>,
+                      document.body
+                    )
+                  }
                 </div>
               ) : (
                 /* Sign In/Up Buttons */
@@ -220,14 +263,6 @@ export default function Navigation() {
           />
         </div>
       </GlassCard>
-
-      {/* Click outside to close user menu */}
-      {showUserMenu && (
-        <div
-          className="fixed inset-0 z-10"
-          onClick={() => setShowUserMenu(false)}
-        />
-      )}
     </motion.div>
   );
 }

@@ -86,7 +86,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(({
       {...props}
     >
       {gradient && hasSupport && (
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 animate-glass-shimmer" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 animate-glass-shimmer pointer-events-none" />
       )}
       
       <div className={cn('relative z-10', loading && 'opacity-50')}>
