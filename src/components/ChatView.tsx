@@ -18,6 +18,7 @@ import { useAuth } from '@/context/AuthContext';
 import { GlassCard } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import clsx from 'clsx';
+import { getNeonAuthToken } from '@/lib/neonAuth';
 
 // Fallback personas data (includes all personas including Dominican Republic)
 const fallbackPersonas: Persona[] = [
@@ -109,6 +110,53 @@ const ChatView: React.FC = () => {
     }
   }, []);
 
+  // Bootstrap: after user logs in and socket connects, load latest conversation if none is stored
+  useEffect(() => {
+    const bootstrapLatestConversation = async () => {
+      try {
+        if (!user || !socket || !isConnected || conversationId) return;
+
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+        const token = await getNeonAuthToken().catch(() => null);
+        if (!token) {
+          console.warn('⚠️ No auth token available for conversations bootstrap; skipping');
+          return;
+        }
+
+        const res = await fetch(`${backendUrl}/api/conversations`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          const t = await res.text().catch(() => '');
+          console.error('❌ Failed to fetch user conversations:', res.status, res.statusText, t?.slice(0, 200));
+          return;
+        }
+
+        const list = await res.json().catch(() => null);
+        if (Array.isArray(list) && list.length > 0 && list[0]?.id) {
+          const latestId = list[0].id as string;
+          console.log('📚 Bootstrap latest conversation:', latestId);
+          setConversationId(latestId);
+          localStorage.setItem('chatConversationId', latestId);
+          // Immediately request history over the socket
+          setIsLoadingHistory(true);
+          socket.emit('load_history', { conversationId: latestId });
+        } else {
+          console.log('ℹ️ No existing conversations for user; staying in empty state');
+        }
+      } catch (e) {
+        console.error('💥 Error bootstrapping latest conversation:', e);
+      }
+    };
+
+    bootstrapLatestConversation();
+  }, [user, isConnected, socket, conversationId]);
+
   // Clear stale conversationId if user is not authenticated
   useEffect(() => {
     if (!user && conversationId) {
@@ -153,63 +201,6 @@ const ChatView: React.FC = () => {
       };
     }
   }, [conversationId, socket, isConnected, user]);
-
-  // Handle history loaded event
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleHistoryLoaded = (data: HistoryLoadedPayload) => {
-      console.log('📚 History loaded:', data.messages.length, 'messages');
-
-      // Normalize payload to frontend Message shape for alignment + timestamps
-      const normalizedMessages: Message[] = (data.messages as any[]).map((m: any) => ({
-        id: m.id ?? `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-        type: (m.type ?? m.role) as 'user' | 'assistant',
-        content: m.content ?? m.text ?? '',
-        timestamp:
-          typeof m.timestamp === 'number'
-            ? m.timestamp
-            : m.created_at
-            ? new Date(m.created_at).getTime()
-            : m.createdAt
-            ? new Date(m.createdAt).getTime()
-            : Date.now(),
-        country_key: m.country_key ?? m.persona_id
-      }));
-
-      setChatState(prev => ({
-        ...prev,
-        messages: normalizedMessages
-      }));
-      setIsLoadingHistory(false);
-      // Ensure conversationId is set
-      setConversationId(data.conversationId);
-      localStorage.setItem('chatConversationId', data.conversationId);
-    };
-
-    socket.on('history_loaded', handleHistoryLoaded);
-
-    return () => {
-      socket.off('history_loaded', handleHistoryLoaded);
-    };
-  }, [socket]);
-
-  // Handle conversation created event from server
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleConversationCreated = (data: { conversationId: string; userId: string }) => {
-      console.log('🆕 Conversation created:', data.conversationId);
-      setConversationId(data.conversationId);
-      localStorage.setItem('chatConversationId', data.conversationId);
-    };
-
-    socket.on('conversation_created', handleConversationCreated);
-
-    return () => {
-      socket.off('conversation_created', handleConversationCreated);
-    };
-  }, [socket]);
 
   // Fetch personas from API - use full backend URL
   useEffect(() => {
@@ -329,6 +320,63 @@ const ChatView: React.FC = () => {
     };
     
     fetchPersonasWithRetry();
+  }, [socket]);
+
+  // Handle history loaded event
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleHistoryLoaded = (data: HistoryLoadedPayload) => {
+      console.log('📚 History loaded:', data.messages.length, 'messages');
+
+      // Normalize payload to frontend Message shape for alignment + timestamps
+      const normalizedMessages: Message[] = (data.messages as any[]).map((m: any) => ({
+        id: m.id ?? `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        type: (m.type ?? m.role) as 'user' | 'assistant',
+        content: m.content ?? m.text ?? '',
+        timestamp:
+          typeof m.timestamp === 'number'
+            ? m.timestamp
+            : m.created_at
+            ? new Date(m.created_at).getTime()
+            : m.createdAt
+            ? new Date(m.createdAt).getTime()
+            : Date.now(),
+        country_key: m.country_key ?? m.persona_id
+      }));
+
+      setChatState(prev => ({
+        ...prev,
+        messages: normalizedMessages
+      }));
+      setIsLoadingHistory(false);
+      // Ensure conversationId is set
+      setConversationId(data.conversationId);
+      localStorage.setItem('chatConversationId', data.conversationId);
+    };
+
+    socket.on('history_loaded', handleHistoryLoaded);
+
+    return () => {
+      socket.off('history_loaded', handleHistoryLoaded);
+    };
+  }, [socket]);
+
+  // Handle conversation created event from server
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleConversationCreated = (data: { conversationId: string; userId: string }) => {
+      console.log('🆕 Conversation created:', data.conversationId);
+      setConversationId(data.conversationId);
+      localStorage.setItem('chatConversationId', data.conversationId);
+    };
+
+    socket.on('conversation_created', handleConversationCreated);
+
+    return () => {
+      socket.off('conversation_created', handleConversationCreated);
+    };
   }, [socket]);
 
   // WebSocket connection is now managed by global context
