@@ -25,7 +25,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         stiffness: 100
       }}
       className={clsx(
-        "flex mb-4",
+        "flex mb-4 w-full",
         isUser ? "justify-end" : "justify-start"
       )}
     >

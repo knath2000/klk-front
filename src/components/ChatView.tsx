@@ -641,12 +641,14 @@ const ChatView: React.FC = () => {
 
           {/* Messages */}
           <AnimatePresence>
-            {chatState.messages.map((message) => (
-              <MessageBubble
-                key={message.id}
-                message={message}
-              />
-            ))}
+            <div className="flex flex-col">
+              {chatState.messages.map((message) => (
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                />
+              ))}
+            </div>
           </AnimatePresence>
 
           {/* Typing Indicator */}
