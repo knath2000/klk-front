@@ -11,8 +11,23 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
-  const isUser = message.type === 'user';
-  const isAssistant = message.type === 'assistant';
+  const roleOrType = (message.type ?? (message as any).role) as 'user' | 'assistant' | undefined;
+  const isUser = roleOrType === 'user';
+  const isAssistant = roleOrType === 'assistant';
+
+  // Robust timestamp derivation (number or ISO string fallbacks)
+  const _ts =
+    typeof (message as any).timestamp === 'number'
+      ? new Date((message as any).timestamp)
+      : (message as any).created_at
+      ? new Date((message as any).created_at)
+      : (message as any).createdAt
+      ? new Date((message as any).createdAt)
+      : undefined;
+  const tsLabel =
+    _ts && !isNaN(_ts.getTime())
+      ? _ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : '';
 
   return (
     <motion.div
@@ -92,10 +107,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             isUser ? "text-blue-100" : "text-gray-500 dark:text-gray-400"
           )}
         >
-          {new Date(message.timestamp).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit'
-          })}
+          {tsLabel}
         </div>
 
         {/* Country indicator for user messages */}

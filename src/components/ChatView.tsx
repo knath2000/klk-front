@@ -160,9 +160,26 @@ const ChatView: React.FC = () => {
 
     const handleHistoryLoaded = (data: HistoryLoadedPayload) => {
       console.log('📚 History loaded:', data.messages.length, 'messages');
+
+      // Normalize payload to frontend Message shape for alignment + timestamps
+      const normalizedMessages: Message[] = (data.messages as any[]).map((m: any) => ({
+        id: m.id ?? `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        type: (m.type ?? m.role) as 'user' | 'assistant',
+        content: m.content ?? m.text ?? '',
+        timestamp:
+          typeof m.timestamp === 'number'
+            ? m.timestamp
+            : m.created_at
+            ? new Date(m.created_at).getTime()
+            : m.createdAt
+            ? new Date(m.createdAt).getTime()
+            : Date.now(),
+        country_key: m.country_key ?? m.persona_id
+      }));
+
       setChatState(prev => ({
         ...prev,
-        messages: data.messages
+        messages: normalizedMessages
       }));
       setIsLoadingHistory(false);
       // Ensure conversationId is set
