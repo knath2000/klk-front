@@ -19,6 +19,7 @@ import { GlassCard } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import clsx from 'clsx';
 import { getNeonAuthToken } from '@/lib/neonAuth';
+import { useOptionalConversations } from '@/context/ConversationsContext';
 
 // Fallback personas data (includes all personas including Dominican Republic)
 const fallbackPersonas: Persona[] = [
@@ -100,6 +101,7 @@ const ChatView: React.FC = () => {
 
   const { socket, isConnected, connect } = useWebSocket();
   const { user } = useAuth();
+  const conversationsCtx = useOptionalConversations();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load conversationId from localStorage on mount
@@ -109,6 +111,20 @@ const ChatView: React.FC = () => {
       setConversationId(storedId);
     }
   }, []);
+
+  // Sync local conversationId with context activeId (if provider present)
+  useEffect(() => {
+    if (conversationsCtx?.activeId && conversationsCtx.activeId !== conversationId) {
+      setConversationId(conversationsCtx.activeId);
+    }
+  }, [conversationsCtx?.activeId, conversationId]);
+
+  // Trigger loading state when active conversation changes via provider
+  useEffect(() => {
+    if (conversationsCtx?.activeId) {
+      setIsLoadingHistory(true);
+    }
+  }, [conversationsCtx?.activeId]);
 
   // Bootstrap: after user logs in and socket connects, load latest conversation if none is stored
   useEffect(() => {
@@ -175,6 +191,11 @@ const ChatView: React.FC = () => {
 
   // Load history when conversationId is available, socket is connected, and user is authenticated
   useEffect(() => {
+    if (conversationsCtx?.activeId) {
+      // Provider handles emitting load_history; just rely on its flow
+      return;
+    }
+
     if (conversationId && socket && isConnected && user) {
       console.log('📚 Loading history for conversation:', conversationId);
       setIsLoadingHistory(true);
@@ -200,7 +221,7 @@ const ChatView: React.FC = () => {
         socket.off('error', handleError);
       };
     }
-  }, [conversationId, socket, isConnected, user]);
+  }, [conversationId, socket, isConnected, user, conversationsCtx?.activeId]);
 
   // Fetch personas from API - use full backend URL
   useEffect(() => {
@@ -353,6 +374,8 @@ const ChatView: React.FC = () => {
       // Ensure conversationId is set
       setConversationId(data.conversationId);
       localStorage.setItem('chatConversationId', data.conversationId);
+      conversationsCtx?.setActive(data.conversationId);
+      void conversationsCtx?.refresh();
     };
 
     socket.on('history_loaded', handleHistoryLoaded);
@@ -370,6 +393,8 @@ const ChatView: React.FC = () => {
       console.log('🆕 Conversation created:', data.conversationId);
       setConversationId(data.conversationId);
       localStorage.setItem('chatConversationId', data.conversationId);
+      conversationsCtx?.setActive(data.conversationId);
+      void conversationsCtx?.refresh();
     };
 
     socket.on('conversation_created', handleConversationCreated);
@@ -489,6 +514,7 @@ const ChatView: React.FC = () => {
       currentConversationId = `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       setConversationId(currentConversationId);
       localStorage.setItem('chatConversationId', currentConversationId);
+      conversationsCtx?.setActive(currentConversationId);
     }
     
     const userMessage: Message = {

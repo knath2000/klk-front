@@ -1,4 +1,5 @@
 import ChatView from '@/components/ChatView';
+import ChatShell from '@/components/ChatShell';
 
 export default function Home() {
   return (
@@ -9,15 +10,18 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 opacity-80" />
 
         {/* Additional floating orbs for chat */}
-        <div className="absolute top-40 right-40 w-64 h-64 bg-blue-400/15 rounded-full blur-3xl animate-glass-pulse" style={{ animationDelay: '2s' }} />
+        <div
+          className="absolute top-40 right-40 w-64 h-64 bg-blue-400/15 rounded-full blur-3xl animate-glass-pulse"
+          style={{ animationDelay: '2s' }}
+        />
         <div
           className="absolute bottom-40 left-40 w-80 h-80 bg-indigo-400/10 rounded-full blur-3xl animate-glass-float"
           style={{ animationDelay: '3s' }}
         />
       </div>
 
-      {/* Main chat interface */}
-      <ChatView />
+      {/* Main chat interface (sidebar for authenticated users) */}
+      <ChatShell />
     </div>
   );
 }
