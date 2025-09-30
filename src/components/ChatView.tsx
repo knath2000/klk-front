@@ -99,7 +99,7 @@ const ChatView: React.FC = () => {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false); // Derived from provider or local fallback
 
-  const { socket, isConnected } = useWebSocket();
+  const { socket, isConnected, connect } = useWebSocket();
   const { user } = useAuth();
   const conversationsCtx = useOptionalConversations();
   const messagesEndRef = useRef<HTMLDivElement>(null);
