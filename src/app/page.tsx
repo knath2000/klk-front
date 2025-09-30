@@ -1,9 +1,6 @@
-import dynamic from 'next/dynamic';
+'use client';
 
-// Dynamic import for ChatShell to avoid SSR with useAuth
-const ChatShell = dynamic(() => import('@/components/ChatShell'), {
-  ssr: false
-});
+import ChatShell from '@/components/ChatShell';
 
 export default function Home() {
   return (

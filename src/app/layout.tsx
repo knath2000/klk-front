@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import StackAuthBridge from '@/components/StackAuthBridge'
-import { AuthProvider } from '@/context/AuthContext' // Import AuthProvider
+import { AuthProvider } from '@/context/AuthContext'
+import { WebSocketProvider } from '@/context/WebSocketContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -23,9 +24,11 @@ export default function RootLayout({
           {/* Safe-area aware container */}
           <div className="px-[clamp(16px,4vw,20px)] pt-[calc(env(safe-area-inset-top)+12px)] pb-[calc(env(safe-area-inset-bottom)+24px)]">
             <AuthProvider>
-              <StackAuthBridge>
-                {children}
-              </StackAuthBridge>
+              <WebSocketProvider>
+                <StackAuthBridge>
+                  {children}
+                </StackAuthBridge>
+              </WebSocketProvider>
             </AuthProvider>
           </div>
         </div>

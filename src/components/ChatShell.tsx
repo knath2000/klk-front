@@ -7,6 +7,9 @@ import ConversationSidebar from '@/components/ConversationSidebar';
 import ChatView from '@/components/ChatView';
 
 export default function ChatShell() {
+  const isClient = typeof window !== 'undefined';
+  if (!isClient) return <ChatView />;
+
   const { user } = useAuth();
 
   if (user) {
