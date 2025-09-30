@@ -231,7 +231,7 @@ const ChatView: React.FC = () => {
             throw new Error('Invalid personas data structure');
           }
           
-          setChatState(prev => ({ ...prev, personas: data.personas }));
+          setChatState(prev => ({ ...prev, persons: data.personas }));
           console.log('🎉 PERSONAS LOADED SUCCESSFULLY:', data.personas.length, 'personas');
           return; // Success, exit the retry loop
           
@@ -530,7 +530,7 @@ const ChatView: React.FC = () => {
                 <motion.h1 
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="text-3xl font-bold text-white mb-2"
+                  className="text-[clamp(22px,5vw,26px)] md:text-3xl font-bold text-white mb-2" // Scaled title
                 >
                   🇪🇸 AI Chat con Sabor Local
                 </motion.h1>
@@ -538,7 +538,7 @@ const ChatView: React.FC = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="text-white/80"
+                  className="text-base md:text-lg text-white/80 leading-1.4" // Scaled body, line-height
                 >
                   Conversa con IA que habla como la gente del lugar
                 </motion.p>
@@ -562,8 +562,8 @@ const ChatView: React.FC = () => {
             </div>
           </GlassCard>
 
-          {/* Controls Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[var(--row-gap)]">
+          {/* Controls Row - Adjusted gap for mobile */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[clamp(12px,3vh,16px)]">
             {/* Search */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -630,30 +630,40 @@ const ChatView: React.FC = () => {
             </motion.div>
           )}
 
-          {/* Welcome message */}
+          {/* Welcome message - Refined for mobile */}
           <AnimatePresence>
             {chatState.messages.length === 0 && !isLoadingHistory && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="text-center py-4 md:py-6"
+                className="text-center py-4 md:py-6 mb-4 md:mb-6" // Added margin-block-end
               >
-                <GlassCard variant="light" size="lg" gradient className="max-w-2xl mx-auto">
+                <GlassCard variant="light" size="lg" gradient className="max-w-2xl mx-auto p-5 md:p-8"> {/* Added padding */}
                   <motion.div
-                    animate={{ rotate: [0, 5, -5, 0] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    className="text-7xl mb-4"
+                    initial={{ scale: 1.2, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="text-[clamp(3rem,8vw,4rem)] md:text-7xl mb-4" // Scaled emoji
                   >
                     🌎
                   </motion.div>
-                  <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
+                  <motion.h2 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-[clamp(22px,5vw,26px)] md:text-3xl md:text-4xl font-bold text-white mb-3" // Scaled title
+                  >
                     ¡Bienvenido!
-                  </h2>
-                  <p className="text-lg md:text-xl text-white/80 mb-4">
+                  </motion.h2>
+                  <motion.p 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="text-base md:text-lg md:text-xl text-white/80 mb-4 leading-1.4" // Scaled body, line-height
+                  >
                     Selecciona un país arriba y comienza a chatear con IA que habla el español local.
-                  </p>
-                  <div className="text-white/60">
+                  </motion.p>
+                  <div className="text-white/60 text-sm md:text-base">
                     Cada país tiene su propio estilo de hablar, ¡descúbrelo!
                   </div>
                 </GlassCard>

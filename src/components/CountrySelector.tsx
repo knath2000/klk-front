@@ -33,7 +33,7 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={clsx(
-          "flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 min-w-[200px]",
+          "flex items-center gap-3 px-4 py-3.5 w-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 min-w-[200px]",
           selectedCountry ? "border-blue-300 dark:border-blue-600" : "border-gray-200 dark:border-gray-700",
           disabled && "opacity-50 cursor-not-allowed",
           isOpen && "ring-2 ring-blue-500 ring-opacity-50"
@@ -44,7 +44,7 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
         {/* Flag/Icon placeholder */}
         <div className="w-6 h-4 bg-gradient-to-r from-blue-500 to-red-500 rounded-sm flex-shrink-0" />
 
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 text-left">
+        <span className="text-base font-medium text-gray-700 dark:text-gray-300 flex-1 text-left">
           {selectedPersona ? selectedPersona.displayName : "Select Country"}
         </span>
 
@@ -79,7 +79,7 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className="absolute top-full mt-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto"
+              className="absolute top-full mt-2 w-full max-w-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto"
             >
               {personas
                 .filter(persona => persona.safe_reviewed)
@@ -101,7 +101,7 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
                     <div className="w-6 h-4 bg-gradient-to-r from-green-500 to-yellow-500 rounded-sm flex-shrink-0" />
 
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      <div className="text-base font-medium text-gray-900 dark:text-gray-100 truncate">
                         {persona.displayName}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
@@ -130,4 +130,8 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
   );
 };
 
+/**
+ * Assuming the component uses a select or custom dropdown, ensure the select element has:
+ * <select className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+ */
 export default CountrySelector;

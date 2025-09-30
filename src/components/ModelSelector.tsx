@@ -191,7 +191,7 @@ export default function ModelSelector({
         aria-hidden="true"
       />
       <div
-        className="fixed z-[10000] bg-white rounded-md shadow-lg ring-1 ring-black/10 pointer-events-auto w-[90vw] max-w-[320px] max-h-[80vh] overflow-y-auto"
+        className="fixed z-[10000] bg-white rounded-md shadow-lg ring-1 ring-black/10 pointer-events-auto w-full max-w-md max-h-[80vh] overflow-y-auto"
         style={{
           top: 'calc(env(safe-area-inset-top, 0px) + 64px)',
           left: '50%',
@@ -239,7 +239,7 @@ export default function ModelSelector({
     <div className="relative z-30">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        className="flex items-center gap-2 px-3 py-3.5 w-full bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-base" // Full-width, padding, font-size
         disabled={isLoading}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
