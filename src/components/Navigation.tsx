@@ -11,6 +11,9 @@ import { LogOut, User, Menu, X } from "lucide-react";
 import { createPortal } from "react-dom";
 
 export default function Navigation() {
+  const isClient = typeof window !== 'undefined';
+  if (!isClient) return null;
+
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const { user, signOut, isLoading } = useAuth();

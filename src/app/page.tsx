@@ -1,5 +1,9 @@
-import ChatView from '@/components/ChatView';
-import ChatShell from '@/components/ChatShell';
+import dynamic from 'next/dynamic';
+
+// Dynamic import for ChatShell to avoid SSR with useAuth
+const ChatShell = dynamic(() => import('@/components/ChatShell'), {
+  ssr: false
+});
 
 export default function Home() {
   return (
@@ -8,7 +12,7 @@ export default function Home() {
       <div className="fixed inset-0 -z-20">
         {/* Chat-specific gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 opacity-80" />
-
+ 
         {/* Additional floating orbs for chat */}
         <div
           className="absolute top-40 right-40 w-64 h-64 bg-blue-400/15 rounded-full blur-3xl animate-glass-pulse"
