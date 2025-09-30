@@ -103,12 +103,14 @@ const ChatView: React.FC = () => {
   const { user } = useAuth();
   const conversationsCtx = useOptionalConversations();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastActiveConversationRef = useRef<string | null>(null);
 
   // Load conversationId from localStorage on mount
   useEffect(() => {
     const storedId = localStorage.getItem('chatConversationId');
     if (storedId) {
       setConversationId(storedId);
+      lastActiveConversationRef.current = storedId;
     }
   }, []);
 
@@ -119,11 +121,13 @@ const ChatView: React.FC = () => {
     }
   }, [conversationsCtx?.activeId, conversationId]);
 
-  // Trigger loading state when active conversation changes via provider
+  // When provider active conversation changes, show loader exactly once
   useEffect(() => {
-    if (conversationsCtx?.activeId) {
-      setIsLoadingHistory(true);
-    }
+    const active = conversationsCtx?.activeId;
+    if (!active) return;
+    if (lastActiveConversationRef.current === active) return;
+    lastActiveConversationRef.current = active;
+    setIsLoadingHistory(true);
   }, [conversationsCtx?.activeId]);
 
   // Bootstrap: after user logs in and socket connects, load latest conversation if none is stored
@@ -350,6 +354,7 @@ const ChatView: React.FC = () => {
     const handleHistoryLoaded = (data: HistoryLoadedPayload) => {
       console.log('📚 History loaded:', data.messages.length, 'messages');
 
+      lastActiveConversationRef.current = data.conversationId;
       // Normalize payload to frontend Message shape for alignment + timestamps
       const normalizedMessages: Message[] = (data.messages as any[]).map((m: any) => ({
         id: m.id ?? `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
@@ -374,8 +379,6 @@ const ChatView: React.FC = () => {
       // Ensure conversationId is set
       setConversationId(data.conversationId);
       localStorage.setItem('chatConversationId', data.conversationId);
-      conversationsCtx?.setActive(data.conversationId);
-      void conversationsCtx?.refresh();
     };
 
     socket.on('history_loaded', handleHistoryLoaded);
@@ -514,7 +517,7 @@ const ChatView: React.FC = () => {
       currentConversationId = `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       setConversationId(currentConversationId);
       localStorage.setItem('chatConversationId', currentConversationId);
-      conversationsCtx?.setActive(currentConversationId);
+      lastActiveConversationRef.current = currentConversationId;
     }
     
     const userMessage: Message = {
