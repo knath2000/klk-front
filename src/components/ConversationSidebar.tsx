@@ -6,7 +6,7 @@ import { GlassCard } from '@/components/ui';
 import clsx from 'clsx';
 
 export default function ConversationSidebar() {
-  const { list, activeId, setActive, loading, error } = useConversations();
+  const { list, activeId, setActive, loading, error, historyLoadingId } = useConversations();
   const listRef = useRef<HTMLDivElement>(null);
 
   // Keyboard navigation between items
@@ -44,7 +44,7 @@ export default function ConversationSidebar() {
           {loading && (
             <div className="p-4 text-white/80 flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Loading...
+              Loading conversations...
             </div>
           )}
 
@@ -97,6 +97,14 @@ export default function ConversationSidebar() {
                 );
               })}
             </ul>
+          )}
+
+          {/* History-specific loading indicator for active conversation */}
+          {historyLoadingId === activeId && !loading && (
+            <div className="p-4 text-white/80 flex items-center gap-2 border-t border-white/15">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Loading conversation history...
+            </div>
           )}
         </div>
       </GlassCard>

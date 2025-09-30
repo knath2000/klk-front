@@ -97,22 +97,39 @@ const ChatView: React.FC = () => {
   });
 
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false); // Derived from provider or local fallback
 
-  const { socket, isConnected, connect } = useWebSocket();
+  const { socket, isConnected } = useWebSocket();
   const { user } = useAuth();
   const conversationsCtx = useOptionalConversations();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const lastActiveConversationRef = useRef<string | null>(null);
 
   // Load conversationId from localStorage on mount
   useEffect(() => {
     const storedId = localStorage.getItem('chatConversationId');
     if (storedId) {
       setConversationId(storedId);
-      lastActiveConversationRef.current = storedId;
     }
   }, []);
+
+  // Single derived loading state effect: align with provider if available, fallback for unauthenticated
+  useEffect(() => {
+    if (conversationsCtx) {
+      // Authenticated: derive from provider's shared loading state
+      setIsLoadingHistory(conversationsCtx.historyLoadingId === conversationId);
+    } else {
+      // Unauthenticated fallback: use local timeout-based loading if needed
+      if (conversationId && socket && isConnected) {
+        setIsLoadingHistory(true);
+        const timeoutId = setTimeout(() => {
+          setIsLoadingHistory(false);
+        }, 5000); // 5 second timeout for unauth fallback
+        return () => clearTimeout(timeoutId);
+      } else {
+        setIsLoadingHistory(false);
+      }
+    }
+  }, [conversationsCtx?.historyLoadingId, conversationId, socket, isConnected]);
 
   // Sync local conversationId with context activeId (if provider present)
   useEffect(() => {
@@ -120,62 +137,6 @@ const ChatView: React.FC = () => {
       setConversationId(conversationsCtx.activeId);
     }
   }, [conversationsCtx?.activeId, conversationId]);
-
-  // When provider active conversation changes, show loader exactly once
-  useEffect(() => {
-    const active = conversationsCtx?.activeId;
-    if (!active) return;
-    if (lastActiveConversationRef.current === active) return;
-    lastActiveConversationRef.current = active;
-    setIsLoadingHistory(true);
-  }, [conversationsCtx?.activeId]);
-
-  // Bootstrap: after user logs in and socket connects, load latest conversation if none is stored
-  useEffect(() => {
-    const bootstrapLatestConversation = async () => {
-      try {
-        if (!user || !socket || !isConnected || conversationId) return;
-
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-        const token = await getNeonAuthToken().catch(() => null);
-        if (!token) {
-          console.warn('⚠️ No auth token available for conversations bootstrap; skipping');
-          return;
-        }
-
-        const res = await fetch(`${backendUrl}/api/conversations`, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (!res.ok) {
-          const t = await res.text().catch(() => '');
-          console.error('❌ Failed to fetch user conversations:', res.status, res.statusText, t?.slice(0, 200));
-          return;
-        }
-
-        const list = await res.json().catch(() => null);
-        if (Array.isArray(list) && list.length > 0 && list[0]?.id) {
-          const latestId = list[0].id as string;
-          console.log('📚 Bootstrap latest conversation:', latestId);
-          setConversationId(latestId);
-          localStorage.setItem('chatConversationId', latestId);
-          // Immediately request history over the socket
-          setIsLoadingHistory(true);
-          socket.emit('load_history', { conversationId: latestId });
-        } else {
-          console.log('ℹ️ No existing conversations for user; staying in empty state');
-        }
-      } catch (e) {
-        console.error('💥 Error bootstrapping latest conversation:', e);
-      }
-    };
-
-    bootstrapLatestConversation();
-  }, [user, isConnected, socket, conversationId]);
 
   // Clear stale conversationId if user is not authenticated
   useEffect(() => {
@@ -192,40 +153,6 @@ const ChatView: React.FC = () => {
       window.scrollTo({ top: 0, behavior: 'auto' });
     }
   }, []);
-
-  // Load history when conversationId is available, socket is connected, and user is authenticated
-  useEffect(() => {
-    if (conversationsCtx?.activeId) {
-      // Provider handles emitting load_history; just rely on its flow
-      return;
-    }
-
-    if (conversationId && socket && isConnected && user) {
-      console.log('📚 Loading history for conversation:', conversationId);
-      setIsLoadingHistory(true);
-      const timeoutId = setTimeout(() => {
-        console.error('⏰ History load timeout after 5s - clearing loading state');
-        setIsLoadingHistory(false);
-      }, 5000); // 5 second timeout
-
-      socket.emit('load_history', { conversationId });
-      
-      // Also listen for error to clear loading
-      const handleError = (errData: { message: string }) => {
-        console.error('❌ History load error:', errData.message);
-        setIsLoadingHistory(false);
-        clearTimeout(timeoutId);
-      };
-      
-      socket.once('error', handleError);
-
-      // Cleanup timeout on unmount or if loading completes
-      return () => {
-        clearTimeout(timeoutId);
-        socket.off('error', handleError);
-      };
-    }
-  }, [conversationId, socket, isConnected, user, conversationsCtx?.activeId]);
 
   // Fetch personas from API - use full backend URL
   useEffect(() => {
@@ -354,7 +281,9 @@ const ChatView: React.FC = () => {
     const handleHistoryLoaded = (data: HistoryLoadedPayload) => {
       console.log('📚 History loaded:', data.messages.length, 'messages');
 
-      lastActiveConversationRef.current = data.conversationId;
+      // Notify provider to clear loading state
+      conversationsCtx?.notifyHistoryResolved(data.conversationId);
+
       // Normalize payload to frontend Message shape for alignment + timestamps
       const normalizedMessages: Message[] = (data.messages as any[]).map((m: any) => ({
         id: m.id ?? `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
@@ -364,10 +293,10 @@ const ChatView: React.FC = () => {
           typeof m.timestamp === 'number'
             ? m.timestamp
             : m.created_at
-            ? new Date(m.created_at).getTime()
-            : m.createdAt
-            ? new Date(m.createdAt).getTime()
-            : Date.now(),
+              ? new Date(m.created_at).getTime()
+              : m.createdAt
+                ? new Date(m.createdAt).getTime()
+                : Date.now(),
         country_key: m.country_key ?? m.persona_id
       }));
 
@@ -375,7 +304,7 @@ const ChatView: React.FC = () => {
         ...prev,
         messages: normalizedMessages
       }));
-      setIsLoadingHistory(false);
+      // Loading state is derived from provider, so no explicit clear needed here
       // Ensure conversationId is set
       setConversationId(data.conversationId);
       localStorage.setItem('chatConversationId', data.conversationId);
@@ -386,7 +315,7 @@ const ChatView: React.FC = () => {
     return () => {
       socket.off('history_loaded', handleHistoryLoaded);
     };
-  }, [socket]);
+  }, [socket, conversationsCtx]);
 
   // Handle conversation created event from server
   useEffect(() => {
@@ -405,7 +334,7 @@ const ChatView: React.FC = () => {
     return () => {
       socket.off('conversation_created', handleConversationCreated);
     };
-  }, [socket]);
+  }, [socket, conversationsCtx]);
 
   // WebSocket connection is now managed by global context
   useEffect(() => {
@@ -517,7 +446,6 @@ const ChatView: React.FC = () => {
       currentConversationId = `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       setConversationId(currentConversationId);
       localStorage.setItem('chatConversationId', currentConversationId);
-      lastActiveConversationRef.current = currentConversationId;
     }
     
     const userMessage: Message = {

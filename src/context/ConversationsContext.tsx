@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useWebSocket } from '@/context/WebSocketContext';
 import { getNeonAuthToken } from '@/lib/neonAuth';
@@ -20,6 +20,8 @@ type ConversationsContextType = {
   refresh: () => Promise<void>;
   loading: boolean;
   error: string | null;
+  historyLoadingId: string | null; // New: tracks which conversation's history is loading
+  notifyHistoryResolved: (conversationId: string) => void; // New: callback to clear loading state
 };
 
 const ConversationsContext = createContext<ConversationsContextType | undefined>(undefined);
@@ -31,6 +33,9 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [historyLoadingId, setHistoryLoadingId] = useState<string | null>(null); // New: shared loading tracker
+  const pendingHistoryIdRef = useRef<string | null>(null); // New: guards against duplicate emits
+  const lastFetchedUserIdRef = useRef<string | null>(null); // New: prevents redundant fetches on user ref changes
 
   const backendUrl = useMemo(
     () => process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001',
@@ -38,11 +43,12 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
   );
 
   const fetchConversations = useCallback(async () => {
-    if (!user) {
-      setList([]);
-      setActiveId(null);
-      return;
+    const userId = user?.id;
+    if (!userId || userId === lastFetchedUserIdRef.current) {
+      return; // Skip if no user or already fetched for this user
     }
+    lastFetchedUserIdRef.current = userId;
+
     setLoading(true);
     setError(null);
     try {
@@ -86,35 +92,51 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
     } finally {
       setLoading(false);
     }
-  }, [backendUrl, user]);
+  }, [backendUrl, user?.id]); // Depend on user.id, not user object
 
   // Initial fetch when user becomes available
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       void fetchConversations();
     } else {
       setList([]);
       setActiveId(null);
+      lastFetchedUserIdRef.current = null;
     }
-  }, [user, fetchConversations]);
+  }, [user?.id, fetchConversations]); // Depend on user.id
 
-  // Emit load_history when activeId changes and socket is connected
+  // Guarded emit for load_history: only when activeId changes or reconnects, and no pending for that id
   useEffect(() => {
-    if (!activeId || !socket) return;
-    if (!isConnected) return;
+    if (!activeId || !socket || !isConnected) return;
+    if (pendingHistoryIdRef.current === activeId) return; // Already pending
+
+    pendingHistoryIdRef.current = activeId;
+    setHistoryLoadingId(activeId);
     try {
       socket.emit('load_history', { conversationId: activeId });
     } catch (e) {
       // swallow; WebSocketContext handles retries
+      pendingHistoryIdRef.current = null;
+      setHistoryLoadingId(null);
     }
-  }, [activeId, socket, isConnected]);
+  }, [activeId, socket, isConnected]); // Single effect for both changes and reconnects
 
-  // On socket reconnect, re-emit for current activeId
+  // Clear pending on disconnect
   useEffect(() => {
-    if (isConnected && socket && activeId) {
-      try { socket.emit('load_history', { conversationId: activeId }); } catch {}
+    if (!isConnected) {
+      pendingHistoryIdRef.current = null;
+      setHistoryLoadingId(null);
     }
-  }, [isConnected, socket, activeId]);
+  }, [isConnected]);
+
+  const notifyHistoryResolved = useCallback((conversationId: string) => {
+    if (pendingHistoryIdRef.current === conversationId) {
+      pendingHistoryIdRef.current = null;
+    }
+    if (historyLoadingId === conversationId) {
+      setHistoryLoadingId(null);
+    }
+  }, [historyLoadingId]);
 
   const setActive = useCallback((id: string) => {
     if (!id || id === activeId) return;
@@ -132,7 +154,9 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
     refresh: fetchConversations,
     loading,
     error,
-  }), [list, activeId, setActive, fetchConversations, loading, error]);
+    historyLoadingId, // New
+    notifyHistoryResolved, // New
+  }), [list, activeId, setActive, fetchConversations, loading, error, historyLoadingId, notifyHistoryResolved]);
 
   return (
     <ConversationsContext.Provider value={value}>
