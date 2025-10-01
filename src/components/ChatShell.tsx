@@ -7,28 +7,31 @@ import ConversationSidebar from '@/components/ConversationSidebar';
 import ChatView from '@/components/ChatView';
 
 export default function ChatShell() {
-  const isClient = typeof window !== 'undefined';
-  if (!isClient) return <ChatView />;
-
   const { user } = useAuth();
 
   if (user) {
     return (
       <ConversationsProvider>
-        <div className="grid grid-cols-1 md:grid-cols-[260px,1fr] min-h-screen">
-          {/* Sidebar hidden on small screens; visible >= md */}
-          <div className="hidden md:block">
-            <ConversationSidebar />
-          </div>
-          {/* Chat content */}
-          <div className="col-span-1">
-            <ChatView />
+        <div className="pt-16 min-h-screen">
+          <div className="grid grid-cols-1 md:grid-cols-[260px,1fr]">
+            {/* Sidebar hidden on small screens; visible >= md */}
+            <div className="hidden md:block">
+              <ConversationSidebar />
+            </div>
+            {/* Chat content */}
+            <div className="col-span-1">
+              <ChatView />
+            </div>
           </div>
         </div>
       </ConversationsProvider>
     );
   }
 
-  // Unauthenticated users: render chat full width
-  return <ChatView />;
+  // Unauthenticated users: render chat full width with top padding
+  return (
+    <div className="pt-16 min-h-screen">
+      <ChatView />
+    </div>
+  );
 }
