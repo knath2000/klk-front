@@ -9,6 +9,7 @@ import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { LogOut, User, Menu, X } from "lucide-react";
 import { createPortal } from "react-dom";
+import { useConversations } from "@/context/ConversationsContext";
 
 export default function Navigation() {
   const isClient = typeof window !== 'undefined';
@@ -17,6 +18,7 @@ export default function Navigation() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const { user, signOut, isLoading } = useAuth();
+  const { toggleSidebar } = useConversations();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -208,8 +210,11 @@ export default function Navigation() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setShowHamburgerMenu(!showHamburgerMenu)}
+                onClick={toggleSidebar}
                 className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/90"
+                aria-label="Toggle sidebar"
+                aria-controls="sidebar"
+                aria-expanded={false} // Update based on state if needed
               >
                 <Menu className="w-5 h-5" />
               </motion.button>

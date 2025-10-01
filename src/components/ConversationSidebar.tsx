@@ -2,11 +2,13 @@
 
 import React, { useRef } from 'react';
 import { useConversations } from '@/context/ConversationsContext';
+import { GlassButton } from '@/components/ui';
+import { Plus } from 'lucide-react';
 import { GlassCard } from '@/components/ui';
 import clsx from 'clsx';
 
 export default function ConversationSidebar() {
-  const { list, activeId, setActive, loading, error, historyLoadingId } = useConversations();
+  const { list, activeId, setActive, loading, error, historyLoadingId, startNewConversation } = useConversations();
   const listRef = useRef<HTMLDivElement>(null);
 
   // Keyboard navigation between items
@@ -37,6 +39,20 @@ export default function ConversationSidebar() {
           ref={listRef}
           className="flex flex-col h-full overflow-y-auto"
         >
+          {/* New Chat Button */}
+          <div className="p-4 border-b border-white/15">
+            <GlassButton
+              variant="light"
+              size="sm"
+              onClick={() => startNewConversation()}
+              className="w-full flex items-center gap-2 justify-center"
+              aria-label="Start new conversation"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Chat</span>
+            </GlassButton>
+          </div>
+
           <div className="px-4 py-3 border-b border-white/15">
             <h2 className="text-sm font-semibold text-white/90">Your conversations</h2>
           </div>

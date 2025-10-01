@@ -20,8 +20,11 @@ type ConversationsContextType = {
   refresh: () => Promise<void>;
   loading: boolean;
   error: string | null;
-  historyLoadingId: string | null; // New: tracks which conversation's history is loading
-  notifyHistoryResolved: (conversationId: string) => void; // New: callback to clear loading state
+  historyLoadingId: string | null;
+  notifyHistoryResolved: (conversationId: string) => void;
+  sidebarOpen: boolean;
+  toggleSidebar: () => void;
+  startNewConversation: (opts?: { auto?: boolean }) => Promise<void>;
 };
 
 const ConversationsContext = createContext<ConversationsContextType | undefined>(undefined);
@@ -33,19 +36,22 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [historyLoadingId, setHistoryLoadingId] = useState<string | null>(null); // New: shared loading tracker
-  const pendingHistoryIdRef = useRef<string | null>(null); // New: guards against duplicate emits
-  const lastFetchedUserIdRef = useRef<string | null>(null); // New: prevents redundant fetches on user ref changes
+  const [historyLoadingId, setHistoryLoadingId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pendingHistoryIdRef = useRef<string | null>(null);
+  const lastFetchedUserIdRef = useRef<string | null>(null);
 
   const backendUrl = useMemo(
     () => process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001',
     []
   );
 
+  const generateTempId = () => `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
   const fetchConversations = useCallback(async () => {
     const userId = user?.id;
     if (!userId || userId === lastFetchedUserIdRef.current) {
-      return; // Skip if no user or already fetched for this user
+      return;
     }
     lastFetchedUserIdRef.current = userId;
 
@@ -92,7 +98,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
     } finally {
       setLoading(false);
     }
-  }, [backendUrl, user?.id]); // Depend on user.id, not user object
+  }, [backendUrl, user?.id]);
 
   // Initial fetch when user becomes available
   useEffect(() => {
@@ -103,7 +109,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
       setActiveId(null);
       lastFetchedUserIdRef.current = null;
     }
-  }, [user?.id, fetchConversations]); // Depend on user.id
+  }, [user?.id, fetchConversations]);
 
   // Guarded emit for load_history: only when activeId changes or reconnects, and no pending for that id
   useEffect(() => {
@@ -119,7 +125,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
       pendingHistoryIdRef.current = null;
       setHistoryLoadingId(null);
     }
-  }, [activeId, socket, isConnected]); // Single effect for both changes and reconnects
+  }, [activeId, socket, isConnected]);
 
   // Clear pending on disconnect
   useEffect(() => {
@@ -147,6 +153,85 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
     }
   }, [activeId, list]);
 
+  const toggleSidebar = useCallback(() => {
+    setSidebarOpen(prev => !prev);
+  }, []);
+
+  const startNewConversation = useCallback(async (opts?: { auto?: boolean }) => {
+    const isAuto = opts?.auto;
+    const isAuthenticated = !!user?.id;
+    let tempId = generateTempId();
+    const placeholder: ConversationSummary = {
+      id: tempId,
+      title: 'New Chat',
+      updated_at: new Date().toISOString(),
+      message_count: 0,
+      persona_id: null, // Will be set later
+    };
+
+    // Optimistically add placeholder
+    setList(prev => [placeholder, ...prev]);
+    setActiveId(tempId);
+    setHistoryLoadingId(tempId); // Show loading for new
+
+    if (isAuthenticated && socket && isConnected) {
+      try {
+        socket.emit('create_conversation', {
+          title: 'New Chat',
+          persona_id: null, // Default or from context
+        });
+        // Wait for 'conversation_created' to replace placeholder
+      } catch (e) {
+        console.error('Failed to emit create_conversation', e);
+      }
+    } else {
+      // For guests, keep temp id, no server emit
+      console.log('Guest mode: using client-only conversation', tempId);
+    }
+
+    // Reset messages (via callback or context if integrated)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('chatConversationId', tempId);
+    }
+
+    // Clear history loading after timeout if no response
+    setTimeout(() => {
+      if (historyLoadingId === tempId) {
+        setHistoryLoadingId(null);
+      }
+    }, 5000);
+  }, [user?.id, socket, isConnected, historyLoadingId]);
+
+  // Load initial conversation on mount
+  useEffect(() => {
+    if (list.length === 0) {
+      void startNewConversation({ auto: true });
+    }
+  }, [list.length, startNewConversation]);
+
+  // Listen for conversation_created
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleConversationCreated = (data: { conversationId: string; userId: string }) => {
+      console.log('🆕 Conversation created:', data.conversationId);
+      // Replace placeholder if temp id matches
+      setList(prev => prev.map(conv => 
+        conv.id.startsWith('temp-') ? { ...conv, id: data.conversationId } : conv
+      ));
+      setActiveId(data.conversationId);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('chatConversationId', data.conversationId);
+      }
+      setHistoryLoadingId(null);
+    };
+
+    socket.on('conversation_created', handleConversationCreated);
+    return () => {
+      socket.off('conversation_created', handleConversationCreated);
+    };
+  }, [socket]);
+
   const value: ConversationsContextType = useMemo(() => ({
     list,
     activeId,
@@ -154,9 +239,12 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
     refresh: fetchConversations,
     loading,
     error,
-    historyLoadingId, // New
-    notifyHistoryResolved, // New
-  }), [list, activeId, setActive, fetchConversations, loading, error, historyLoadingId, notifyHistoryResolved]);
+    historyLoadingId,
+    notifyHistoryResolved,
+    sidebarOpen,
+    toggleSidebar,
+    startNewConversation,
+  }), [list, activeId, setActive, fetchConversations, loading, error, historyLoadingId, notifyHistoryResolved, sidebarOpen, toggleSidebar, startNewConversation]);
 
   return (
     <ConversationsContext.Provider value={value}>
