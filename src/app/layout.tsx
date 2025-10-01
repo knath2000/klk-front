@@ -4,6 +4,7 @@ import './globals.css'
 import StackAuthBridge from '@/components/StackAuthBridge'
 import { AuthProvider } from '@/context/AuthContext'
 import { WebSocketProvider } from '@/context/WebSocketContext'
+import Navigation from '@/components/Navigation'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -26,6 +27,7 @@ export default function RootLayout({
             <AuthProvider>
               <WebSocketProvider>
                 <StackAuthBridge>
+                  <Navigation />
                   {children}
                 </StackAuthBridge>
               </WebSocketProvider>

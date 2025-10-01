@@ -1,9 +1,10 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Persona } from '@/types/chat';
 import clsx from 'clsx';
+import { createPortal } from 'react-dom';
 
 interface CountrySelectorProps {
   personas: Persona[];
@@ -19,17 +20,67 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
   disabled = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const menuRef = useRef<HTMLDivElement>(null);
   const selectedPersona = personas.find(p => p.country_key === selectedCountry);
+  const items = personas.filter(p => p.safe_reviewed);
 
   const handleSelect = (countryKey: string) => {
     onCountrySelect(countryKey);
     setIsOpen(false);
   };
 
+  // Update menu position when opened
+  useEffect(() => {
+    if (!triggerRef.current || !isOpen) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const width = 320; // Approximate menu width
+    setMenuPos({
+      top: rect.bottom + 8,
+      left: Math.max(8, rect.right - width),
+    });
+  }, [isOpen]);
+
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (disabled) return;
+    const currentIndex = items.findIndex(p => p.country_key === selectedCountry);
+    let newIndex = currentIndex;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        newIndex = (index + 1) % items.length;
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        newIndex = (index - 1 + items.length) % items.length;
+        break;
+      case 'Enter':
+        e.preventDefault();
+        handleSelect(items[index].country_key);
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setIsOpen(false);
+        triggerRef.current?.focus();
+        break;
+    }
+
+    // Focus the new item
+    if (newIndex !== currentIndex) {
+      setTimeout(() => {
+        const newItem = menuRef.current?.querySelectorAll('[role="option"]')[newIndex];
+        (newItem as HTMLElement)?.focus();
+      }, 0);
+    }
+  };
+
   return (
     <div className="relative">
       {/* Trigger Button */}
       <motion.button
+        ref={triggerRef}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={clsx(
@@ -40,6 +91,9 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
         )}
         whileHover={!disabled ? { scale: 1.02 } : {}}
         whileTap={!disabled ? { scale: 0.98 } : {}}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-label="Select Country"
       >
         {/* Flag/Icon placeholder */}
         <div className="w-6 h-4 bg-gradient-to-r from-blue-500 to-red-500 rounded-sm flex-shrink-0" />
@@ -69,21 +123,29 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40"
-              onClick={() => setIsOpen(false)}
+              className="fixed inset-0 z-[9999]"
+              onClick={() => {
+                setIsOpen(false);
+                triggerRef.current?.focus();
+              }}
+              aria-hidden="true"
             />
 
-            {/* Dropdown Menu */}
-            <motion.div
-              initial={{ opacity: 0, y: -10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className="absolute top-full mt-2 w-full max-w-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto"
-            >
-              {personas
-                .filter(persona => persona.safe_reviewed)
-                .map((persona, index) => (
+            {/* Portal dropdown */}
+            {typeof document !== 'undefined' && createPortal(
+              <motion.div
+                ref={menuRef}
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="fixed z-[10000] w-full max-w-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-64 overflow-y-auto"
+                style={{ top: menuPos.top, left: menuPos.left }}
+                role="listbox"
+                aria-label="Country options"
+                tabIndex={-1}
+              >
+                {items.map((persona, index) => (
                   <motion.button
                     key={persona.id}
                     onClick={() => handleSelect(persona.country_key)}
@@ -96,6 +158,10 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
                     transition={{ delay: index * 0.05, duration: 0.2 }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    role="option"
+                    aria-selected={selectedCountry === persona.country_key}
+                    tabIndex={0}
+                    onKeyDown={(e) => handleKeyDown(e, index)}
                   >
                     {/* Flag placeholder */}
                     <div className="w-6 h-4 bg-gradient-to-r from-green-500 to-yellow-500 rounded-sm flex-shrink-0" />
@@ -122,7 +188,9 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
                     )}
                   </motion.button>
                 ))}
-            </motion.div>
+              </motion.div>,
+              document.body
+            )}
           </>
         )}
       </AnimatePresence>
