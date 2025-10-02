@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import clsx from 'clsx';
 import { getNeonAuthToken } from '@/lib/neonAuth';
 import { useOptionalConversations } from '@/context/ConversationsContext';
+import { Plus, Mic } from 'lucide-react';
 
 // Fallback personas data (includes all personas including Dominican Republic)
 const fallbackPersonas: Persona[] = [
@@ -231,7 +232,7 @@ const ChatView: React.FC = () => {
             throw new Error('Invalid personas data structure');
           }
           
-          setChatState(prev => ({ ...prev, persons: data.personas }));
+          setChatState(prev => ({ ...prev, personas: data.personas }));
           console.log('🎉 PERSONAS LOADED SUCCESSFULLY:', data.personas.length, 'personas');
           return; // Success, exit the retry loop
           
@@ -518,6 +519,8 @@ const ChatView: React.FC = () => {
     });
   };
 
+  const isEmptyState = chatState.messages.length === 0 && !isLoadingHistory;
+
   return (
     <div className="flex flex-col gap-[var(--row-gap)] min-h-[100svh] h-[100vh] h-[100lvh]">
       {/* Header with glass design */}
@@ -538,7 +541,7 @@ const ChatView: React.FC = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="text-base md:text-lg text-white/80 leading-1.4" // Scaled body, line-height
+                  className="text-base md:text-lg md:text-xl text-white/80 leading-1.4" // Scaled body, line-height
                 >
                   Conversa con IA que habla como la gente del lugar
                 </motion.p>
@@ -630,57 +633,74 @@ const ChatView: React.FC = () => {
             </motion.div>
           )}
 
-          {/* Welcome message - Refined for mobile */}
+          {/* Empty State Hero - Centered prompt with large input */}
           <AnimatePresence>
-            {chatState.messages.length === 0 && !isLoadingHistory && (
+            {isEmptyState && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="text-center py-4 md:py-6 mb-4 md:mb-6" // Added margin-block-end
+                className="flex flex-col items-center justify-center min-h-[60vh] text-center py-8 md:py-12"
               >
-                <GlassCard variant="light" size="lg" gradient className="max-w-2xl mx-auto p-5 md:p-8"> {/* Added padding */}
-                  <motion.div
-                    initial={{ scale: 1.2, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="text-[clamp(3rem,8vw,4rem)] md:text-7xl mb-4" // Scaled emoji
-                  >
-                    🌎
-                  </motion.div>
-                  <motion.h2 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-[clamp(22px,5vw,26px)] md:text-3xl md:text-4xl font-bold text-white mb-3" // Scaled title
-                  >
-                    ¡Bienvenido!
-                  </motion.h2>
-                  <motion.p 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="text-base md:text-lg md:text-xl text-white/80 mb-4 leading-1.4" // Scaled body, line-height
-                  >
-                    Selecciona un país arriba y comienza a chatear con IA que habla el español local.
-                  </motion.p>
-                  <div className="text-white/60 text-sm md:text-base">
-                    Cada país tiene su propio estilo de hablar, ¡descúbrelo!
-                  </div>
-                </GlassCard>
+                <motion.div
+                  initial={{ scale: 1.2, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-6xl md:text-7xl mb-6"
+                >
+                  🌎
+                </motion.div>
+                <motion.h2 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-2xl md:text-3xl font-bold text-white mb-4"
+                >
+                  What can I help with?
+                </motion.h2>
+                <motion.p 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-base md:text-lg text-white/80 mb-8 max-w-md"
+                >
+                  Ask anything and I'll respond in local Spanish slang.
+                </motion.p>
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="w-full max-w-2xl"
+                >
+                  <GlassCard variant="light" size="lg" className="p-0">
+                    <div className="relative">
+                      <div className="flex items-center gap-2">
+                        <Plus className="w-5 h-5 text-gray-400" />
+                        <ChatInput
+                          onSendMessage={handleSendMessage}
+                          disabled={!chatState.isConnected || !chatState.selectedCountry}
+                          selectedCountry={chatState.selectedCountry}
+                        />
+                        <Mic className="w-5 h-5 text-gray-400" />
+                      </div>
+                    </div>
+                  </GlassCard>
+                </motion.div>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* Messages */}
           <AnimatePresence>
-            <div className="flex flex-col">
-              {chatState.messages.map((message) => (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                />
-              ))}
-            </div>
+            {!isEmptyState && (
+              <div className="flex flex-col">
+                {chatState.messages.map((message) => (
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                  />
+                ))}
+              </div>
+            )}
           </AnimatePresence>
 
           {/* Typing Indicator */}

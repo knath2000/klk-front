@@ -1,29 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #343541;
+  --foreground: #ececf1;
+  --sidebar-bg: #202123;
   
-  /* Glassmorphism Design Tokens */
-  --glass-light: rgba(255, 255, 255, 0.15);
-  --glass-medium: rgba(255, 255, 255, 0.25);
-  --glass-dark: rgba(31, 41, 55, 0.15);
-  --glass-accent-blue: rgba(59, 130, 246, 0.15);
-  --glass-accent-purple: rgba(147, 51, 234, 0.15);
-  --glass-accent-emerald: rgba(16, 185, 129, 0.15);
+  /* Glassmorphism Design Tokens - Darker, minimal */
+  --glass-light: rgba(255, 255, 255, 0.08);
+  --glass-medium: rgba(255, 255, 255, 0.12);
+  --glass-dark: rgba(31, 41, 55, 0.08);
+  --glass-accent-blue: rgba(59, 130, 246, 0.08);
+  --glass-accent-purple: rgba(147, 51, 234, 0.08);
+  --glass-accent-emerald: rgba(16, 185, 129, 0.08);
   
-  --glass-border-light: rgba(255, 255, 255, 0.18);
-  --glass-border-dark: rgba(31, 41, 55, 0.18);
-  --glass-border-accent: rgba(59, 130, 246, 0.3);
+  --glass-border-light: rgba(255, 255, 255, 0.12);
+  --glass-border-dark: rgba(31, 41, 55, 0.12);
+  --glass-border-accent: rgba(59, 130, 246, 0.2);
   
-  --shadow-glass: 0 4px 30px rgba(0, 0, 0, 0.1), 0 1.5px 0 rgba(255, 255, 255, 0.30) inset;
-  --shadow-glass-hover: 0 8px 32px rgba(31, 38, 135, 0.37);
-  --shadow-glass-focus: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  --shadow-glass: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --shadow-glass-hover: 0 4px 20px rgba(0, 0, 0, 0.15);
+  --shadow-glass-focus: 0 0 0 2px rgba(59, 130, 246, 0.2);
   
-  --blur-glass: blur(16px) saturate(130%);
-  --blur-glass-sm: blur(8px) saturate(130%);
-  --blur-glass-lg: blur(24px) saturate(130%);
-  --blur-glass-xl: blur(40px) saturate(130%);
+  --blur-glass: blur(8px) saturate(120%);
+  --blur-glass-sm: blur(4px) saturate(120%);
+  --blur-glass-lg: blur(12px) saturate(120%);
+  --blur-glass-xl: blur(20px) saturate(120%);
 
   /* Layout Rhythm & Z-Index Tokens */
   --section-gap: clamp(12px, 2.5vw, 28px);
