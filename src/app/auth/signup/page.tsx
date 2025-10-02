@@ -1,10 +1,9 @@
 'use client';
 
 import { ArrowLeft } from 'lucide-react';
+import dynamicFn from 'next/dynamic';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { GlassCard } from '@/components/ui';
-import dynamicFn from 'next/dynamic';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,12 +29,7 @@ export default function SignUpPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
         >
-          <GlassCard
-            variant="light"
-            size="lg"
-            gradient
-            className="max-w-md mx-auto w-full text-white/90"
-          >
+          <div className="max-w-md mx-auto w-full text-white/90 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <Link
                 href="/"
@@ -44,7 +38,7 @@ export default function SignUpPage() {
                 <ArrowLeft className="w-4 h-4" />
                 <span className="text-sm font-medium">Back</span>
               </Link>
-              <div aria-hidden className="text-xs text-white/60">Únete</div>
+              <div aria-hidden className="text-xs text-white/60">Crear cuenta</div>
             </div>
 
             <div className="text-center mb-6">
@@ -52,7 +46,7 @@ export default function SignUpPage() {
                 Create your account
               </h1>
               <p className="mt-1 text-sm text-white/70">
-                Start chatting with local Spanish personas
+                Join to save conversations and access premium features
               </p>
             </div>
 
@@ -63,20 +57,7 @@ export default function SignUpPage() {
                 <DynamicStackSignUp />
               </div>
             </div>
-
-            {/* Sign in link */}
-            <div className="mt-6 text-center">
-              <p className="text-white/70">
-                Already have an account?{' '}
-                <Link
-                  href="/auth/signin"
-                  className="text-white hover:text-blue-300 font-medium transition-colors"
-                >
-                  Sign in
-                </Link>
-              </p>
-            </div>
-          </GlassCard>
+          </div>
         </motion.div>
       </div>
     </div>

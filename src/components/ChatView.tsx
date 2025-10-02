@@ -15,7 +15,6 @@ import ModelSelector from './ModelSelector';
 import SearchBar from './SearchBar';
 import { useWebSocket } from '@/context/WebSocketContext';
 import { useAuth } from '@/context/AuthContext';
-import { GlassCard } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import clsx from 'clsx';
 import { getNeonAuthToken } from '@/lib/neonAuth';
@@ -159,30 +158,30 @@ const ChatView: React.FC = () => {
   useEffect(() => {
     const fetchPersonasWithRetry = async (retries = 3) => {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-      
+
       console.log('🔍 API CONFIGURATION:');
       console.log('   Backend URL:', backendUrl);
       console.log('   Environment:', process.env.NODE_ENV);
       console.log('   Is Production:', process.env.NODE_ENV === 'production');
-      
+
       // Validate backend URL
       if (!backendUrl || backendUrl.includes('your-railway-app')) {
         console.error('❌ INVALID BACKEND URL:', backendUrl);
         console.error('   Please set NEXT_PUBLIC_BACKEND_URL to your actual backend URL');
-        setChatState(prev => ({ 
-          ...prev, 
-          personas: fallbackPersonas 
+        setChatState(prev => ({
+          ...prev,
+          personas: fallbackPersonas
         }));
         return;
       }
-      
+
       for (let attempt = 1; attempt <= retries; attempt++) {
         console.log(`🔄 ATTEMPT ${attempt}/${retries}: Fetching personas from ${backendUrl}/api/personas`);
-        
+
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-          
+
           const response = await fetch(`${backendUrl}/api/personas`, {
             method: 'GET',
             headers: {
@@ -191,19 +190,19 @@ const ChatView: React.FC = () => {
             },
             signal: controller.signal,
           });
-          
+
           clearTimeout(timeoutId);
-          
+
           console.log('📊 API RESPONSE:');
           console.log('   Status:', response.status);
           console.log('   Status Text:', response.statusText);
           console.log('   Content-Type:', response.headers.get('content-type'));
           console.log('   URL:', response.url);
-          
+
           if (!response.ok) {
             const errorText = await response.text();
             console.error('❌ API ERROR RESPONSE:', errorText);
-            
+
             // Check if it's a Next.js 404 page
             if (errorText.includes('<!DOCTYPE html>') && errorText.includes('404')) {
               console.error('🚨 DETECTED NEXT.JS 404 PAGE - Backend URL is incorrect or unreachable');
@@ -211,10 +210,10 @@ const ChatView: React.FC = () => {
               console.error('   This usually means the backend URL is pointing to the frontend instead of backend');
               throw new Error('Backend URL appears to be incorrect - got Next.js 404 page');
             }
-            
+
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
-          
+
           const contentType = response.headers.get('content-type');
           if (!contentType || !contentType.includes('application/json')) {
             const text = await response.text();
@@ -223,32 +222,32 @@ const ChatView: React.FC = () => {
             console.error('   Response Text (first 500 chars):', text.substring(0, 500));
             throw new Error('Response is not JSON');
           }
-          
+
           const data = await response.json();
           console.log('✅ PERSONAS DATA RECEIVED:', data);
-          
+
           if (!data.personas || !Array.isArray(data.personas)) {
             console.error('❌ INVALID DATA STRUCTURE:', data);
             throw new Error('Invalid personas data structure');
           }
-          
+
           setChatState(prev => ({ ...prev, personas: data.personas }));
           console.log('🎉 PERSONAS LOADED SUCCESSFULLY:', data.personas.length, 'personas');
           return; // Success, exit the retry loop
-          
+
         } catch (error) {
           console.error(`💥 ERROR ON ATTEMPT ${attempt}/${retries}:`, error);
-          
+
           const errorMessage = error instanceof Error ? error.message : String(error);
           const errorName = error instanceof Error ? error.name : 'UnknownError';
-          
+
           if (errorName === 'AbortError') {
             console.error('   Request timed out after 10 seconds');
           } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
             console.error('   Network error - backend may be unreachable');
             console.error('   Check if backend URL is correct and backend is running');
           }
-          
+
           // If this is the last attempt, fall back to mock data
           if (attempt === retries) {
             console.log('🔄 ALL RETRIES EXHAUSTED - FALLING BACK TO FALLBACK_PERSONAS');
@@ -257,10 +256,10 @@ const ChatView: React.FC = () => {
             console.log('   2. Verify the Railway backend is running and accessible');
             console.log('   3. Check browser console for CORS errors');
             console.log('   4. Try accessing the backend directly in a new tab');
-            
-            setChatState(prev => ({ 
-              ...prev, 
-              personas: fallbackPersonas 
+
+            setChatState(prev => ({
+              ...prev,
+              personas: fallbackPersonas
             }));
           } else {
             // Wait before retrying (exponential backoff)
@@ -271,7 +270,7 @@ const ChatView: React.FC = () => {
         }
       }
     };
-    
+
     fetchPersonasWithRetry();
   }, [socket]);
 
@@ -440,7 +439,7 @@ const ChatView: React.FC = () => {
 
     // Generate consistent message ID that matches server expectations
     const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // Generate conversationId if this is the first message
     let currentConversationId = conversationId;
     if (!currentConversationId) {
@@ -448,7 +447,7 @@ const ChatView: React.FC = () => {
       setConversationId(currentConversationId);
       localStorage.setItem('chatConversationId', currentConversationId);
     }
-    
+
     const userMessage: Message = {
       id: `user-${messageId}`, // Clear user message ID prefix
       type: 'user',
@@ -471,7 +470,7 @@ const ChatView: React.FC = () => {
       model: chatState.currentModel,
       conversationId: currentConversationId
     });
-    
+
     console.log('📤 MESSAGE SENT with ID:', messageId);
   };
 
@@ -485,7 +484,7 @@ const ChatView: React.FC = () => {
       // Look for existing assistant message with the same base ID
       const assistantMessageId = `assistant-${messageId}`;
       const existingMessageIndex = prev.messages.findIndex(msg => msg.id === assistantMessageId);
-      
+
       if (existingMessageIndex >= 0) {
         // Update existing assistant message
         const updatedMessages = [...prev.messages];
@@ -526,18 +525,18 @@ const ChatView: React.FC = () => {
       {/* Header with glass design */}
       <div className="relative z-10 px-4 md:px-6 pl-safe-l pr-safe-r pt-4 md:pt-6 mt-0">
         <div className="max-w-7xl mx-auto flex flex-col gap-[var(--row-gap)]">
-          <GlassCard variant="light" size="md" hover className="py-3">
+          <div className="bg-[#343541] border border-gray-700 rounded-lg p-4 py-3">
             <div className="flex items-center justify-between flex-wrap gap-3 xs:flex-nowrap">
               {/* Title Section */}
               <div>
-                <motion.h1 
+                <motion.h1
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   className="text-[clamp(22px,5vw,26px)] md:text-3xl font-bold text-white mb-2" // Scaled title
                 >
                   🇪🇸 AI Chat con Sabor Local
                 </motion.h1>
-                <motion.p 
+                <motion.p
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 }}
@@ -548,7 +547,7 @@ const ChatView: React.FC = () => {
               </div>
 
               {/* Connection Status */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
@@ -563,7 +562,7 @@ const ChatView: React.FC = () => {
                 </span>
               </motion.div>
             </div>
-          </GlassCard>
+          </div>
 
           {/* Controls Row - Adjusted gap for mobile */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[clamp(12px,3vh,16px)]">
@@ -573,12 +572,12 @@ const ChatView: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <GlassCard variant="light" size="md" hover className="min-h-12 p-3">
-                <SearchBar 
-                  onSearch={handleSearch} 
-                  onConversationSelect={handleSearch} 
+              <div className="bg-[#343541] border border-gray-700 rounded-lg min-h-12 p-3 hover:bg-gray-800 transition-colors">
+                <SearchBar
+                  onSearch={handleSearch}
+                  onConversationSelect={handleSearch}
                 />
-              </GlassCard>
+              </div>
             </motion.div>
 
             {/* Model Selector */}
@@ -587,13 +586,13 @@ const ChatView: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <GlassCard variant="blue" size="md" hover className="min-h-12 p-3">
-                <ModelSelector 
-                  currentModel={chatState.currentModel || 'gpt-4o-mini'} 
+              <div className="bg-[#343541] border border-gray-700 rounded-lg min-h-12 p-3 hover:bg-gray-800 transition-colors">
+                <ModelSelector
+                  currentModel={chatState.currentModel || 'gpt-4o-mini'}
                   onModelChange={handleModelChange}
                   conversationId={conversationId || undefined}
                 />
-              </GlassCard>
+              </div>
             </motion.div>
 
             {/* Country Selector */}
@@ -602,13 +601,13 @@ const ChatView: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <GlassCard variant="emerald" size="md" hover className="min-h-12 p-3">
+              <div className="bg-[#343541] border border-gray-700 rounded-lg min-h-12 p-3 hover:bg-gray-800 transition-colors">
                 <CountrySelector
                   personas={chatState.personas}
                   selectedCountry={chatState.selectedCountry}
                   onCountrySelect={handleCountrySelect}
                 />
-              </GlassCard>
+              </div>
             </motion.div>
           </div>
         </div>
@@ -650,14 +649,14 @@ const ChatView: React.FC = () => {
                 >
                   🌎
                 </motion.div>
-                <motion.h2 
+                <motion.h2
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="text-2xl md:text-3xl font-bold text-white mb-4"
                 >
                   What can I help with?
                 </motion.h2>
-                <motion.p 
+                <motion.p
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
@@ -665,13 +664,13 @@ const ChatView: React.FC = () => {
                 >
                   Ask anything and I'll respond in local Spanish slang.
                 </motion.p>
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                   className="w-full max-w-2xl"
                 >
-                  <GlassCard variant="light" size="lg" className="p-0">
+                  <div className="bg-[#343541] border border-gray-700 rounded-lg p-0">
                     <div className="relative">
                       <div className="flex items-center gap-2">
                         <Plus className="w-5 h-5 text-gray-400" />
@@ -683,7 +682,7 @@ const ChatView: React.FC = () => {
                         <Mic className="w-5 h-5 text-gray-400" />
                       </div>
                     </div>
-                  </GlassCard>
+                  </div>
                 </motion.div>
               </motion.div>
             )}
@@ -716,13 +715,13 @@ const ChatView: React.FC = () => {
       {/* Input Area with glass design */}
       <div className="relative z-10 p-6 pt-2 pl-safe-l pr-safe-r mt-[clamp(8px,1.5vh,16px)]">
         <div className="max-w-4xl mx-auto">
-          <GlassCard variant="dark" size="md">
+          <div className="bg-[#343541] border border-gray-700 rounded-lg p-3">
             <ChatInput
               onSendMessage={handleSendMessage}
               disabled={!chatState.isConnected || !chatState.selectedCountry}
               selectedCountry={chatState.selectedCountry}
             />
-          </GlassCard>
+          </div>
         </div>
       </div>
     </div>

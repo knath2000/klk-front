@@ -2,10 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { useConversations } from '@/context/ConversationsContext';
-import { GlassButton } from '@/components/ui';
 import { Plus, Search, User, ChevronRight } from 'lucide-react';
-import { GlassCard } from '@/components/ui';
-import { GlassInput } from '@/components/ui';
 import clsx from 'clsx';
 import Link from 'next/link';
 
@@ -15,7 +12,7 @@ export default function ConversationSidebar() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Filter conversations based on search query
-  const filteredList = list.filter(conv => 
+  const filteredList = list.filter(conv =>
     conv.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     conv.id.includes(searchQuery)
   );
@@ -34,36 +31,30 @@ export default function ConversationSidebar() {
 
   return (
     <aside className="h-full">
-      <GlassCard
-        variant="light"
-        size="md"
-        gradient
-        className="h-full w-full md:w-60 lg:w-64 xl:w-72 p-0"
-      >
+      <div className="h-full w-full md:w-60 lg:w-64 xl:w-72 p-0 bg-[#202123] border-r border-gray-700">
         <div className="flex flex-col h-full overflow-hidden">
           {/* Top Section: New Chat Button */}
-          <div className="p-4 border-b border-white/15">
-            <GlassButton
-              variant="light"
-              size="sm"
+          <div className="p-4 border-b border-gray-700">
+            <button
               onClick={() => startNewConversation()}
-              className="w-full flex items-center gap-2 justify-center"
+              className="w-full flex items-center gap-2 justify-center px-3 py-2 rounded-md bg-[#4b90ff] hover:bg-[#4b90ff]/90 text-white transition-colors"
               aria-label="Start new conversation"
             >
               <Plus className="w-4 h-4" />
               <span>New Chat</span>
-            </GlassButton>
+            </button>
           </div>
 
           {/* Search/Filter (Optional) */}
-          <div className="p-4 border-b border-white/15">
+          <div className="p-4 border-b border-gray-700">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              <GlassInput
+              <input
+                type="text"
                 placeholder="Search conversations..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10"
+                className="w-full pl-10 px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#4b90ff] focus:border-transparent"
               />
             </div>
           </div>
@@ -77,7 +68,7 @@ export default function ConversationSidebar() {
             ref={listRef}
             className="flex-1 overflow-y-auto"
           >
-            <div className="px-4 py-3 border-b border-white/15">
+            <div className="px-4 py-3 border-b border-gray-700">
               <h2 className="text-sm font-semibold text-white/90">Your conversations</h2>
             </div>
 
@@ -141,7 +132,7 @@ export default function ConversationSidebar() {
 
             {/* History-specific loading indicator for active conversation */}
             {historyLoadingId === activeId && !loading && (
-              <div className="p-4 text-white/80 flex items-center gap-2 border-t border-white/15">
+              <div className="p-4 text-white/80 flex items-center gap-2 border-t border-gray-700">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Loading conversation history...
               </div>
@@ -149,7 +140,7 @@ export default function ConversationSidebar() {
           </div>
 
           {/* Footer: User Info + Upgrade */}
-          <div className="p-4 border-t border-white/15">
+          <div className="p-4 border-t border-gray-700">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center">
                 <User className="w-4 h-4 text-white" />
@@ -168,7 +159,7 @@ export default function ConversationSidebar() {
             </Link>
           </div>
         </div>
-      </GlassCard>
+      </div>
     </aside>
   );
 }

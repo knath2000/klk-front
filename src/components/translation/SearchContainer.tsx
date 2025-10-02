@@ -4,7 +4,6 @@
 import React from 'react';
 import { useState, useRef } from 'react';
 import { Search, X } from 'lucide-react';
-import { GlassInput } from '@/components/ui';
 
 interface SearchContainerProps {
   onQuerySubmit: (query: string) => void;
@@ -46,18 +45,20 @@ export function SearchContainer({ onQuerySubmit, onQueryClear, isLoading }: Sear
   return (
     <div className="relative w-full max-w-md">
       <form onSubmit={handleSubmit} className="relative">
-        <GlassInput
-          ref={inputRef}
-          type="text"
-          placeholder="Search for translations..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="pr-10 pl-10"
-          role="searchbox"
-          aria-label="Search input"
-          leftIcon={<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />}
-          rightIcon={rightIcon}
-        />
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Search for translations..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full pl-10 pr-10 px-3 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-transparent"
+            role="searchbox"
+            aria-label="Search input"
+          />
+          {rightIcon}
+        </div>
       </form>
     </div>
   );

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { GlassCard } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
@@ -63,21 +62,18 @@ export default function Navigation() {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       className="fixed left-4 right-4 z-20 isolate pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
       style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
     >
-      <GlassCard 
-        variant="light" 
-        size="sm" 
-        hover 
+      <div
         className={cn(
-          "px-4 py-1.5 transition-colors", // Slim height
+          "px-4 py-1.5 transition-colors backdrop-blur-sm rounded-lg border", // Slim height
           scrolled
-            ? "bg-[#343541]/80 border-gray-200/20 backdrop-blur-sm shadow-md"
-            : "bg-[#343541]/60 border-gray-200/10 backdrop-blur-sm"
+            ? "bg-[#343541]/80 border-gray-200/20 shadow-md"
+            : "bg-[#343541]/60 border-gray-200/10"
         )}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -207,7 +203,7 @@ export default function Navigation() {
             </motion.div>
           </div>
         </div>
-      </GlassCard>
+      </div>
     </motion.div>
   );
 }

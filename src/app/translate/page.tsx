@@ -10,16 +10,15 @@ import { ResultsContainer } from '@/components/translation/ResultsContainer';
 import { LoadingSkeleton } from '@/components/translation/LoadingSkeleton';
 import { ErrorDisplay } from '@/components/translation/ErrorDisplay';
 import ErrorBoundary from '@/components/translation/ErrorBoundary';
-import { GlassCard } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 // Make SearchContainer client-only to avoid SSR hydration issues
 const SearchContainer = dynamic(() => import('@/components/translation/SearchContainer').then(mod => ({ default: mod.SearchContainer })), {
   ssr: false,
   loading: () => (
-    <GlassCard variant="light" size="md" animate>
+    <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 animate-pulse">
       <div className="animate-pulse bg-white/10 h-16 rounded-xl" />
-    </GlassCard>
+    </div>
   )
 });
 
@@ -244,13 +243,13 @@ function TranslatePageContent() {
       {/* Translation-specific background */}
       <div className="fixed inset-0 -z-20">
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-teal-900 to-cyan-900 opacity-90" />
-        
+
         {/* Translation-specific floating orbs */}
         <div className="absolute top-32 left-32 w-72 h-72 bg-emerald-400/15 rounded-full blur-3xl animate-glass-pulse" />
         <div className="absolute bottom-32 right-32 w-96 h-96 bg-teal-400/10 rounded-full blur-3xl animate-glass-float" />
-        <div 
-          className="absolute top-2/3 left-1/4 w-64 h-64 bg-cyan-400/12 rounded-full blur-3xl animate-glass-pulse" 
-          style={{ animationDelay: '1.5s' }} 
+        <div
+          className="absolute top-2/3 left-1/4 w-64 h-64 bg-cyan-400/12 rounded-full blur-3xl animate-glass-pulse"
+          style={{ animationDelay: '1.5s' }}
         />
       </div>
 
@@ -261,7 +260,7 @@ function TranslatePageContent() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <GlassCard variant="emerald" size="lg" gradient className="max-w-2xl mx-auto">
+          <div className="max-w-2xl mx-auto bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
             <motion.div
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
@@ -275,7 +274,7 @@ function TranslatePageContent() {
             <p className="text-lg text-white/80">
               Get instant translations with regional context and examples
             </p>
-          </GlassCard>
+          </div>
         </motion.div>
 
         {/* Search Container */}
@@ -285,8 +284,8 @@ function TranslatePageContent() {
           transition={{ delay: 0.2 }}
           className="mb-8"
         >
-          <SearchContainer 
-            onQuerySubmit={handleQuerySubmit} 
+          <SearchContainer
+            onQuerySubmit={handleQuerySubmit}
             onQueryClear={handleQueryClear}
             isLoading={state.isLoading}
           />
@@ -299,14 +298,14 @@ function TranslatePageContent() {
           transition={{ delay: 0.3 }}
           className="mb-8"
         >
-          <GlassCard variant="blue" size="sm" hover className="cursor-pointer max-w-max mx-auto">
+          <div className="cursor-pointer max-w-max mx-auto bg-white/10 backdrop-blur-md border border-white/20 rounded-xl hover:bg-white/20 transition-colors">
             <div className="flex items-center gap-2 text-white px-4 py-3">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="text-sm font-medium">Help</span>
             </div>
-          </GlassCard>
+          </div>
         </motion.div>
 
         {/* Results Container */}
@@ -317,22 +316,22 @@ function TranslatePageContent() {
             transition={{ delay: 0.4 }}
           >
             {state.isLoading && !streamingResult ? (
-              <GlassCard variant="light" size="lg" animate>
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
                 <LoadingSkeleton />
-              </GlassCard>
+              </div>
             ) : state.error ? (
-              <GlassCard variant="purple" size="lg" animate>
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
                 <ErrorDisplay error={state.error} onRetry={handleRetry} />
-              </GlassCard>
+              </div>
             ) : (
-              <GlassCard variant="light" size="lg" animate>
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
                 <ResultsContainer
                   query={currentQuery}
                   streamingResult={streamingResult}
                   onStreamingUpdate={setStreamingResult}
                   result={translationResult}
                 />
-              </GlassCard>
+              </div>
             )}
           </motion.div>
         )}
@@ -345,7 +344,7 @@ function TranslatePageContent() {
             transition={{ delay: 0.6 }}
             className="mt-12"
           >
-            <GlassCard variant="dark" size="lg">
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
               <h2 className="text-2xl font-semibold text-white mb-6">
                 Recent Translations
               </h2>
@@ -357,11 +356,8 @@ function TranslatePageContent() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.1 }}
                   >
-                    <GlassCard 
-                      variant="light" 
-                      size="sm" 
-                      hover 
-                      className="cursor-pointer"
+                    <div
+                      className="cursor-pointer bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-colors"
                       onClick={() => handleQuerySubmit(item.query)}
                     >
                       <p className="font-medium text-white">
@@ -370,11 +366,11 @@ function TranslatePageContent() {
                       <p className="text-sm text-white/60 mt-1">
                         {item.timestamp.toLocaleDateString()}
                       </p>
-                    </GlassCard>
+                    </div>
                   </motion.div>
                 ))}
               </div>
-            </GlassCard>
+            </div>
           </motion.div>
         )}
       </div>

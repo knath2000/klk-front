@@ -4,7 +4,6 @@ import { ArrowLeft } from 'lucide-react';
 import dynamicFn from 'next/dynamic';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { GlassCard } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,12 +29,7 @@ export default function SignInPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
         >
-          <GlassCard
-            variant="light"
-            size="lg"
-            gradient
-            className="max-w-md mx-auto w-full text-white/90"
-          >
+          <div className="max-w-md mx-auto w-full text-white/90 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <Link
                 href="/"
@@ -63,7 +57,7 @@ export default function SignInPage() {
                 <DynamicStackSignIn />
               </div>
             </div>
-          </GlassCard>
+          </div>
         </motion.div>
       </div>
     </div>
