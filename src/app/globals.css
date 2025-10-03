@@ -1,30 +1,35 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
 
 :root {
-  --background: #343541;
-  --foreground: #ececf1;
+  /* Modern soft neobrutalism color palette */
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #151b2b;
+  --bg-tertiary: #1e2a3e;
+  --background: #0a0e1a;
+  --foreground: #f8fafc;
   --sidebar-bg: #202123;
-  
-  /* Glassmorphism Design Tokens - Darker, minimal */
-  --glass-light: rgba(255, 255, 255, 0.08);
-  --glass-medium: rgba(255, 255, 255, 0.12);
-  --glass-dark: rgba(31, 41, 55, 0.08);
-  --glass-accent-blue: rgba(59, 130, 246, 0.08);
-  --glass-accent-purple: rgba(147, 51, 234, 0.08);
-  --glass-accent-emerald: rgba(16, 185, 129, 0.08);
-  
-  --glass-border-light: rgba(255, 255, 255, 0.12);
-  --glass-border-dark: rgba(31, 41, 55, 0.12);
-  --glass-border-accent: rgba(59, 130, 246, 0.2);
-  
-  --shadow-glass: 0 2px 10px rgba(0, 0, 0, 0.1);
-  --shadow-glass-hover: 0 4px 20px rgba(0, 0, 0, 0.15);
-  --shadow-glass-focus: 0 0 0 2px rgba(59, 130, 246, 0.2);
-  
-  --blur-glass: blur(8px) saturate(120%);
-  --blur-glass-sm: blur(4px) saturate(120%);
-  --blur-glass-lg: blur(12px) saturate(120%);
-  --blur-glass-xl: blur(20px) saturate(120%);
+
+  /* Accent colors - muted but vibrant */
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+  --accent-emerald: #10b981;
+  --accent-orange: #f97316;
+
+  /* Text hierarchy with proper contrast */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  /* Interactive states */
+  --hover-overlay: rgba(59, 130, 246, 0.08);
+  --active-overlay: rgba(139, 92, 246, 0.12);
+
+  /* Enhanced shadows for depth */
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.12);
+  --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.2);
+  --shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.2);
 
   /* Layout Rhythm & Z-Index Tokens */
   --section-gap: clamp(12px, 2.5vw, 28px);
@@ -34,36 +39,39 @@
   --z-content: 10;
   --z-nav: 20;
   --z-modal: 50;
+
+  /* Typography scale for better readability */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+
+  /* Line heights for optimal readability */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
-  
-  /* Glassmorphism Colors */
-  --color-glass-light: var(--glass-light);
-  --color-glass-medium: var(--glass-medium);
-  --color-glass-dark: var(--glass-dark);
-  --color-glass-blue: var(--glass-accent-blue);
-  --color-glass-purple: var(--glass-accent-purple);
-  --color-glass-emerald: var(--glass-accent-emerald);
-  
-  /* Glass Border Colors */
-  --color-glass-border: var(--glass-border-light);
-  --color-glass-border-dark: var(--glass-border-dark);
-  --color-glass-border-accent: var(--glass-border-accent);
-  
-  /* Glass Text Colors */
-  --color-glass-text: var(--text-glass-primary);
-  --color-glass-text-secondary: var(--text-glass-secondary);
-  --color-glass-text-muted: var(--text-glass-muted);
-  
-  /* Custom Shadow Utilities */
-  --shadow-glass: var(--shadow-glass);
-  --shadow-glass-hover: var(--shadow-glass-hover);
-  --shadow-glass-focus: var(--shadow-glass-focus);
+
+  /* Modern color tokens */
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-purple: var(--accent-purple);
+  --color-accent-emerald: var(--accent-emerald);
+  --color-accent-orange: var(--accent-orange);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
 }
 
 @media (prefers-color-scheme: light) {
@@ -73,168 +81,245 @@
   }
 }
 
-/* Base glassmorphism utilities */
-.glass-light {
-  background: var(--glass-light);
-  backdrop-filter: var(--blur-glass);
-  -webkit-backdrop-filter: var(--blur-glass);
-  border: 1px solid var(--glass-border-light);
-  box-shadow: var(--shadow-glass);
-}
-
-.glass-dark {
-  background: var(--glass-dark);
-  backdrop-filter: var(--blur-glass);
-  -webkit-backdrop-filter: var(--blur-glass);
-  border: 1px solid var(--glass-border-dark);
-  box-shadow: var(--shadow-glass);
-}
-
-.glass-blue {
-  background: var(--glass-accent-blue);
-  backdrop-filter: var(--blur-glass);
-  -webkit-backdrop-filter: var(--blur-glass);
-  border: 1px solid var(--glass-border-accent);
-  box-shadow: var(--shadow-glass);
-}
-
-.glass-purple {
-  background: var(--glass-accent-purple);
-  backdrop-filter: var(--blur-glass);
-  -webkit-backdrop-filter: var(--blur-glass);
-  border: 1px solid var(--glass-border-accent);
-  box-shadow: var(--shadow-glass);
-}
-
-.glass-emerald {
-  background: var(--glass-accent-emerald);
-  backdrop-filter: var(--blur-glass);
-  -webkit-backdrop-filter: var(--blur-glass);
-  border: 1px solid var(--glass-border-accent);
-  box-shadow: var(--shadow-glass);
-}
-
-/* Interactive states */
-.glass-hover {
-  transition: all 300ms cubic-bezier(0.4, 0.0, 0.2, 1);
-}
-
-.glass-hover:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: var(--shadow-glass-hover);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.glass-focus:focus {
-  outline: none;
-  box-shadow: var(--shadow-glass), var(--shadow-glass-focus);
-  border-color: var(--glass-border-accent);
-}
-
-/* Animations */
-@keyframes glassFloat {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-
-@keyframes glassPulse {
-  0%, 100% { opacity: 0.15; }
-  50% { opacity: 0.25; }
-}
-
-@keyframes glassShimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.animate-glass-float {
-  animation: glassFloat 6s ease-in-out infinite;
-}
-
-.animate-glass-pulse {
-  animation: glassPulse 2s ease-in-out infinite;
-}
-
-.animate-glass-shimmer {
-  animation: glassShimmer 3s linear infinite;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  background-size: 200% 100%;
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .glass-light {
-    background: rgba(255, 255, 255, 0.85);
-    border-color: rgba(0, 0, 0, 0.3);
-  }
-  
-  .glass-dark {
-    background: rgba(0, 0, 0, 0.85);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  .glass-hover {
-    transition: none;
-  }
-  
-  .glass-hover:hover {
-    transform: none;
-  }
-  
-  .animate-glass-float,
-  .animate-glass-pulse,
-  .animate-glass-shimmer {
-    animation: none;
-  }
-}
-
-/* Focus visible for keyboard navigation */
-.glass-focus:focus-visible {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
-  box-shadow: var(--shadow-glass), var(--shadow-glass-focus);
-}
-
-/* Background gradient utilities */
-.bg-gradient-chat {
-  background: linear-gradient(135deg, #1e3a8a, #581c87, #312e81);
-}
-
-.bg-gradient-translate {
-  background: linear-gradient(135deg, #064e3b, #0f766e, #155e75);
-}
-
-.bg-gradient-enterprise {
-  background: linear-gradient(135deg, #7c2d12, #dc2626, #ea580c);
-}
-
+/* Modern base styles */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans, system-ui, sans-serif);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: var(--font-size-base);
+  line-height: var(--leading-normal);
   min-height: 100vh;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
 }
 
 html {
   height: 100%;
 }
 
-/* Ensure backdrop-filter works in production */
-@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-  .glass-light,
-  .glass-dark,
-  .glass-blue,
-  .glass-purple,
-  .glass-emerald {
-    backdrop-filter: var(--blur-glass);
-    -webkit-backdrop-filter: var(--blur-glass);
+/* Modern message bubble styles */
+.message-bubble {
+  position: relative;
+  padding: 12px 16px;
+  border-radius: 18px;
+  margin-bottom: 8px;
+  max-width: 85%;
+  word-wrap: break-word;
+  animation: messageSlideIn 0.3s ease-out;
+  font-size: var(--font-size-base);
+  line-height: var(--leading-normal);
+}
+
+.message-user {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  color: white;
+  margin-left: auto;
+  border-bottom-right-radius: 4px;
+  font-weight: 500;
+}
+
+.message-assistant {
+  background: var(--bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border-bottom-left-radius: 4px;
+  font-weight: 400;
+}
+
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: 8px;
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+}
+
+/* Modern animations */
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Vertical rhythm helpers (Tailwind v4-friendly custom classes) */
+/* Enhanced interactive states */
+.interactive-element {
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.interactive-element::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--hover-overlay);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.interactive-element:hover::before {
+  opacity: 1;
+}
+
+.interactive-element:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+  box-shadow: var(--shadow-focus);
+}
+
+/* Modern layout utilities */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--section-gap);
+  padding: var(--card-pad);
+}
+
+.bento-item {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: var(--card-pad);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease;
+}
+
+.bento-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+/* Enhanced focus management for accessibility */
+.focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+  box-shadow: var(--shadow-focus);
+}
+
+/* Touch targets for mobile */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 12px;
+}
+
+/* Modern gradient backgrounds */
+.bg-gradient-modern {
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+}
+
+/* Typography improvements */
+.text-modern-heading {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: var(--font-size-xl);
+  line-height: var(--leading-tight);
+  color: var(--text-primary);
+}
+
+.text-modern-body {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 400;
+  font-size: var(--font-size-base);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+}
+
+/* Modern scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+  .message-bubble {
+    max-width: 90%;
+    padding: 10px 14px;
+  }
+
+  .mobile-drawer {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .mobile-drawer.open {
+    transform: translateX(0);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --text-primary: #ffffff;
+    --text-secondary: #e5e5e5;
+    --bg-secondary: #1a1a1a;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .message-bubble {
+    animation: none;
+  }
+
+  .interactive-element {
+    transition: none;
+  }
+}
+
+/* Background isolation utility for decorative layers */
+.bg-isolation {
+  isolation: isolate;
+  pointer-events: none;
+  z-index: var(--z-bg);
+}
+
+/* Content elevation helpers */
+.z-content { z-index: var(--z-content); }
+.z-nav { z-index: var(--z-nav); }
+.z-modal { z-index: var(--z-modal); }
+
+/* Modern glassmorphism alternative - subtle depth */
+.glass-modern {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Enhanced hover effects */
+.glass-modern:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+/* Modern focus styles */
+.glass-modern:focus {
+  outline: none;
+  box-shadow: var(--shadow-soft), var(--shadow-focus);
+  border-color: var(--accent-blue);
+}
+
+/* Layout rhythm helpers */
 .stack {
   display: flex;
   flex-direction: column;
@@ -246,30 +331,8 @@ html {
   gap: var(--row-gap);
 }
 
-/* Glass surface safety to reduce bleed/clipping and double-blur */
-.glass-light,
-.glass-dark,
-.glass-blue,
-.glass-purple,
-.glass-emerald {
-  /* Do not force overflow hidden so popovers/menus can escape card bounds */
-  background-clip: padding-box;     /* prevent bleed past border radius */
-  border-radius: inherit;           /* inherit rounding from container */
-}
-
-/* Background isolation utility for decorative layers (orbs/vignette) */
-.bg-isolation {
-  isolation: isolate;
-  pointer-events: none;
-  z-index: var(--z-bg);
-}
-
-/* Content elevation helpers mapped to tokens (optional usage) */
-.z-content { z-index: var(--z-content); }
-.z-nav { z-index: var(--z-nav); }
-.z-modal { z-index: var(--z-modal); }
-
-/* Optional utility to explicitly clip glass content when desired */
-.glass-clip {
-  overflow: hidden;
-}
+/* Safe area support for mobile */
+.safe-top { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-left { padding-left: env(safe-area-inset-left); }
+.safe-right { padding-right: env(safe-area-inset-right); }
