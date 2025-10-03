@@ -21,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <div className="min-h-[100svh] h-[100vh] h-[100lvh] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-x-hidden">
+        <div className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-x-hidden" style={{ height: '100dvh' }}>
           {/* Container with only bottom padding - no horizontal padding */}
           <div className="pb-[calc(env(safe-area-inset-bottom)+24px)]">
             <AuthProvider>
