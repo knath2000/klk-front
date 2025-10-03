@@ -1,14 +1,32 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { ConversationsProvider } from '@/context/ConversationsContext';
-import ConversationSidebar from '@/components/ConversationSidebar';
+import ConversationSidebarCollapsible from '@/components/ConversationSidebarCollapsible';
 import ChatView from '@/components/ChatView';
 
-export default function ChatShellNew() {
+export default function ChatShellCollapsibleFixed() {
   const { user } = useAuth();
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Load sidebar state from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebar-collapsed');
+    if (saved !== null) {
+      setIsSidebarCollapsed(JSON.parse(saved));
+    }
+  }, []);
+
+  // Save sidebar state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', JSON.stringify(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
+
+  const toggleSidebarCollapse = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
 
   if (user) {
     return (
@@ -17,7 +35,9 @@ export default function ChatShellNew() {
           {/* Mobile hamburger menu button */}
           <button
             onClick={() => setIsMobileDrawerOpen(true)}
-            className="lg:hidden fixed top-4 left-4 z-[60] p-2 bg-[#202123] rounded-md border border-gray-600 hover:bg-[#2a2b32] transition-colors"
+            className={`lg:hidden fixed top-4 z-[60] p-2 bg-[#202123] rounded-md border border-gray-600 hover:bg-[#2a2b32] transition-colors ${
+              isSidebarCollapsed ? 'left-4' : 'left-4'
+            }`}
             aria-label="Open conversations menu"
           >
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,31 +53,27 @@ export default function ChatShellNew() {
             />
           )}
 
-          {/* Sidebar - mobile drawer + desktop sidebar */}
+          {/* Sidebar - mobile drawer + desktop collapsible sidebar */}
           <aside className={`
             ${isMobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}
             lg:translate-x-0 lg:block
             fixed lg:sticky top-0 h-screen
-            w-80 bg-[#202123] z-[60] lg:z-auto
-            transition-transform duration-300 ease-in-out
+            ${isSidebarCollapsed ? 'w-16' : 'w-80'}
+            bg-[#202123] z-[60] lg:z-auto
+            transition-all duration-300 ease-in-out
             overflow-y-auto
           `}>
-            <div className="p-4">
-              <button
-                onClick={() => setIsMobileDrawerOpen(false)}
-                className="lg:hidden float-right p-1 text-gray-400 hover:text-white"
-                aria-label="Close menu"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-              <ConversationSidebar />
-            </div>
+            <ConversationSidebarCollapsible
+              isCollapsed={isSidebarCollapsed}
+              onToggleCollapse={toggleSidebarCollapse}
+              onMobileClose={() => setIsMobileDrawerOpen(false)}
+            />
           </aside>
 
           {/* Main content */}
-          <main className="flex-1 flex flex-col min-h-screen lg:ml-0">
+          <main className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ${
+            isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-0'
+          }`}>
             <ChatView />
           </main>
         </div>
