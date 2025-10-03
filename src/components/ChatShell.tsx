@@ -6,7 +6,7 @@ import { ConversationsProvider } from '@/context/ConversationsContext';
 import ConversationSidebarCollapsible from '@/components/ConversationSidebarCollapsible';
 import ChatView from '@/components/ChatView';
 
-export default function ChatShellCollapsibleFixed() {
+export default function ChatShellHeightFixed() {
   const { user } = useAuth();
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -57,7 +57,7 @@ export default function ChatShellCollapsibleFixed() {
           <aside className={`
             ${isMobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}
             lg:translate-x-0 lg:block
-            fixed lg:sticky top-0 h-screen
+            fixed lg:sticky top-0 min-h-screen
             ${isSidebarCollapsed ? 'w-16' : 'w-80'}
             bg-[#202123] z-[60] lg:z-auto
             transition-all duration-300 ease-in-out
