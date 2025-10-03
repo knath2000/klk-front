@@ -4,7 +4,6 @@ import './globals.css'
 import StackAuthBridge from '@/components/StackAuthBridge'
 import { AuthProvider } from '@/context/AuthContext'
 import { WebSocketProvider } from '@/context/WebSocketContext'
-import Navigation from '@/components/Navigation'
 import { ConversationsProvider } from '@/context/ConversationsContext'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -23,13 +22,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <div className="min-h-[100svh] h-[100vh] h-[100lvh] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-x-hidden">
-          {/* Safe-area aware container */}
-          <div className="px-[clamp(16px,4vw,20px)] pt-[calc(env(safe-area-inset-top)+12px)] pb-[calc(env(safe-area-inset-bottom)+24px)]">
+          {/* Safe-area aware container - removed navbar padding */}
+          <div className="px-[clamp(16px,4vw,20px)] pb-[calc(env(safe-area-inset-bottom)+24px)]">
             <AuthProvider>
               <WebSocketProvider>
                 <StackAuthBridge>
                   <ConversationsProvider>
-                    <Navigation />
                     {children}
                   </ConversationsProvider>
                 </StackAuthBridge>
