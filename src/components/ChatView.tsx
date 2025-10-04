@@ -103,6 +103,7 @@ const ChatView: React.FC = () => {
   const { user } = useAuth();
   const conversationsCtx = useOptionalConversations();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const clearedGuestConversationRef = useRef(false);
 
   // Load conversationId from localStorage on mount
   useEffect(() => {
@@ -138,12 +139,19 @@ const ChatView: React.FC = () => {
     }
   }, [conversationsCtx?.activeId, conversationId]);
 
-  // Clear stale conversationId if user is not authenticated
+  // Clear stale conversationId if user is not authenticated, guard against repeated clears
   useEffect(() => {
-    if (!user && conversationId) {
-      console.log('🔐 No auth user; clearing stale conversationId from localStorage');
-      setConversationId(null);
-      localStorage.removeItem('chatConversationId');
+    if (!user) {
+      if (!clearedGuestConversationRef.current) {
+        if (conversationId) {
+          console.log('🔐 No auth user; clearing stale conversationId from localStorage');
+        }
+        setConversationId(null);
+        localStorage.removeItem('chatConversationId');
+        clearedGuestConversationRef.current = true;
+      }
+    } else {
+      clearedGuestConversationRef.current = false;
     }
   }, [user, conversationId]);
 
