@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { io, Socket } from 'socket.io-client';
 import { getWebSocketUrl, handleTabSwitch } from '@/lib/websocket';
 import { getNeonAuthToken } from '@/lib/neonAuth';
+import { useAuth } from '@/context/AuthContext';
 
 export type ConnectionState = 'connecting' | 'connected' | 'disconnected' | 'error';
 
@@ -68,6 +69,16 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const lastPingTimeRef = useRef<number>(0);
   // Guard to differentiate intentional disconnects vs. unexpected ones
   const manualDisconnectRef = useRef<boolean>(false);
+  const { user } = useAuth();
+  const isAuthenticated = Boolean(user?.id);
+  const requireAuth = process.env.NEXT_PUBLIC_WEBSOCKET_REQUIRE_AUTH === 'true';
+  const shouldConnect = isAuthenticated || !requireAuth;
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      tokenCache = null;
+    }
+  }, [isAuthenticated]);
 
   const getSessionId = useCallback((): string | null => {
     if (typeof window !== 'undefined') {
@@ -141,12 +152,23 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     });
 
     newSocket.on('connect_error', (err) => {
-      console.error('❌ WebSocket ERROR:', err.message);
+      const message = err?.message || '';
+      console.error('❌ WebSocket ERROR:', message);
+
+      if (requireAuth && (message.toLowerCase().includes('token required') || message.toLowerCase().includes('invalid token'))) {
+        setError('token-required');
+        setConnectionState('disconnected');
+        manualDisconnectRef.current = true;
+        tokenCache = null;
+        newSocket.disconnect();
+        return;
+      }
+
       setConnectionState('error');
-      setError(err.message);
+      setError(message);
 
       // Faster fallback to polling
-      if (err.message.includes('websocket')) {
+      if (message.includes('websocket')) {
         console.log('🔄 Falling back to polling transport');
         newSocket.io!.opts.transports = ['polling', 'websocket'];
         setTimeout(() => newSocket.connect(), 1000);
@@ -185,7 +207,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     (newSocket as Socket & { _cleanup?: () => void })._cleanup = cleanup;
 
     return newSocket;
-  }, [getSessionId, setSessionId]);
+  }, [getSessionId, setSessionId, requireAuth]);
 
   const startLatencyMonitoring = (socket: Socket) => {
     stopLatencyMonitoring();
@@ -215,39 +237,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     }
   };
 
-  const connect = useCallback(async () => {
-    if (socketRef.current?.connected) {
-      return; // Already connected
-    }
-
-    if (!socketRef.current || socketRef.current.disconnected) {
-      console.log('🔌 Initiating optimized WebSocket connection');
-      manualDisconnectRef.current = false;
-
-      try {
-        // Get cached token quickly
-        const token = await getCachedToken();
-
-        const newSocket = createSocket();
-        socketRef.current = newSocket;
-        setSocket(newSocket);
-        setConnectionState('connecting');
-
-        // Set auth token if available
-        if (token) {
-          (newSocket as Socket & { auth?: SocketAuth }).auth = { token };
-          console.log('🔐 Auth token set (cached)');
-        }
-
-        newSocket.connect();
-      } catch (error) {
-        console.error('Failed to create socket:', error);
-        setConnectionState('error');
-        setError('Failed to create connection');
-      }
-    }
-  }, [createSocket]);
-
   const disconnect = useCallback(() => {
     if (socketRef.current) {
       console.log('🔌 Disconnecting WebSocket');
@@ -264,25 +253,67 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     }
   }, []);
 
+  const connect = useCallback(async () => {
+    if (!shouldConnect) {
+      if (requireAuth) {
+        setError('token-required');
+      }
+      setConnectionState('disconnected');
+      if (socketRef.current) {
+        disconnect();
+      }
+      return;
+    }
+
+    if (socketRef.current?.connected) {
+      return; // Already connected
+    }
+
+    if (!socketRef.current || socketRef.current.disconnected) {
+      console.log('🔌 Initiating optimized WebSocket connection');
+      manualDisconnectRef.current = false;
+
+      try {
+        const token = isAuthenticated ? await getCachedToken() : null;
+        if (isAuthenticated && !token) {
+          console.warn('🔐 Auth token required but not available; skipping WebSocket connection');
+          setError('missing-token');
+          setConnectionState('error');
+          return;
+        }
+
+        const newSocket = createSocket();
+        socketRef.current = newSocket;
+        setSocket(newSocket);
+        setConnectionState('connecting');
+        setError(null);
+
+        if (token) {
+          (newSocket as Socket & { auth?: SocketAuth }).auth = { token };
+          console.log('🔐 Auth token set (cached)');
+        }
+
+        newSocket.connect();
+      } catch (error) {
+        console.error('Failed to create socket:', error);
+        setConnectionState('error');
+        setError('Failed to create connection');
+      }
+    }
+  }, [createSocket, shouldConnect, isAuthenticated, requireAuth, disconnect]);
+
   // Initialize connection on mount
   useEffect(() => {
-    console.log('🚀 Initializing optimized WebSocket connection');
-    connect();
-
-    // Cleanup on unmount
-    return () => {
-      console.log('🧹 Cleaning up WebSocket connection');
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
+    if (shouldConnect) {
+      connect();
+    } else {
+      setSocket(null);
+      if (requireAuth) {
+        setError('token-required');
       }
-      stopLatencyMonitoring();
-
-      const s = socketRef.current as (Socket & { _cleanup?: () => void }) | null;
-      if (s?._cleanup) {
-        try { s._cleanup(); } catch {}
-      }
-    };
-  }, [connect]);
+      setConnectionState('disconnected');
+    }
+  }, [shouldConnect, connect, requireAuth]);
 
   // Handle window beforeunload
   useEffect(() => {
@@ -290,13 +321,17 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       if (socketRef.current) {
         console.log('🔌 Cleaning up WebSocket before page unload');
         manualDisconnectRef.current = true;
+        const s = socketRef.current as (Socket & { _cleanup?: () => void }) | null;
+        if (s?._cleanup) {
+          try { s._cleanup(); } catch {}
+        }
         socketRef.current.disconnect();
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, []);
+  }, [connect, disconnect]);
 
   const value: WebSocketContextType = {
     socket,

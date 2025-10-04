@@ -104,6 +104,9 @@ const ChatView: React.FC = () => {
   const conversationsCtx = useOptionalConversations();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const clearedGuestConversationRef = useRef(false);
+  const hasFetchedPersonasRef = useRef(false);
+  const personaFetchKeyRef = useRef<string | null>(null);
+  const personaFetchInFlightRef = useRef(false);
 
   // Load conversationId from localStorage on mount
   useEffect(() => {
@@ -164,8 +167,18 @@ const ChatView: React.FC = () => {
 
   // Fetch personas from API - use full backend URL
   useEffect(() => {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+    const fetchKey = `${backendUrl}|${user?.id ?? 'guest'}`;
+
+    if (personaFetchInFlightRef.current) {
+      return;
+    }
+    if (hasFetchedPersonasRef.current && personaFetchKeyRef.current === fetchKey) {
+      return;
+    }
+
     const fetchPersonasWithRetry = async (retries = 3) => {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+      personaFetchInFlightRef.current = true;
 
       console.log('🔍 API CONFIGURATION:');
       console.log('   Backend URL:', backendUrl);
@@ -180,6 +193,9 @@ const ChatView: React.FC = () => {
           ...prev,
           personas: fallbackPersonas
         }));
+        hasFetchedPersonasRef.current = true;
+        personaFetchKeyRef.current = fetchKey;
+        personaFetchInFlightRef.current = false;
         return;
       }
 
@@ -241,8 +257,10 @@ const ChatView: React.FC = () => {
 
           setChatState(prev => ({ ...prev, personas: data.personas }));
           console.log('🎉 PERSONAS LOADED SUCCESSFULLY:', data.personas.length, 'personas');
-          return; // Success, exit the retry loop
-
+          hasFetchedPersonasRef.current = true;
+          personaFetchKeyRef.current = fetchKey;
+          personaFetchInFlightRef.current = false;
+          return;
         } catch (error) {
           console.error(`💥 ERROR ON ATTEMPT ${attempt}/${retries}:`, error);
 
@@ -256,7 +274,6 @@ const ChatView: React.FC = () => {
             console.error('   Check if backend URL is correct and backend is running');
           }
 
-          // If this is the last attempt, fall back to mock data
           if (attempt === retries) {
             console.log('🔄 ALL RETRIES EXHAUSTED - FALLING BACK TO FALLBACK_PERSONAS');
             console.log('💡 TROUBLESHOOTING TIPS:');
@@ -269,18 +286,27 @@ const ChatView: React.FC = () => {
               ...prev,
               personas: fallbackPersonas
             }));
+            hasFetchedPersonasRef.current = true;
+            personaFetchKeyRef.current = fetchKey;
+            personaFetchInFlightRef.current = false;
+            return;
           } else {
-            // Wait before retrying (exponential backoff)
             const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
             console.log(`⏳ RETRYING IN ${delay}ms...`);
             await new Promise(resolve => setTimeout(resolve, delay));
           }
         }
       }
+
+      personaFetchInFlightRef.current = false;
     };
 
-    fetchPersonasWithRetry();
-  }, [socket]);
+    void fetchPersonasWithRetry();
+
+    return () => {
+      // no-op cleanup
+    };
+  }, [user?.id]);
 
   // Handle history loaded event
   useEffect(() => {
