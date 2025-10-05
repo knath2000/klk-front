@@ -28,7 +28,7 @@ export default function ChatShellFullHeight() {
 
   return (
     <ConversationsProvider>
-      <div className="relative flex h-dvh overflow-hidden">
+      <div className="relative flex min-h-screen items-stretch">
         {/* Mobile hamburger menu button */}
         <button
           onClick={() => setIsMobileDrawerOpen(true)}
@@ -53,13 +53,16 @@ export default function ChatShellFullHeight() {
         {/* Sidebar - mobile drawer + desktop collapsible sidebar */}
         <aside
           className={`
+            sidebar-shell
             ${isMobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}
-            lg:translate-x-0 lg:block
-            fixed inset-y-0 lg:inset-y-auto lg:sticky lg:top-0
-            ${isSidebarCollapsed ? 'w-16' : 'w-80'}
-            bg-[#202123] z-[60] lg:z-auto
-            transition-all duration-300 ease-in-out
+            fixed inset-y-0 left-0 w-72
+            lg:relative lg:translate-x-0 lg:block
+            lg:sticky lg:top-0 lg:flex-shrink-0
+            ${isSidebarCollapsed ? 'lg:w-16' : 'lg:w-80'}
+            z-[60] lg:z-auto
+            transition-transform duration-300 ease-in-out
             overflow-y-auto
+            lg:min-h-screen
           `}
         >
           <ConversationSidebarCollapsible
@@ -71,7 +74,7 @@ export default function ChatShellFullHeight() {
 
         {/* Main content */}
         <main
-          className={`flex-1 flex flex-col overflow-y-auto transition-all duration-300 ease-in-out ${
+          className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
             isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-0'
           }`}
         >
