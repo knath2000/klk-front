@@ -161,7 +161,16 @@ function TranslatePageContent() {
       handleTranslationError
     );
 
-    return cleanup;
+    // Add fallback event handler
+    socket.on('translation_fallback', ({ transport, reason }) => {
+      console.warn('🔄 Server fallback triggered:', transport, reason);
+      console.log(`Using fallback: ${transport}`);
+    });
+
+    return () => {
+      cleanup();
+      socket.off('translation_fallback');
+    };
   }, [socket, dispatch]);
 
   const handleQuerySubmit = async (query: string) => {
@@ -357,7 +366,7 @@ function TranslatePageContent() {
                       transition={{ delay: index * 0.1 }}
                     >
                       <div
-                        className="cursor-pointer bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-colors"
+                        className="cursor-pointer bg-white/10 backdrop-blr-md border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-colors"
                         onClick={() => handleQuerySubmit(item.query)}
                       >
                         <p className="font-medium text-white">

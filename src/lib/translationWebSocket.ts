@@ -123,14 +123,25 @@ export const setupTranslationHandlers = (
   };
 };
 
+// Pending requests queue for disconnected state
+const pendingRequests: TranslationRequest[] = [];
+
 // Send translation request
 export const sendTranslationRequest = (socket: Socket, request: TranslationRequest) => {
   if (socket.connected) {
     console.log('📤 Sending translation request:', request.id);
     socket.emit('translation_request', request);
   } else {
-    console.error('❌ Cannot send translation request: WebSocket not connected');
-    throw new Error('WebSocket connection not available');
+    console.warn('⚠️ Socket disconnected; queuing request', request.id);
+    pendingRequests.push(request);
+    socket.once('connect', () => {
+      const queued = pendingRequests.splice(0, pendingRequests.length);
+      queued.forEach((req) => {
+        console.log('📤 Flushing queued translation request:', req.id);
+        socket.emit('translation_request', req);
+      });
+    });
+    socket.connect();
   }
 };
 

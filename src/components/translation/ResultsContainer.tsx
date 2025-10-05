@@ -23,6 +23,12 @@ const tabs = [
 
 export function ResultsContainer({ query, streamingResult, onStreamingUpdate, result }: ResultsContainerProps) {
   const [activeTab, setActiveTab] = useState('definitions');
+  const [regionFilter, setRegionFilter] = useState<string | null>(null);
+
+  // Filter senses based on selected region
+  const filteredSenses = result?.entry?.senses?.filter((sense) =>
+    regionFilter ? (sense.regions || []).includes(regionFilter) : true
+  );
 
   const renderTabContent = () => {
     if (streamingResult && !result) {
@@ -89,8 +95,38 @@ export function ResultsContainer({ query, streamingResult, onStreamingUpdate, re
                   </div>
                 </motion.div>
 
+                {/* Region filter buttons */}
+                <div className="flex flex-wrap gap-2 mt-4 mb-4">
+                  <button
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                      !regionFilter
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                    onClick={() => setRegionFilter(null)}
+                  >
+                    All regions
+                  </button>
+                  {(result.entry?.senses || [])
+                    .flatMap((s) => s.regions || [])
+                    .filter((value, index, self) => self.indexOf(value) === index)
+                    .map((region) => (
+                      <button
+                        key={region}
+                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                          regionFilter === region
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                        onClick={() => setRegionFilter(region)}
+                      >
+                        {region}
+                      </button>
+                    ))}
+                </div>
+
                 {/* Senses list (already sorted slang/colloquial first by server) */}
-                {result.entry.senses.map((sense, index) => (
+                {(filteredSenses || []).map((sense, index) => (
                   <motion.div
                     key={index}
                     initial={{ opacity: 0, y: 20 }}
@@ -152,8 +188,8 @@ export function ResultsContainer({ query, streamingResult, onStreamingUpdate, re
                             <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Examples:</h5>
                             {sense.examples.map((ex, exIdx) => (
                               <div key={exIdx} className="text-sm">
-                                <p className="text-gray-900 dark:text-white italic">“{ex.es}”</p>
-                                <p className="text-gray-600 dark:text-gray-400">“{ex.en}”</p>
+                                <p className="text-gray-900 dark:text-white italic">"{ex.es}"</p>
+                                <p className="text-gray-600 dark:text-gray-400">"{ex.en}"</p>
                               </div>
                             ))}
                           </div>
@@ -436,6 +472,7 @@ export function ResultsContainer({ query, streamingResult, onStreamingUpdate, re
       animate={{ opacity: 1, y: 0 }}
       className="bg-white dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden"
     >
+
       {/* Tab Navigation */}
       <div className="border-b border-gray-200 dark:border-gray-700">
         <div className="flex overflow-x-auto">
