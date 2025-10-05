@@ -228,10 +228,26 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     });
 
     // Handle page visibility changes
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
         if (newSocket.disconnected) {
           console.log('🔄 Reconnecting due to tab visibility');
+
+          // Re-apply auth token before reconnecting
+          if (isAuthenticated) {
+            try {
+              const token = await getCachedToken();
+              if (token) {
+                (newSocket as Socket & { auth?: SocketAuth }).auth = { token };
+                console.log('🔐 Auth token re-applied for visibility reconnect');
+              } else {
+                console.warn('🔐 No auth token available for visibility reconnect');
+              }
+            } catch (error) {
+              console.warn('Failed to get auth token for visibility reconnect:', error);
+            }
+          }
+
           newSocket.connect();
         }
       }
