@@ -95,8 +95,11 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       tokenCache = null;
       requireAuthRuntimeRef.current = false;
       setRuntimeRequireAuth(false);
+    } else if (runtimeRequireAuth) {
+      requireAuthRuntimeRef.current = false;
+      setRuntimeRequireAuth(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, runtimeRequireAuth]);
 
   const getSessionId = useCallback((): string | null => {
     if (typeof window !== 'undefined') {
