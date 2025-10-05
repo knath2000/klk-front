@@ -1,11 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { ConversationsProvider } from '@/context/ConversationsContext';
 import ConversationSidebarCollapsible from '@/components/ConversationSidebarCollapsible';
 import ChatView from '@/components/ChatView';
 
-export default function ChatShellFullHeight() {
+type ChatShellProps = {
+  children?: ReactNode;
+};
+
+export default function ChatShellFullHeight({ children }: ChatShellProps) {
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -78,7 +82,7 @@ export default function ChatShellFullHeight() {
             isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-0'
           }`}
         >
-          <ChatView />
+          {children ?? <ChatView />}
         </main>
       </div>
     </ConversationsProvider>

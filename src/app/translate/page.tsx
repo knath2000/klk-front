@@ -11,6 +11,7 @@ import { LoadingSkeleton } from '@/components/translation/LoadingSkeleton';
 import { ErrorDisplay } from '@/components/translation/ErrorDisplay';
 import ErrorBoundary from '@/components/translation/ErrorBoundary';
 import { cn } from '@/lib/utils';
+import ChatShell from '@/components/ChatShell';
 
 // Make SearchContainer client-only to avoid SSR hydration issues
 const SearchContainer = dynamic(() => import('@/components/translation/SearchContainer').then(mod => ({ default: mod.SearchContainer })), {
@@ -239,142 +240,142 @@ function TranslatePageContent() {
   };
 
   return (
-    <div className="min-h-screen">
-      {/* Translation-specific background */}
-      <div className="fixed inset-0 -z-20">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-teal-900 to-cyan-900 opacity-90" />
-
-        {/* Translation-specific floating orbs */}
-        <div className="absolute top-32 left-32 w-72 h-72 bg-emerald-400/15 rounded-full blur-3xl animate-glass-pulse" />
-        <div className="absolute bottom-32 right-32 w-96 h-96 bg-teal-400/10 rounded-full blur-3xl animate-glass-float" />
-        <div
-          className="absolute top-2/3 left-1/4 w-64 h-64 bg-cyan-400/12 rounded-full blur-3xl animate-glass-pulse"
-          style={{ animationDelay: '1.5s' }}
-        />
-      </div>
-
-      <div className="relative z-10 container mx-auto px-4 py-8 max-w-4xl">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <div className="max-w-2xl mx-auto bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
-            <motion.div
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className="text-5xl mb-4"
-            >
-              📚
-            </motion.div>
-            <h1 className="text-4xl font-bold text-white mb-2">
-              Spanish Translation
-            </h1>
-            <p className="text-lg text-white/80">
-              Get instant translations with regional context and examples
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Search Container */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-8"
-        >
-          <SearchContainer
-            onQuerySubmit={handleQuerySubmit}
-            onQueryClear={handleQueryClear}
-            isLoading={state.isLoading}
+    <ChatShell>
+      <div className="relative flex-1 overflow-y-auto">
+        {/* Translation-specific background */}
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-teal-900 to-cyan-900 opacity-90" />
+          <div className="absolute top-32 left-10 md:left-32 w-60 md:w-72 h-60 md:h-72 bg-emerald-400/15 rounded-full blur-3xl animate-glass-pulse" />
+          <div className="absolute bottom-32 right-10 md:right-32 w-72 md:w-96 h-72 md:h-96 bg-teal-400/10 rounded-full blur-3xl animate-glass-float" />
+          <div
+            className="absolute top-2/3 left-1/4 w-56 md:w-64 h-56 md:h-64 bg-cyan-400/12 rounded-full blur-3xl animate-glass-pulse"
+            style={{ animationDelay: '1.5s' }}
           />
-        </motion.div>
+        </div>
 
-        {/* Inline Help Button - Repositioned from floating */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mb-8"
-        >
-          <div className="cursor-pointer max-w-max mx-auto bg-white/10 backdrop-blur-md border border-white/20 rounded-xl hover:bg-white/20 transition-colors">
-            <div className="flex items-center gap-2 text-white px-4 py-3">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-sm font-medium">Help</span>
+        <div className="relative z-10 container mx-auto px-4 py-8 max-w-4xl">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-8"
+          >
+            <div className="max-w-2xl mx-auto bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
+              <motion.div
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="text-5xl mb-4"
+              >
+                📚
+              </motion.div>
+              <h1 className="text-4xl font-bold text-white mb-2">
+                Spanish Translation
+              </h1>
+              <p className="text-lg text-white/80">
+                Get instant translations with regional context and examples
+              </p>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        {/* Results Container */}
-        {currentQuery && (
+          {/* Search Container */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.2 }}
+            className="mb-8"
           >
-            {state.isLoading && !streamingResult ? (
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
-                <LoadingSkeleton />
-              </div>
-            ) : state.error ? (
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
-                <ErrorDisplay error={state.error} onRetry={handleRetry} />
-              </div>
-            ) : (
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
-                <ResultsContainer
-                  query={currentQuery}
-                  streamingResult={streamingResult}
-                  onStreamingUpdate={setStreamingResult}
-                  result={translationResult}
-                />
-              </div>
-            )}
+            <SearchContainer
+              onQuerySubmit={handleQuerySubmit}
+              onQueryClear={handleQueryClear}
+              isLoading={state.isLoading}
+            />
           </motion.div>
-        )}
 
-        {/* History Section */}
-        {state.history.length > 0 && !currentQuery && (
+          {/* Inline Help Button - Repositioned from floating */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="mt-12"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mb-8"
           >
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
-              <h2 className="text-2xl font-semibold text-white mb-6">
-                Recent Translations
-              </h2>
-              <div className="grid gap-4 md:grid-cols-2">
-                {state.history.slice(0, 6).map((item, index) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <div
-                      className="cursor-pointer bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-colors"
-                      onClick={() => handleQuerySubmit(item.query)}
-                    >
-                      <p className="font-medium text-white">
-                        {item.query}
-                      </p>
-                      <p className="text-sm text-white/60 mt-1">
-                        {item.timestamp.toLocaleDateString()}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
+            <div className="cursor-pointer max-w-max mx-auto bg-white/10 backdrop-blur-md border border-white/20 rounded-xl hover:bg-white/20 transition-colors">
+              <div className="flex items-center gap-2 text-white px-4 py-3">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-sm font-medium">Help</span>
               </div>
             </div>
           </motion.div>
-        )}
+
+          {/* Results Container */}
+          {currentQuery && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              {state.isLoading && !streamingResult ? (
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+                  <LoadingSkeleton />
+                </div>
+              ) : state.error ? (
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+                  <ErrorDisplay error={state.error} onRetry={handleRetry} />
+                </div>
+              ) : (
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+                  <ResultsContainer
+                    query={currentQuery}
+                    streamingResult={streamingResult}
+                    onStreamingUpdate={setStreamingResult}
+                    result={translationResult}
+                  />
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* History Section */}
+          {state.history.length > 0 && !currentQuery && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="mt-12"
+            >
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
+                <h2 className="text-2xl font-semibold text-white mb-6">
+                  Recent Translations
+                </h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {state.history.slice(0, 6).map((item, index) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.1 }}
+                    >
+                      <div
+                        className="cursor-pointer bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-colors"
+                        onClick={() => handleQuerySubmit(item.query)}
+                      >
+                        <p className="font-medium text-white">
+                          {item.query}
+                        </p>
+                        <p className="text-sm text-white/60 mt-1">
+                          {item.timestamp.toLocaleDateString()}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </div>
       </div>
-    </div>
+    </ChatShell>
   );
 }
 
