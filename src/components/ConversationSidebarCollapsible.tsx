@@ -3,10 +3,11 @@
 import React, { useRef, useState } from 'react';
 import { useConversations } from '@/context/ConversationsContext';
 import { useAuth } from '@/context/AuthContext';
-import { Plus, Search, User, ChevronRight, LogOut, Zap, ChevronLeft, MessageSquare } from 'lucide-react';
+import { Plus, Search, User, ChevronRight, LogOut, Zap, ChevronLeft, MessageSquare, Languages } from 'lucide-react';
 import clsx from 'clsx';
 import Link from 'next/link';
 import ModelSelector from '@/components/ModelSelector';
+import { usePathname } from 'next/navigation';
 
 interface AIModel {
   id: string;
@@ -33,6 +34,7 @@ export default function ConversationSidebarCollapsible({
   const listRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentModel, setCurrentModel] = useState('meta-llama/llama-3.2-3b-instruct');
+  const pathname = usePathname();
 
   // Filter conversations based on search query
   const filteredList = list.filter(conv =>
@@ -139,6 +141,34 @@ export default function ConversationSidebarCollapsible({
               </Link>
             ) : null}
           </div>
+
+          {/* Primary Navigation */}
+          <nav className={`flex ${isCollapsed ? 'flex-col gap-2 items-center' : 'items-center gap-2'} mb-4`}>
+            <Link
+              href="/"
+              className={clsx(
+                'flex items-center gap-2 px-3 py-2 rounded-md transition-colors',
+                pathname === '/' ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10',
+                isCollapsed ? 'w-10 justify-center' : 'w-full justify-start'
+              )}
+              aria-label="Chat workspace"
+            >
+              <MessageSquare className="w-4 h-4" />
+              {!isCollapsed && <span className="text-sm font-medium">Chat</span>}
+            </Link>
+            <Link
+              href="/translate"
+              className={clsx(
+                'flex items-center gap-2 px-3 py-2 rounded-md transition-colors',
+                pathname?.startsWith('/translate') ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10',
+                isCollapsed ? 'w-10 justify-center' : 'w-full justify-start'
+              )}
+              aria-label="Translation workspace"
+            >
+              <Languages className="w-4 h-4" />
+              {!isCollapsed && <span className="text-sm font-medium">Translate</span>}
+            </Link>
+          </nav>
 
           {/* Model Selector - Hidden when collapsed */}
           {!isCollapsed && (
