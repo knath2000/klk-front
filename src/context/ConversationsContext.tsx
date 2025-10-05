@@ -184,8 +184,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
       } catch (e) {
         console.error('Failed to emit create_conversation', e);
       }
-    } else {
-      // For guests, keep temp id, no server emit
+    } else if (!isAuthenticated) {
       console.log('Guest mode: using client-only conversation', tempId);
     }
 

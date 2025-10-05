@@ -69,14 +69,32 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const lastPingTimeRef = useRef<number>(0);
   // Guard to differentiate intentional disconnects vs. unexpected ones
   const manualDisconnectRef = useRef<boolean>(false);
+  const requireAuthRuntimeRef = useRef<boolean>(false);
   const { user } = useAuth();
   const isAuthenticated = Boolean(user?.id);
-  const requireAuth = process.env.NEXT_PUBLIC_WEBSOCKET_REQUIRE_AUTH === 'true';
-  const shouldConnect = isAuthenticated || !requireAuth;
+  /**
+   * WebSocket auth matrix (server REQUIRE_AUTH vs client NEXT_PUBLIC_WEBSOCKET_REQUIRE_AUTH):
+   * - false / false  => guests allowed, sockets always connect
+   * - true  / true   => only authenticated sockets connect (desired strict mode)
+   * - true  / false  => backend rejects guests (Token required) unless we catch it client-side
+   * - false / true   => frontend restricts guests even though backend would allow them
+   */
+  const requireAuthFlag = process.env.NEXT_PUBLIC_WEBSOCKET_REQUIRE_AUTH;
+  const requireAuth = requireAuthFlag === 'true';
+  const [runtimeRequireAuth, setRuntimeRequireAuth] = useState<boolean>(false);
+  const shouldConnect = (isAuthenticated || !requireAuth) && !runtimeRequireAuth;
+
+  useEffect(() => {
+    if (typeof requireAuthFlag === 'undefined') {
+      console.warn('[WebSocket] NEXT_PUBLIC_WEBSOCKET_REQUIRE_AUTH is undefined; ensure env vars stay in sync with server REQUIRE_AUTH.');
+    }
+  }, [requireAuthFlag]);
 
   useEffect(() => {
     if (!isAuthenticated) {
       tokenCache = null;
+      requireAuthRuntimeRef.current = false;
+      setRuntimeRequireAuth(false);
     }
   }, [isAuthenticated]);
 
@@ -129,6 +147,11 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       }
       manualDisconnectRef.current = false;
 
+      if (isAuthenticated && (requireAuthRuntimeRef.current || runtimeRequireAuth)) {
+        requireAuthRuntimeRef.current = false;
+        setRuntimeRequireAuth(false);
+      }
+
       // Start latency monitoring
       startLatencyMonitoring(newSocket);
     });
@@ -155,12 +178,26 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       const message = err?.message || '';
       console.error('❌ WebSocket ERROR:', message);
 
-      if (requireAuth && (message.toLowerCase().includes('token required') || message.toLowerCase().includes('invalid token'))) {
+      const tokenError = message.toLowerCase().includes('token required') || message.toLowerCase().includes('invalid token');
+      if (tokenError) {
+        requireAuthRuntimeRef.current = true;
+        setRuntimeRequireAuth(true);
         setError('token-required');
         setConnectionState('disconnected');
         manualDisconnectRef.current = true;
         tokenCache = null;
         newSocket.disconnect();
+        setSocket(null);
+        return;
+      }
+
+      if (requireAuth) {
+        setError('token-required');
+        setConnectionState('disconnected');
+        manualDisconnectRef.current = true;
+        tokenCache = null;
+        newSocket.disconnect();
+        setSocket(null);
         return;
       }
 
@@ -255,7 +292,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
   const connect = useCallback(async () => {
     if (!shouldConnect) {
-      if (requireAuth) {
+      if (requireAuth || runtimeRequireAuth) {
         setError('token-required');
       }
       setConnectionState('disconnected');
@@ -300,7 +337,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         setError('Failed to create connection');
       }
     }
-  }, [createSocket, shouldConnect, isAuthenticated, requireAuth, disconnect]);
+  }, [createSocket, shouldConnect, isAuthenticated, requireAuth, runtimeRequireAuth, disconnect]);
 
   // Initialize connection on mount
   useEffect(() => {
@@ -308,12 +345,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       connect();
     } else {
       setSocket(null);
-      if (requireAuth) {
+      if (requireAuth || runtimeRequireAuth) {
         setError('token-required');
       }
       setConnectionState('disconnected');
     }
-  }, [shouldConnect, connect, requireAuth]);
+  }, [shouldConnect, connect, requireAuth, runtimeRequireAuth]);
 
   // Handle window beforeunload
   useEffect(() => {
