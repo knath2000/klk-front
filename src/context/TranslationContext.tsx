@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import { useAuth } from '@/context/AuthContext';
 
 // Add these interfaces before the useEffect
 interface ParsedHistoryItem {
@@ -43,6 +44,7 @@ export interface TranslationState {
     openrouter: boolean;
     overall: boolean;
   };
+  authReady: boolean;
 }
 
 export type TranslationAction =
@@ -53,7 +55,8 @@ export type TranslationAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'LOAD_FROM_STORAGE'; payload: { history: TranslationHistoryItem[]; favorites: FavoriteItem[] } }
-  | { type: 'UPDATE_SERVICE_STATUS'; payload: { langdb: boolean; openrouter: boolean; overall: boolean } };
+  | { type: 'UPDATE_SERVICE_STATUS'; payload: { langdb: boolean; openrouter: boolean; overall: boolean } }
+  | { type: 'SET_AUTH_READY'; payload: boolean };
 
 // Initial state
 const initialState: TranslationState = {
@@ -62,6 +65,7 @@ const initialState: TranslationState = {
   isLoading: false,
   error: null,
   serviceStatus: { langdb: true, openrouter: true, overall: true },
+  authReady: false,
 };
 
 // Reducer
@@ -140,6 +144,12 @@ function translationReducer(state: TranslationState, action: TranslationAction):
         serviceStatus: action.payload,
       };
 
+    case 'SET_AUTH_READY':
+      return {
+        ...state,
+        authReady: action.payload,
+      };
+
     default:
       return state;
   }
@@ -159,6 +169,7 @@ const TranslationContext = createContext<{
 // Provider component
 export function TranslationProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(translationReducer, initialState);
+  const { user, isLoading: authLoading } = useAuth();
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -185,6 +196,13 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
       console.error('Failed to load translation data from localStorage:', error);
     }
   }, []);
+
+  // Set auth ready when auth loading completes
+  useEffect(() => {
+    if (!authLoading) {
+      dispatch({ type: 'SET_AUTH_READY', payload: true });
+    }
+  }, [authLoading]);
 
   // Save to localStorage whenever state changes
   useEffect(() => {

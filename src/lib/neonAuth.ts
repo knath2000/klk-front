@@ -23,6 +23,10 @@ interface WindowWithStack extends Window {
   stackAppInstance?: any;
 }
 
+// Memoize stackAppInstance probing to avoid repeated logs
+let stackAppInstanceCache: { instance: any; timestamp: number } | null = null;
+const STACK_APP_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 // Best-effort cookie reader
 function readCookieMap(): Record<string, string> {
   const map: Record<string, string> = {};
@@ -177,11 +181,18 @@ export async function getNeonAuthToken(): Promise<string | null> {
   // Try to get token directly from Stack Auth app instance FIRST
   try {
     const win = typeof window !== 'undefined' ? (window as WindowWithStack) : undefined;
-    if (win?.stackAppInstance) {
-      console.log('🔍 [getNeonAuthToken] Found stackAppInstance, trying to get token directly...');
 
-      // Try the most direct method first - getAccessToken or similar
-      const app = win.stackAppInstance;
+    // Use cached stackAppInstance if available and not expired
+    let app = null;
+    if (stackAppInstanceCache && Date.now() - stackAppInstanceCache.timestamp < STACK_APP_CACHE_TTL) {
+      app = stackAppInstanceCache.instance;
+    } else if (win?.stackAppInstance) {
+      app = win.stackAppInstance;
+      stackAppInstanceCache = { instance: app, timestamp: Date.now() };
+      console.log('🔍 [getNeonAuthToken] Found stackAppInstance, trying to get token directly...');
+    }
+
+    if (app) {
       console.log('🔍 [getNeonAuthToken] Stack app instance methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(app)));
       console.log('🔍 [getNeonAuthToken] Stack app instance properties:', Object.keys(app));
 
