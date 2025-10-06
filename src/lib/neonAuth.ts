@@ -165,6 +165,12 @@ function findStackTokenFromSessionStorage(): string | null {
   return null;
 }
 
+export async function renewToken(force?: boolean): Promise<string | null> {
+  console.log('🔄 [renewToken] Starting token renewal (force:', force, ')...');
+  // Note: tokenCache is managed in WebSocketContext.tsx, this function always fetches fresh
+  return getNeonAuthToken();
+}
+
 export async function getNeonAuthToken(): Promise<string | null> {
   console.log('🔍 [getNeonAuthToken] Starting token retrieval...');
 

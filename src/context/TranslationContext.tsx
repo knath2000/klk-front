@@ -164,6 +164,7 @@ const TranslationContext = createContext<{
   addToFavorites: (item: Omit<FavoriteItem, 'id' | 'timestamp'>) => void;
   removeFromFavorites: (id: string) => void;
   isInFavorites: (query: string, language: string) => boolean;
+  isReadyForTranslation: boolean;
 } | null>(null);
 
 // Provider component
@@ -203,6 +204,9 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'SET_AUTH_READY', payload: true });
     }
   }, [authLoading]);
+
+  // Block translation requests until auth is ready
+  const isReadyForTranslation = state.authReady;
 
   // Save to localStorage whenever state changes
   useEffect(() => {
@@ -267,6 +271,7 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
         addToFavorites,
         removeFromFavorites,
         isInFavorites,
+        isReadyForTranslation,
       }}
     >
       {children}

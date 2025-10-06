@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { getWebSocketUrl, handleTabSwitch } from '@/lib/websocket';
-import { getNeonAuthToken } from '@/lib/neonAuth';
+import { getNeonAuthToken, renewToken } from '@/lib/neonAuth';
 import { useAuth } from '@/context/AuthContext';
 
 export type ConnectionState = 'connecting' | 'connected' | 'disconnected' | 'error';
@@ -42,6 +42,17 @@ interface SocketAuth {
 let tokenCache: { token: string | null; timestamp: number } | null = null;
 const TOKEN_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+// Shared auth state for cross-component access
+let sharedAuthToken: string | null = null;
+let lastTokenRenewal: number = 0;
+
+// Metrics counters
+const metrics = {
+  tokenRenewAttempts: 0,
+  tokenRenewFailures: 0,
+  wsReconnectAuthRefresh: 0,
+};
+
 const getCachedToken = async (): Promise<string | null> => {
   // Return cached token if still valid
   if (tokenCache && Date.now() - tokenCache.timestamp < TOKEN_CACHE_TTL) {
@@ -49,10 +60,17 @@ const getCachedToken = async (): Promise<string | null> => {
   }
 
   try {
-    const token = await getNeonAuthToken();
-    tokenCache = { token, timestamp: Date.now() };
+    metrics.tokenRenewAttempts++;
+    const token = await renewToken(false); // Use cached version
+    if (token) {
+      tokenCache = { token, timestamp: Date.now() };
+      sharedAuthToken = token;
+      lastTokenRenewal = Date.now();
+      console.log('🔄 Token renewed and cached successfully');
+    }
     return token;
   } catch (error) {
+    metrics.tokenRenewFailures++;
     console.warn('Failed to get auth token:', error);
     return null;
   }
@@ -177,12 +195,30 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       }
     });
 
-    newSocket.on('connect_error', (err) => {
+    newSocket.on('connect_error', async (err) => {
       const message = err?.message || '';
       console.error('❌ WebSocket ERROR:', message);
 
       const tokenError = message.toLowerCase().includes('token required') || message.toLowerCase().includes('invalid token');
       if (tokenError) {
+        console.log('🔄 Token error detected, attempting renewal and retry...');
+
+        try {
+          // Force token renewal
+          const freshToken = await renewToken(true);
+          if (freshToken) {
+            console.log('🔄 Fresh token obtained, retrying connection...');
+            (newSocket as Socket & { auth?: SocketAuth }).auth = { token: freshToken };
+            setTimeout(() => newSocket.connect(), 1000); // Retry after 1 second
+            return;
+          } else {
+            console.warn('🔄 Token renewal failed, falling back to error state');
+          }
+        } catch (renewError) {
+          console.error('🔄 Token renewal failed:', renewError);
+        }
+
+        // If renewal failed or no token, set error state
         requireAuthRuntimeRef.current = true;
         setRuntimeRequireAuth(true);
         setError('token-required');
@@ -227,30 +263,39 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       setError(`Reconnection failed: ${err.message}`);
     });
 
-    // Handle page visibility changes
+    // Handle page visibility changes with debouncing
+    let visibilityTimeout: NodeJS.Timeout | null = null;
     const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible') {
-        if (newSocket.disconnected) {
-          console.log('🔄 Reconnecting due to tab visibility');
-
-          // Re-apply auth token before reconnecting
-          if (isAuthenticated) {
-            try {
-              const token = await getCachedToken();
-              if (token) {
-                (newSocket as Socket & { auth?: SocketAuth }).auth = { token };
-                console.log('🔐 Auth token re-applied for visibility reconnect');
-              } else {
-                console.warn('🔐 No auth token available for visibility reconnect');
-              }
-            } catch (error) {
-              console.warn('Failed to get auth token for visibility reconnect:', error);
-            }
-          }
-
-          newSocket.connect();
-        }
+      // Clear any pending visibility handler
+      if (visibilityTimeout) {
+        clearTimeout(visibilityTimeout);
       }
+
+      visibilityTimeout = setTimeout(async () => {
+        if (document.visibilityState === 'visible') {
+          if (newSocket.disconnected) {
+            console.log('🔄 Reconnecting due to tab visibility');
+            metrics.wsReconnectAuthRefresh++;
+
+            // Force token renewal before reconnecting
+            if (isAuthenticated) {
+              try {
+                const token = await renewToken(true);
+                if (token) {
+                  (newSocket as Socket & { auth?: SocketAuth }).auth = { token };
+                  console.log('🔐 Auth token renewed for visibility reconnect');
+                } else {
+                  console.warn('🔐 No auth token available for visibility reconnect');
+                }
+              } catch (error) {
+                console.warn('Failed to renew auth token for visibility reconnect:', error);
+              }
+            }
+
+            newSocket.connect();
+          }
+        }
+      }, 500); // Debounce by 500ms to prevent rapid-fire events
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -330,7 +375,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       manualDisconnectRef.current = false;
 
       try {
-        const token = isAuthenticated ? await getCachedToken() : null;
+        const token = isAuthenticated ? await renewToken(true) : null;
         if (isAuthenticated && !token) {
           console.warn('🔐 Auth token required but not available; skipping WebSocket connection');
           setError('missing-token');
@@ -346,7 +391,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
         if (token) {
           (newSocket as Socket & { auth?: SocketAuth }).auth = { token };
-          console.log('🔐 Auth token set (cached)');
+          console.log('🔐 Auth token set (renewed)');
         }
 
         newSocket.connect();

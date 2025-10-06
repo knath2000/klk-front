@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { TranslationProvider, useTranslation } from '@/context/TranslationContext';
 import { useWebSocket } from '@/context/WebSocketContext';
+import { useConversations } from '@/context/ConversationsContext';
 import { setupTranslationHandlers, sendTranslationRequest, generateRequestId, TranslationResult, TranslationDelta } from '@/lib/translationWebSocket';
 import dynamic from 'next/dynamic';
 import { ResultsContainer } from '@/components/translation/ResultsContainer';
@@ -106,11 +107,24 @@ const formatTranslationResult = (result: TranslationResult): string => {
 };
 
 function TranslatePageContent() {
-  const { state, dispatch } = useTranslation();
+  const { state, dispatch, isReadyForTranslation } = useTranslation();
   const { socket, isConnected } = useWebSocket();
+  const conversations = useConversations();
   const [currentQuery, setCurrentQuery] = useState<string>('');
   const [streamingResult, setStreamingResult] = useState<string>('');
   const [translationResult, setTranslationResult] = useState<TranslationResult | null>(null);
+
+  // Refresh conversations on page focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (conversations) {
+        conversations.refresh();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [conversations]);
 
   // ... existing code ...
   const handleQueryClear = () => {
@@ -175,6 +189,14 @@ function TranslatePageContent() {
 
   const handleQuerySubmit = async (query: string) => {
     try {
+      // Check if auth is ready before proceeding
+      if (!isReadyForTranslation) {
+        console.warn('🔐 Auth not ready, delaying translation request...');
+        // Wait a bit and retry, or show a loading state
+        setTimeout(() => handleQuerySubmit(query), 1000);
+        return;
+      }
+
       // Ensure we have a socket instance
       if (!socket) {
         throw new Error('WebSocket connection not available. Please try again.');
