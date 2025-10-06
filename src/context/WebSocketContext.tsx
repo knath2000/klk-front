@@ -99,8 +99,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
    */
   const requireAuthFlag = process.env.NEXT_PUBLIC_WEBSOCKET_REQUIRE_AUTH;
   const requireAuth = requireAuthFlag === 'true';
+  const allowGuestTranslation = process.env.NEXT_PUBLIC_ALLOW_GUEST_TRANSLATION === 'true';
   const [runtimeRequireAuth, setRuntimeRequireAuth] = useState<boolean>(false);
-  const shouldConnect = (isAuthenticated || !requireAuth) && !runtimeRequireAuth;
+  const shouldConnect = (isAuthenticated || !requireAuth || allowGuestTranslation) && !runtimeRequireAuth;
 
   useEffect(() => {
     if (typeof requireAuthFlag === 'undefined') {
@@ -376,7 +377,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
       try {
         const token = isAuthenticated ? await renewToken(true) : null;
-        if (isAuthenticated && !token) {
+        if (isAuthenticated && !token && !allowGuestTranslation) {
           console.warn('🔐 Auth token required but not available; skipping WebSocket connection');
           setError('missing-token');
           setConnectionState('error');
@@ -401,7 +402,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         setError('Failed to create connection');
       }
     }
-  }, [createSocket, shouldConnect, isAuthenticated, requireAuth, runtimeRequireAuth, disconnect]);
+  }, [createSocket, shouldConnect, isAuthenticated, requireAuth, runtimeRequireAuth, disconnect, allowGuestTranslation]);
 
   // Initialize connection on mount
   useEffect(() => {
