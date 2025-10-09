@@ -98,22 +98,26 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
    * - false / true   => frontend restricts guests even though backend would allow them
    */
   const requireAuthFlag = process.env.NEXT_PUBLIC_WEBSOCKET_REQUIRE_AUTH;
-  const requireAuth = requireAuthFlag === 'true';
+  const requireAuth =
+    requireAuthFlag === 'true' ||
+    (!requireAuthFlag && process.env.NODE_ENV === 'production');
   const allowGuestTranslation = process.env.NEXT_PUBLIC_ALLOW_GUEST_TRANSLATION === 'true';
   const [runtimeRequireAuth, setRuntimeRequireAuth] = useState<boolean>(false);
   const shouldConnect = (isAuthenticated || !requireAuth || allowGuestTranslation) && !runtimeRequireAuth;
 
   useEffect(() => {
-    if (typeof requireAuthFlag === 'undefined') {
-      console.warn('[WebSocket] NEXT_PUBLIC_WEBSOCKET_REQUIRE_AUTH is undefined; ensure env vars stay in sync with server REQUIRE_AUTH.');
-    }
-  }, [requireAuthFlag]);
+    console.log('[WebSocket] Auth configuration', {
+      requireAuth,
+      allowGuestTranslation,
+      requireAuthFlag: requireAuthFlag ?? 'unset',
+      nodeEnv: process.env.NODE_ENV,
+    });
+  }, [requireAuth, allowGuestTranslation, requireAuthFlag]);
 
   useEffect(() => {
     if (!isAuthenticated) {
       tokenCache = null;
-      requireAuthRuntimeRef.current = false;
-      setRuntimeRequireAuth(false);
+      // Keep runtimeRequireAuth sticky for guests to honor server Token required responses.
     } else if (runtimeRequireAuth) {
       requireAuthRuntimeRef.current = false;
       setRuntimeRequireAuth(false);
@@ -359,6 +363,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     if (!shouldConnect) {
       if (requireAuth || runtimeRequireAuth) {
         setError('token-required');
+        console.warn('[WebSocket] Connection blocked: auth required but no token available');
       }
       setConnectionState('disconnected');
       if (socketRef.current) {
@@ -392,7 +397,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
         if (token) {
           (newSocket as Socket & { auth?: SocketAuth }).auth = { token };
-          console.log('🔐 Auth token set (renewed)');
+          console.log(
+            '🔐 Auth token set (connect)',
+            token ? `${token.slice(0, 10)}…` : null
+          );
         }
 
         newSocket.connect();

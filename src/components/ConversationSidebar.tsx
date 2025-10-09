@@ -199,7 +199,7 @@ export default function ConversationSidebarEnhanced() {
           )}
 
           {/* History-specific loading indicator for active conversation */}
-          {historyLoadingId === activeId && !loading && (
+          {!!historyLoadingId && !!activeId && historyLoadingId === activeId && !loading && (
             <div className="p-4 text-white/80 flex items-center gap-2 border-t border-gray-700">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               Loading conversation history...

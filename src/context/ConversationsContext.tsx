@@ -169,23 +169,35 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
       persona_id: null, // Will be set later
     };
 
+    if (!isAuthenticated) {
+      console.warn('🚫 startNewConversation blocked: user not authenticated');
+      if (!isAuto) {
+        setError('Authentication required to create a new conversation');
+      }
+      return;
+    }
+
+    if (!socket || !isConnected) {
+      console.warn('🚫 startNewConversation blocked: socket not ready');
+      if (!isAuto) {
+        setError('Connection required to create conversation');
+      }
+      return;
+    }
+
     // Optimistically add placeholder
     setList(prev => [placeholder, ...prev]);
     setActiveId(tempId);
     setHistoryLoadingId(tempId); // Show loading for new
 
-    if (isAuthenticated && socket && isConnected) {
-      try {
-        socket.emit('create_conversation', {
-          title: 'New Chat',
-          persona_id: null, // Default or from context
-        });
-        // Wait for 'conversation_created' to replace placeholder
-      } catch (e) {
-        console.error('Failed to emit create_conversation', e);
-      }
-    } else if (!isAuthenticated) {
-      console.log('Guest mode: using client-only conversation', tempId);
+    try {
+      socket.emit('create_conversation', {
+        title: 'New Chat',
+        persona_id: null, // Default or from context
+      });
+      // Wait for 'conversation_created' to replace placeholder
+    } catch (e) {
+      console.error('Failed to emit create_conversation', e);
     }
 
     // Reset messages (via callback or context if integrated)
@@ -203,10 +215,10 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
 
   // Load initial conversation on mount
   useEffect(() => {
-    if (list.length === 0) {
+    if (list.length === 0 && user?.id) {
       void startNewConversation({ auto: true });
     }
-  }, [list.length, startNewConversation]);
+  }, [list.length, startNewConversation, user?.id]);
 
   // Listen for conversation_created
   useEffect(() => {

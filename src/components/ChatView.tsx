@@ -99,7 +99,7 @@ const ChatView: React.FC = () => {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false); // Derived from provider or local fallback
 
-  const { socket, isConnected, connect } = useWebSocket();
+  const { socket, isConnected, connect, error: wsError } = useWebSocket();
   const { user } = useAuth();
   const conversationsCtx = useOptionalConversations();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -118,22 +118,17 @@ const ChatView: React.FC = () => {
 
   // Single derived loading state effect: align with provider if available, fallback for unauthenticated
   useEffect(() => {
-    if (conversationsCtx) {
-      // Authenticated: derive from provider's shared loading state
-      setIsLoadingHistory(conversationsCtx.historyLoadingId === conversationId);
-    } else {
-      // Unauthenticated fallback: use local timeout-based loading if needed
-      if (conversationId && socket && isConnected) {
-        setIsLoadingHistory(true);
-        const timeoutId = setTimeout(() => {
-          setIsLoadingHistory(false);
-        }, 5000); // 5 second timeout for unauth fallback
-        return () => clearTimeout(timeoutId);
-      } else {
-        setIsLoadingHistory(false);
-      }
+    if (!isConnected) {
+      setIsLoadingHistory(false);
+      return;
     }
-  }, [conversationsCtx?.historyLoadingId, conversationId, socket, isConnected]);
+
+    if (conversationsCtx) {
+      setIsLoadingHistory(Boolean(conversationId && conversationsCtx.historyLoadingId === conversationId));
+    } else {
+      setIsLoadingHistory(false);
+    }
+  }, [conversationsCtx?.historyLoadingId, conversationId, isConnected]);
 
   // Sync local conversationId with context activeId (if provider present)
   useEffect(() => {
@@ -596,6 +591,15 @@ const ChatView: React.FC = () => {
                 </span>
               </motion.div>
             </div>
+
+            {wsError === 'token-required' && (
+              <div className="bg-yellow-500/10 border border-yellow-500/40 text-yellow-100 rounded-lg px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">Authentication required</span>
+                  <span className="text-sm text-yellow-100/80">Please sign in to continue chatting.</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Controls Row - Adjusted gap for mobile */}

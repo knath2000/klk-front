@@ -309,8 +309,7 @@ export default function ConversationSidebarCollapsible({
             </ul>
           )}
 
-          {/* History-specific loading indicator for active conversation */}
-          {historyLoadingId === activeId && !loading && (
+          {!!historyLoadingId && !!activeId && historyLoadingId === activeId && !loading && (
             <div className={`text-white/80 flex items-center gap-2 border-t border-gray-700 ${
               isCollapsed ? 'p-2 justify-center' : 'p-4'
             }`}>
