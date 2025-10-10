@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
+import useAnimationsReady from '@/hooks/useAnimationsReady';
 import { TranslationProvider, useTranslation } from '@/context/TranslationContext';
 import { useWebSocket } from '@/context/WebSocketContext';
 import { useConversations } from '@/context/ConversationsContext';
@@ -109,6 +110,7 @@ const formatTranslationResult = (result: TranslationResult): string => {
 
 function TranslatePageContent() {
   const { state, dispatch, isReadyForTranslation } = useTranslation();
+  const animationsReady = useAnimationsReady();
   const { socket, isConnected } = useWebSocket();
   const conversations = useConversations();
   const [currentQuery, setCurrentQuery] = useState<string>('');
@@ -368,67 +370,90 @@ function TranslatePageContent() {
         </div>
 
         <div className="relative z-10 container mx-auto px-4 py-8 max-w-4xl">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
-          >
-            <div className="max-w-2xl mx-auto bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
-              <motion.div
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                className="text-5xl mb-4"
-              >
-                📚
-              </motion.div>
-              <h1 className="text-4xl font-bold text-white mb-2">
-                Spanish Translation
-              </h1>
-              <p className="text-lg text-white/80">
-                Get instant translations with regional context and examples
-              </p>
-            </div>
-          </motion.div>
-
-          {/* Search Container */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mb-8"
-          >
-            <SearchContainer
-              onQuerySubmit={handleQuerySubmit}
-              onQueryClear={handleQueryClear}
-              isLoading={state.isLoading}
-            />
-          </motion.div>
-
-          {/* Inline Help Button - Repositioned from floating */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mb-8"
-          >
-            <div className="cursor-pointer max-w-max mx-auto bg-white/10 backdrop-blur-md border border-white/20 rounded-xl hover:bg-white/20 transition-colors">
-              <div className="flex items-center gap-2 text-white px-4 py-3">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-sm font-medium">Help</span>
+          {/* Header (idle-gated animations) */}
+          {animationsReady ? (
+            <LazyMotion features={domAnimation}>
+              <m.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
+                <div className="max-w-2xl mx-auto bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
+                  <m.div animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} className="text-5xl mb-4">
+                    📚
+                  </m.div>
+                  <h1 className="text-4xl font-bold text-white mb-2">Spanish Translation</h1>
+                  <p className="text-lg text-white/80">Get instant translations with regional context and examples</p>
+                </div>
+              </m.div>
+            </LazyMotion>
+          ) : (
+            <div className="text-center mb-8">
+              <div className="max-w-2xl mx-auto bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
+                <div className="text-5xl mb-4">📚</div>
+                <h1 className="text-4xl font-bold text-white mb-2">Spanish Translation</h1>
+                <p className="text-lg text-white/80">Get instant translations with regional context and examples</p>
               </div>
             </div>
-          </motion.div>
+          )}
+
+          {/* Search Container */}
+          {animationsReady ? (
+            <LazyMotion features={domAnimation}>
+              <m.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-8">
+                <SearchContainer onQuerySubmit={handleQuerySubmit} onQueryClear={handleQueryClear} isLoading={state.isLoading} />
+              </m.div>
+            </LazyMotion>
+          ) : (
+            <div className="mb-8">
+              <SearchContainer onQuerySubmit={handleQuerySubmit} onQueryClear={handleQueryClear} isLoading={state.isLoading} />
+            </div>
+          )}
+
+          {/* Inline Help Button - Repositioned from floating */}
+          {animationsReady ? (
+            <LazyMotion features={domAnimation}>
+              <m.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-8">
+                <div className="cursor-pointer max-w-max mx-auto bg-white/10 backdrop-blur-md border border-white/20 rounded-xl hover:bg-white/20 transition-colors">
+                  <div className="flex items-center gap-2 text-white px-4 py-3">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm font-medium">Help</span>
+                  </div>
+                </div>
+              </m.div>
+            </LazyMotion>
+          ) : (
+            <div className="mb-8">
+              <div className="cursor-pointer max-w-max mx-auto bg-white/10 backdrop-blur-md border border-white/20 rounded-xl hover:bg-white/20 transition-colors">
+                <div className="flex items-center gap-2 text-white px-4 py-3">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-sm font-medium">Help</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Results Container */}
-          {currentQuery && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
+          {currentQuery && (animationsReady ? (
+            <LazyMotion features={domAnimation}>
+              <m.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+                {state.isLoading && !hasResult ? (
+                  <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+                    <LoadingSkeleton />
+                  </div>
+                ) : (!hasResult && state.error) ? (
+                  <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+                    <ErrorDisplay error={state.error} onRetry={handleRetry} />
+                  </div>
+                ) : (
+                  <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+                    <ResultsContainer query={currentQuery} streamingResult={streamingResult} onStreamingUpdate={setStreamingResult} result={translationResult} />
+                  </div>
+                )}
+              </m.div>
+            </LazyMotion>
+          ) : (
+            <div>
               {state.isLoading && !hasResult ? (
                 <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
                   <LoadingSkeleton />
@@ -439,53 +464,47 @@ function TranslatePageContent() {
                 </div>
               ) : (
                 <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
-                  <ResultsContainer
-                    query={currentQuery}
-                    streamingResult={streamingResult}
-                    onStreamingUpdate={setStreamingResult}
-                    result={translationResult}
-                  />
+                  <ResultsContainer query={currentQuery} streamingResult={streamingResult} onStreamingUpdate={setStreamingResult} result={translationResult} />
                 </div>
               )}
-            </motion.div>
-          )}
+            </div>
+          ))}
 
           {/* History Section */}
           {state.history.length > 0 && !currentQuery && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="mt-12"
-            >
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
-                <h2 className="text-2xl font-semibold text-white mb-6">
-                  Recent Translations
-                </h2>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {state.history.slice(0, 6).map((item, index) => (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      <div
-                        className="cursor-pointer bg-white/10 backdrop-blr-md border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-colors"
-                        onClick={() => handleQuerySubmit(item.query)}
-                      >
-                        <p className="font-medium text-white">
-                          {item.query}
-                        </p>
-                        <p className="text-sm text-white/60 mt-1">
-                          {item.timestamp.toLocaleDateString()}
-                        </p>
+            animationsReady ? (
+              <LazyMotion features={domAnimation}>
+                <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="mt-12">
+                  <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
+                    <h2 className="text-2xl font-semibold text-white mb-6">Recent Translations</h2>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {state.history.slice(0, 6).map((item, index) => (
+                        <m.div key={item.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.1 }}>
+                          <div className="cursor-pointer bg-white/10 backdrop-blr-md border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-colors" onClick={() => handleQuerySubmit(item.query)}>
+                            <p className="font-medium text-white">{item.query}</p>
+                            <p className="text-sm text-white/60 mt-1">{item.timestamp.toLocaleDateString()}</p>
+                          </div>
+                        </m.div>
+                      ))}
+                    </div>
+                  </div>
+                </m.div>
+              </LazyMotion>
+            ) : (
+              <div className="mt-12">
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
+                  <h2 className="text-2xl font-semibold text-white mb-6">Recent Translations</h2>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {state.history.slice(0, 6).map((item) => (
+                      <div key={item.id} className="cursor-pointer bg-white/10 backdrop-blr-md border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-colors" onClick={() => handleQuerySubmit(item.query)}>
+                        <p className="font-medium text-white">{item.query}</p>
+                        <p className="text-sm text-white/60 mt-1">{item.timestamp.toLocaleDateString()}</p>
                       </div>
-                    </motion.div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
-            </motion.div>
+            )
           )}
         </div>
       </div>

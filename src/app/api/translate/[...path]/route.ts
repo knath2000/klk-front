@@ -16,7 +16,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       headers: {
         'Content-Type': 'application/json',
         // Forward auth if needed
-        ...Object.fromEntries(request.headers.entries())
+        // Headers.entries() may not be typed as iterable in some environments — convert explicitly
+        ...(() => {
+          const h: Record<string, string> = {};
+          // Headers.forEach is available on the standard Headers implementation; use it to build a plain object.
+          request.headers.forEach((value: string, key: string) => {
+            h[key] = value;
+          });
+          return h;
+        })()
       },
     });
     
@@ -43,7 +51,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...Object.fromEntries(request.headers.entries())
+        // Headers.entries() may not be typed as iterable in some environments — convert explicitly
+        ...(() => {
+          const h: Record<string, string> = {};
+          // Headers.forEach is available on the standard Headers implementation; use it to build a plain object.
+          request.headers.forEach((value: string, key: string) => {
+            h[key] = value;
+          });
+          return h;
+        })()
       },
       body: JSON.stringify(body),
     });

@@ -11,6 +11,16 @@
     "start": "next start",
     "lint": "eslint"
   },
+  "browserslist": {
+    "production": [
+      "last 2 Chrome versions",
+      "last 2 Firefox versions",
+      "last 2 Safari versions"
+    ],
+    "development": [
+      "last 1 Chrome version"
+    ]
+  },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
     "@stackframe/react": "^2.8.39",
@@ -27,6 +37,7 @@
     "use-debounce": "^10.0.6"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^15.5.4",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.8.0",

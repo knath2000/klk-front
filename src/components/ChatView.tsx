@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback, ReactNode } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
+import dynamic from 'next/dynamic';
+import useAnimationsReady from '@/hooks/useAnimationsReady';
 import {
   Message,
   Persona,
@@ -11,7 +13,8 @@ import CountrySelector from './CountrySelector';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import ChatInput from './ChatInput';
-import ModelSelector from './ModelSelector';
+// ModelSelector is dynamically imported below to reduce initial bundle size
+const ModelSelector = dynamic(() => import('./ModelSelector'), { ssr: false, loading: () => null });
 import SearchBar from './SearchBar';
 import { useWebSocket } from '@/context/WebSocketContext';
 import { useAuth } from '@/context/AuthContext';
@@ -111,6 +114,8 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
   const hasFetchedPersonasRef = useRef(false);
   const personaFetchKeyRef = useRef<string | null>(null);
   const personaFetchInFlightRef = useRef(false);
+  // Gate animations so framer-motion feature bundle is loaded after idle
+  const animationsReady = useAnimationsReady();
 
   // Load conversationId from localStorage on mount
   useEffect(() => {
@@ -638,95 +643,141 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
             <div className="flex items-center justify-between flex-wrap gap-3 xs:flex-nowrap">
               {/* Title Section */}
               <div>
-                <motion.h1
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="text-[clamp(22px,5vw,26px)] md:text-3xl font-bold text-white mb-2" // Scaled title
-                >
-                  🇪🇸 AI Chat con Sabor Local
-                </motion.h1>
-                <motion.p
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="text-base md:text-lg md:text-xl text-white/80 leading-1.4" // Scaled body, line-height
-                >
-                  Conversa con IA que habla como la gente del lugar
-                </motion.p>
+                {animationsReady ? (
+                  <LazyMotion features={domAnimation}>
+                    <m.h1
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="text-[clamp(22px,5vw,26px)] md:text-3xl font-bold text-white mb-2"
+                    >
+                      🇪🇸 AI Chat con Sabor Local
+                    </m.h1>
+                    <m.p
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 }}
+                      className="text-base md:text-lg md:text-xl text-white/80 leading-1.4"
+                    >
+                      Conversa con IA que habla como la gente del lugar
+                    </m.p>
+
+                    {/* Connection Status (animated) */}
+                    <m.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="flex items-center gap-2"
+                    >
+                      <div className={clsx(
+                        "w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin",
+                        chatState.isConnected ? "bg-emerald-400 shadow-emerald-400/50" : "bg-red-400 shadow-red-400/50"
+                      )} />
+                      <span className="text-sm text-white/80">
+                        {chatState.isConnected ? 'Conectado' : 'Desconectado'}
+                      </span>
+                    </m.div>
+                  </LazyMotion>
+                ) : (
+                  <>
+                    <h1 className="text-[clamp(22px,5vw,26px)] md:text-3xl font-bold text-white mb-2">
+                      🇪🇸 AI Chat con Sabor Local
+                    </h1>
+                    <p className="text-base md:text-lg md:text-xl text-white/80 leading-1.4">
+                      Conversa con IA que habla como la gente del lugar
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <div className={clsx(
+                        "w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin",
+                        chatState.isConnected ? "bg-emerald-400 shadow-emerald-400/50" : "bg-red-400 shadow-red-400/50"
+                      )} />
+                      <span className="text-sm text-white/80">
+                        {chatState.isConnected ? 'Conectado' : 'Desconectado'}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* Connection Status */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
-                className="flex items-center gap-2"
-              >
-                <div className={clsx(
-                  "w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin",
-                  chatState.isConnected ? "bg-emerald-400 shadow-emerald-400/50" : "bg-red-400 shadow-red-400/50"
-                )} />
-                <span className="text-sm text-white/80">
-                  {chatState.isConnected ? 'Conectado' : 'Desconectado'}
-                </span>
-              </motion.div>
+              {wsError === 'token-required' && (
+                <div className="bg-yellow-500/10 border border-yellow-500/40 text-yellow-100 rounded-lg px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">Authentication required</span>
+                    <span className="text-sm text-yellow-100/80">Please sign in to continue chatting.</span>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {wsError === 'token-required' && (
-              <div className="bg-yellow-500/10 border border-yellow-500/40 text-yellow-100 rounded-lg px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">Authentication required</span>
-                  <span className="text-sm text-yellow-100/80">Please sign in to continue chatting.</span>
-                </div>
-              </div>
-            )}
-          </div>
+            {/* Controls Row - Adjusted gap for mobile */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[clamp(12px,3vh,16px)]">
+              {animationsReady ? (
+                <LazyMotion features={domAnimation}>
+                  <m.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <div className="bg-[#343541] border border-gray-700 rounded-lg min-h-12 p-3 hover:bg-gray-800 transition-colors">
+                      <SearchBar
+                        onSearch={handleSearch}
+                        onConversationSelect={handleSearch}
+                      />
+                    </div>
+                  </m.div>
 
-          {/* Controls Row - Adjusted gap for mobile */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[clamp(12px,3vh,16px)]">
-            {/* Search */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <div className="bg-[#343541] border border-gray-700 rounded-lg min-h-12 p-3 hover:bg-gray-800 transition-colors">
-                <SearchBar
-                  onSearch={handleSearch}
-                  onConversationSelect={handleSearch}
-                />
-              </div>
-            </motion.div>
+                  <m.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <div className="bg-[#343541] border border-gray-700 rounded-lg min-h-12 p-3 hover:bg-gray-800 transition-colors">
+                      <ModelSelector
+                        currentModel={chatState.currentModel || 'gpt-4o-mini'}
+                        onModelChange={handleModelChange}
+                        conversationId={conversationId || undefined}
+                      />
+                    </div>
+                  </m.div>
 
-            {/* Model Selector */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <div className="bg-[#343541] border border-gray-700 rounded-lg min-h-12 p-3 hover:bg-gray-800 transition-colors">
-                <ModelSelector
-                  currentModel={chatState.currentModel || 'gpt-4o-mini'}
-                  onModelChange={handleModelChange}
-                  conversationId={conversationId || undefined}
-                />
-              </div>
-            </motion.div>
-
-            {/* Country Selector */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <div className="bg-[#343541] border border-gray-700 rounded-lg min-h-12 p-3 hover:bg-gray-800 transition-colors">
-                <CountrySelector
-                  personas={chatState.personas}
-                  selectedCountry={chatState.selectedCountry}
-                  onCountrySelect={handleCountrySelect}
-                />
-              </div>
-            </motion.div>
+                  <m.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <div className="bg-[#343541] border border-gray-700 rounded-lg min-h-12 p-3 hover:bg-gray-800 transition-colors">
+                      <CountrySelector
+                        personas={chatState.personas}
+                        selectedCountry={chatState.selectedCountry}
+                        onCountrySelect={handleCountrySelect}
+                      />
+                    </div>
+                  </m.div>
+                </LazyMotion>
+              ) : (
+                <>
+                  <div className="bg-[#343541] border border-gray-700 rounded-lg min-h-12 p-3 hover:bg-gray-800 transition-colors">
+                    <SearchBar
+                      onSearch={handleSearch}
+                      onConversationSelect={handleSearch}
+                    />
+                  </div>
+                  <div className="bg-[#343541] border border-gray-700 rounded-lg min-h-12 p-3 hover:bg-gray-800 transition-colors">
+                    <ModelSelector
+                      currentModel={chatState.currentModel || 'gpt-4o-mini'}
+                      onModelChange={handleModelChange}
+                      conversationId={conversationId || undefined}
+                    />
+                  </div>
+                  <div className="bg-[#343541] border border-gray-700 rounded-lg min-h-12 p-3 hover:bg-gray-800 transition-colors">
+                    <CountrySelector
+                      personas={chatState.personas}
+                      selectedCountry={chatState.selectedCountry}
+                      onCountrySelect={handleCountrySelect}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -738,7 +789,7 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
         <div className="max-w-4xl mx-auto">
           {/* Loading History Indicator */}
           {isLoadingHistory && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="text-center py-4"
@@ -747,42 +798,42 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 Loading conversation history...
               </div>
-            </motion.div>
+            </m.div>
           )}
 
           {/* Empty State Hero - Centered prompt with large input */}
           <AnimatePresence>
             {isEmptyState && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 className="flex flex-col items-center justify-center min-h-[60vh] text-center py-8 md:py-12"
               >
-                <motion.div
+                <m.div
                   initial={{ scale: 1.2, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ duration: 0.5 }}
                   className="text-6xl md:text-7xl mb-6"
                 >
                   🌎
-                </motion.div>
-                <motion.h2
+                </m.div>
+                <m.h2
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="text-2xl md:text-3xl font-bold text-white mb-4"
                 >
                   What can I help with?
-                </motion.h2>
-                <motion.p
+                </m.h2>
+                <m.p
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
                   className="text-base md:text-lg text-white/80 mb-8 max-w-md"
                 >
                   Ask anything and I'll respond in local Spanish slang.
-                </motion.p>
-                <motion.div
+                </m.p>
+                <m.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
@@ -803,8 +854,8 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
                       </div>
                     )}
                   </div>
-                </motion.div>
-              </motion.div>
+                </m.div>
+              </m.div>
             )}
           </AnimatePresence>
 

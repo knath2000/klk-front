@@ -6,7 +6,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import { WebSocketProvider } from '@/context/WebSocketContext'
 import { ConversationsProvider } from '@/context/ConversationsContext'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'AI Chat con Sabor Local',
@@ -20,6 +20,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://klk-back.onrender.com" crossOrigin="" />
+      </head>
       <body className={inter.className}>
         <div className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-x-hidden" style={{ height: '100dvh' }}>
           {/* Container with only bottom padding - no horizontal padding */}

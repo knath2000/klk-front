@@ -128,6 +128,9 @@ export default function ConversationSidebarEnhanced() {
         </div>
 
         {/* Scrollable Conversation List */}
+        <div className="px-4 py-3 border-b border-gray-700">
+          <h2 className="text-sm font-semibold text-white/90">Your conversations</h2>
+        </div>
         <div
           role="listbox"
           aria-label="Conversations"
@@ -136,10 +139,6 @@ export default function ConversationSidebarEnhanced() {
           ref={listRef}
           className="flex-1 overflow-y-auto"
         >
-          <div className="px-4 py-3 border-b border-gray-700">
-            <h2 className="text-sm font-semibold text-white/90">Your conversations</h2>
-          </div>
-
           {loading && (
             <div className="p-4 text-white/80 flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
