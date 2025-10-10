@@ -172,11 +172,14 @@ export default function ModelSelector({
 
   const getSpeedBadge = (speed: string) => {
     const speedClasses = {
-      fast: 'bg-green-100 text-green-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      slow: 'bg-red-100 text-red-800'
+      fast: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200',
+      medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200',
+      slow: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200'
     };
-    return speedClasses[speed as keyof typeof speedClasses] || 'bg-gray-100 text-gray-800';
+    return (
+      speedClasses[speed as keyof typeof speedClasses] ||
+      'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+    );
   };
 
   const listboxId = 'model-selector-listbox';
@@ -191,7 +194,7 @@ export default function ModelSelector({
         aria-hidden="true"
       />
       <div
-        className="fixed z-[10000] bg-white rounded-md shadow-lg ring-1 ring-black/10 pointer-events-auto w-full max-w-md max-h-[80vh] overflow-y-auto"
+        className="fixed z-[10000] bg-white dark:bg-gray-900 dark:text-white rounded-md shadow-lg ring-1 ring-black/10 dark:ring-white/10 pointer-events-auto w-full max-w-md max-h-[80vh] overflow-y-auto"
         style={{
           top: 'calc(env(safe-area-inset-top, 0px) + 64px)',
           left: '50%',
@@ -202,7 +205,7 @@ export default function ModelSelector({
         aria-label="Available Models"
       >
         <div className="py-1">
-          <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
             Available Models
           </div>
           {models.map((model) => (
@@ -211,14 +214,16 @@ export default function ModelSelector({
               onClick={() => handleModelChange(model.id)}
               role="option"
               aria-selected={currentModel === model.id}
-              className={`w-full px-4 py-3 text-left hover:bg-gray-50 flex items-start justify-between ${
-                currentModel === model.id ? 'bg-indigo-50 border-l-4 border-indigo-500' : ''
+              className={`w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 flex items-start justify-between focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400 ${
+                currentModel === model.id
+                  ? 'bg-indigo-50 border-l-4 border-indigo-500 dark:bg-indigo-500/10 dark:border-indigo-400'
+                  : ''
               }`}
               disabled={!model.is_available || isLoading}
             >
               <div>
-                <div className="font-medium text-gray-900">{model.display_name}</div>
-                <div className="text-xs text-gray-500 mt-1">{model.description}</div>
+                <div className="font-medium text-gray-900 dark:text-white">{model.display_name}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">{model.description}</div>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`px-2 py-1 text-xs rounded-full ${getSpeedBadge(model.inference_speed)}`}>
@@ -239,7 +244,7 @@ export default function ModelSelector({
     <div className="relative z-30">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-3.5 w-full bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-base" // Full-width, padding, font-size
+        className="flex items-center gap-2 px-3 py-3.5 w-full text-base bg-white border border-gray-300 text-gray-900 rounded-md hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700 dark:focus-visible:ring-blue-400 dark:focus-visible:border-blue-400" // Full-width, padding, font-size
         disabled={isLoading}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
@@ -254,7 +259,7 @@ export default function ModelSelector({
           <>
             <span className="text-xs">🤖</span>
             {getCurrentModel()?.display_name || 'Select Model'}
-            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 ml-1 text-gray-700 dark:text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </>
