@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { getWebSocketUrl, handleTabSwitch } from '@/lib/websocket';
 import { getNeonAuthToken, renewToken } from '@/lib/neonAuth';
 import { useAuth } from '@/context/AuthContext';
@@ -137,12 +137,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     }
   }, []);
 
-  const createSocket = useCallback((): Socket => {
+  const createSocket = useCallback(async (): Promise<Socket> => {
     const wsUrl = getWebSocketUrl();
     const sessionId = getSessionId();
 
     console.log('🔌 Creating optimized WebSocket connection to:', wsUrl);
 
+    const { io } = await import('socket.io-client');
     const newSocket = io(wsUrl, {
       path: '/socket.io',
       transports: ['websocket', 'polling'],
@@ -389,7 +390,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
           return;
         }
 
-        const newSocket = createSocket();
+        const newSocket = await createSocket();
         socketRef.current = newSocket;
         setSocket(newSocket);
         setConnectionState('connecting');

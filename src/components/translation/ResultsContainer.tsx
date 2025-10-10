@@ -2,7 +2,10 @@
 
 import { useState } from 'react';
 import { TranslationResult } from '@/lib/translationWebSocket';
-import { motion, AnimatePresence } from 'framer-motion';
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
+// Provide a top-level alias so existing <motion.*> JSX continues to work while we incrementally migrate to <m.*>
+const motion = m;
+import useAnimationsReady from '@/hooks/useAnimationsReady';
 import { BookOpen, Volume2, MessageSquare, Link, ChevronRight } from 'lucide-react';
 
 
@@ -500,17 +503,30 @@ export function ResultsContainer({ query, streamingResult, onStreamingUpdate, re
 
       {/* Tab Content */}
       <div className="p-6">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            {renderTabContent()}
-          </motion.div>
-        </AnimatePresence>
+        {(() => {
+          const animationsReady = useAnimationsReady();
+          const reduceMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+          if (!animationsReady) {
+            return <div>{renderTabContent()}</div>;
+          }
+
+          return (
+            <LazyMotion features={domAnimation}>
+              <AnimatePresence mode="wait">
+                <m.div
+                  key={activeTab}
+                  initial={reduceMotion ? undefined : { opacity: 0, x: 20 }}
+                  animate={reduceMotion ? undefined : { opacity: 1, x: 0 }}
+                  exit={reduceMotion ? undefined : { opacity: 0, x: -20 }}
+                  transition={reduceMotion ? undefined : { duration: 0.2 }}
+                >
+                  {renderTabContent()}
+                </m.div>
+              </AnimatePresence>
+            </LazyMotion>
+          );
+        })()}
       </div>
     </motion.div>
   );

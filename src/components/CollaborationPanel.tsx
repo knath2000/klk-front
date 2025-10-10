@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { io, Socket } from 'socket.io-client';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
+// Keep backward-compatible `motion` name for existing JSX while we migrate incrementally
+const motion = m;
+import type { Socket } from 'socket.io-client';
 
 interface UserJoinedEvent {
   userId: string;
@@ -51,36 +53,43 @@ const CollaborationPanel: React.FC<{ conversationId: string }> = ({ conversation
 
   // Initialize WebSocket connection
   useEffect(() => {
-    const initializeWebSocket = () => {
+    const initializeWebSocket = async () => {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-      socketRef.current = io(backendUrl, {
-        withCredentials: true,
-        transports: ['websocket', 'polling']
-      });
 
-      socketRef.current.emit('authenticate', localStorage.getItem('user_id'));
+      try {
+        // Lazy-load socket.io-client only when the panel mounts
+        const { io } = await import('socket.io-client');
+        socketRef.current = io(backendUrl, {
+          withCredentials: true,
+          transports: ['websocket', 'polling']
+        });
 
-      // Join conversation room
-      socketRef.current.emit('join_conversation', {
-        conversationId,
-        userId: localStorage.getItem('user_id')
-      });
+        socketRef.current.emit('authenticate', localStorage.getItem('user_id'));
 
-      // Listen for collaborator updates
-      socketRef.current.on('user_joined', (data: UserJoinedEvent) => {
-        // Handle user joined
-        console.log('User joined:', data);
-      });
+        // Join conversation room
+        socketRef.current.emit('join_conversation', {
+          conversationId,
+          userId: localStorage.getItem('user_id')
+        });
 
-      socketRef.current.on('user_left', (data: UserLeftEvent) => {
-        // Handle user left
-        console.log('User left:', data);
-      });
+        // Listen for collaborator updates
+        socketRef.current.on('user_joined', (data: UserJoinedEvent) => {
+          // Handle user joined
+          console.log('User joined:', data);
+        });
 
-      socketRef.current.on('user_typing', (data: UserTypingEvent) => {
-        // Handle typing indicator
-        console.log('User typing:', data);
-      });
+        socketRef.current.on('user_left', (data: UserLeftEvent) => {
+          // Handle user left
+          console.log('User left:', data);
+        });
+
+        socketRef.current.on('user_typing', (data: UserTypingEvent) => {
+          // Handle typing indicator
+          console.log('User typing:', data);
+        });
+      } catch (err) {
+        console.error('Failed to initialize collaboration socket:', err);
+      }
 
       return () => {
         if (socketRef.current) {
@@ -93,7 +102,17 @@ const CollaborationPanel: React.FC<{ conversationId: string }> = ({ conversation
       };
     };
 
-    initializeWebSocket();
+    // Fire-and-forget async initializer; cleanup is returned from initializeWebSocket when it resolves,
+    // but React expects a sync cleanup function — we attach cleanup via a mounted flag.
+    let cleanupFn: (() => void) | null = null;
+    (async () => {
+      const maybeCleanup = await initializeWebSocket();
+      if (typeof maybeCleanup === 'function') cleanupFn = maybeCleanup;
+    })();
+
+    return () => {
+      if (cleanupFn) cleanupFn();
+    };
   }, [conversationId]);
 
   // Fetch shared users
