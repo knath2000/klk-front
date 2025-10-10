@@ -51,7 +51,7 @@ const CollaborationPanel: React.FC<{ conversationId: string }> = ({ conversation
   const [isSharing, setIsSharing] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
-  // Initialize WebSocket connection
+  // Initializes WebSocket connection
   useEffect(() => {
     const initializeWebSocket = async () => {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
