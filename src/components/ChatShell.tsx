@@ -3,13 +3,13 @@
 import React, { useState, useEffect, ReactNode } from 'react';
 import { ConversationsProvider } from '@/context/ConversationsContext';
 import ConversationSidebarCollapsible from '@/components/ConversationSidebarCollapsible';
-import ChatView from '@/components/ChatView';
 
 type ChatShellProps = {
-  children?: ReactNode;
+  children: ReactNode;
+  footerSlot?: ReactNode;
 };
 
-export default function ChatShellFullHeight({ children }: ChatShellProps) {
+export default function ChatShellFullHeight({ children, footerSlot }: ChatShellProps) {
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -82,7 +82,8 @@ export default function ChatShellFullHeight({ children }: ChatShellProps) {
             isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-0'
           }`}
         >
-          {children ?? <ChatView />}
+          <div className="flex-1 flex flex-col">{children}</div>
+          {footerSlot}
         </main>
       </div>
     </ConversationsProvider>

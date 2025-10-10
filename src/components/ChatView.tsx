@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Message,
@@ -86,7 +86,11 @@ type HistoryLoadedPayload = {
   timestamp: string;
 };
 
-const ChatView: React.FC = () => {
+interface ChatViewProps {
+  onFooterChange?: (node: ReactNode | null) => void;
+}
+
+const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
   const [chatState, setChatState] = useState<ChatState>({
     messages: [],
     selectedCountry: null,
@@ -418,8 +422,11 @@ const ChatView: React.FC = () => {
     console.log('Searching for:', query);
   };
 
-  const handleSendMessage = async (message: string) => {
-    if (!chatState.selectedCountry || !socket) {
+  const selectedCountry = chatState.selectedCountry;
+  const currentModel = chatState.currentModel;
+
+  const handleSendMessage = useCallback(async (message: string) => {
+    if (!selectedCountry || !socket) {
       console.error('❌ Cannot send message: no country selected or socket not connected');
       return;
     }
@@ -464,7 +471,7 @@ const ChatView: React.FC = () => {
       }
     }
 
-    console.log('📤 SENDING MESSAGE:', { message, country: chatState.selectedCountry });
+    console.log('📤 SENDING MESSAGE:', { message, country: selectedCountry });
 
     // Generate consistent message ID that matches server expectations
     const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -482,7 +489,7 @@ const ChatView: React.FC = () => {
       type: 'user',
       content: message,
       timestamp: Date.now(),
-      country_key: chatState.selectedCountry
+      country_key: selectedCountry
     };
 
     setChatState(prev => ({
@@ -493,15 +500,35 @@ const ChatView: React.FC = () => {
     // Send to server with the base message ID
     socket?.emit('user_message', {
       message,
-      selected_country_key: chatState.selectedCountry,
+      selected_country_key: selectedCountry,
       client_ts: Date.now(),
       message_id: messageId, // Send base ID to server
-      model: chatState.currentModel,
+      model: currentModel,
       conversationId: currentConversationId
     });
 
     console.log('📤 MESSAGE SENT with ID:', messageId);
-  };
+  }, [selectedCountry, socket, connect, isConnected, conversationId, currentModel]);
+
+  const footerSlot = useMemo(() => (
+    <div className="relative z-10 p-6 pt-2 pl-safe-l pr-safe-r mt-[clamp(8px,1.5vh,16px)]">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-[#343541] border border-gray-700 rounded-lg p-3">
+          <ChatInput
+            onSendMessage={handleSendMessage}
+            disabled={!isConnected || !selectedCountry}
+            selectedCountry={selectedCountry}
+          />
+        </div>
+      </div>
+    </div>
+  ), [handleSendMessage, isConnected, selectedCountry]);
+
+  useEffect(() => {
+    if (!onFooterChange) return;
+    onFooterChange(footerSlot);
+    return () => onFooterChange(null);
+  }, [footerSlot, onFooterChange]);
 
   const selectedPersona = chatState.personas.find(p => p.country_key === chatState.selectedCountry);
 
@@ -653,7 +680,7 @@ const ChatView: React.FC = () => {
 
       {/* Messages Area */}
       <div className={cn(
-        hasMessages ? "flex-1 overflow-y-auto px-4 md:px-6 pl-safe-l pr-safe-r pb-4" : "px-4 md:px-6 pl-safe-l pr-safe-r pb-2"
+        hasMessages ? "flex-1 overflow-y-auto px-4 md:px-6 pl-safe-l pr-safe-r pb-32" : "px-4 md:px-6 pl-safe-l pr-safe-r pb-32"
       )}>
         <div className="max-w-4xl mx-auto">
           {/* Loading History Indicator */}
@@ -708,17 +735,13 @@ const ChatView: React.FC = () => {
                   transition={{ delay: 0.2 }}
                   className="w-full max-w-2xl"
                 >
-                  <div className="bg-[#343541] border border-gray-700 rounded-lg p-0">
-                    <div className="relative">
-                      <div className="flex items-center gap-2">
-                        <Plus className="w-5 h-5 text-gray-400" />
-                        <ChatInput
-                          onSendMessage={handleSendMessage}
-                          disabled={!chatState.isConnected || !chatState.selectedCountry}
-                          selectedCountry={chatState.selectedCountry}
-                        />
-                        <Mic className="w-5 h-5 text-gray-400" />
+                  <div className="bg-[#343541] border border-gray-700 rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <Plus className="w-5 h-5 text-gray-400" />
+                      <div className="flex-1 px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-xl text-left text-white/70">
+                        Selecciona un país primero...
                       </div>
+                      <Mic className="w-5 h-5 text-gray-400" />
                     </div>
                   </div>
                 </motion.div>
@@ -747,19 +770,6 @@ const ChatView: React.FC = () => {
           />
 
           <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      {/* Input Area with glass design */}
-      <div className="relative z-10 p-6 pt-2 pl-safe-l pr-safe-r mt-[clamp(8px,1.5vh,16px)]">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-[#343541] border border-gray-700 rounded-lg p-3">
-            <ChatInput
-              onSendMessage={handleSendMessage}
-              disabled={!chatState.isConnected || !chatState.selectedCountry}
-              selectedCountry={chatState.selectedCountry}
-            />
-          </div>
         </div>
       </div>
     </div>

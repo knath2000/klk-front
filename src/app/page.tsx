@@ -1,8 +1,12 @@
 'use client';
 
+import { useState, ReactNode } from 'react';
 import ChatShell from '@/components/ChatShell';
+import ChatView from '@/components/ChatView';
 
 export default function Home() {
+  const [footerSlot, setFooterSlot] = useState<ReactNode | null>(null);
+
   return (
     <div className="min-h-screen">
       {/* Dynamic background specific to chat */}
@@ -22,7 +26,9 @@ export default function Home() {
       </div>
 
       {/* Main chat interface (sidebar for authenticated users) */}
-      <ChatShell />
+      <ChatShell footerSlot={footerSlot}>
+        <ChatView onFooterChange={setFooterSlot} />
+      </ChatShell>
     </div>
   );
 }
