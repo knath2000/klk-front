@@ -6,6 +6,7 @@ import { TranslationProvider, useTranslation } from '@/context/TranslationContex
 import { useWebSocket } from '@/context/WebSocketContext';
 import { useConversations } from '@/context/ConversationsContext';
 import { setupTranslationHandlers, sendTranslationRequest, generateRequestId, TranslationResult, TranslationDelta } from '@/lib/translationWebSocket';
+import { translateViaRest, getOrCreateAnonId } from '@/lib/translateClient';
 import dynamic from 'next/dynamic';
 import { ResultsContainer } from '@/components/translation/ResultsContainer';
 import { LoadingSkeleton } from '@/components/translation/LoadingSkeleton';
@@ -189,36 +190,74 @@ function TranslatePageContent() {
 
   const handleQuerySubmit = async (query: string) => {
     try {
-      // Check if auth is ready before proceeding
-      if (!isReadyForTranslation) {
-        console.warn('🔐 Auth not ready, delaying translation request...');
-        // Wait a bit and retry, or show a loading state
-        setTimeout(() => handleQuerySubmit(query), 1000);
-        return;
+      // Diagnostic: log environment and socket state
+      console.log('[TranslatePage] handleQuerySubmit called', { query, isReadyForTranslation, socketExists: !!socket, socketId: socket?.id, socketConnected: !!socket?.connected, isConnected });
+
+      // If the socket is not available, always use REST fallback (covers guest and env cases)
+      const socketAvailable = !!socket && (socket.connected || isConnected);
+
+      if (!socketAvailable) {
+        console.warn('[TranslatePage] Socket unavailable; using REST fallback for translation', { query });
+        dispatch({ type: 'SET_LOADING', payload: true });
+        dispatch({ type: 'SET_ERROR', payload: null });
+
+        try {
+          const anonId = getOrCreateAnonId();
+          console.log('[TranslatePage] REST fallback: calling translateViaRest', { anonId, query });
+          const restResp = await translateViaRest({
+            text: query,
+            sourceLang: 'en',
+            targetLang: 'es',
+            context: undefined,
+            userId: anonId,
+          });
+          console.log('[TranslatePage] REST fallback response received', { requestId: restResp.metadata?.requestId, definitions: restResp.definitions?.length ?? 0 });
+
+          // Map REST response to the frontend TranslationResult shape (best-effort)
+          const mapped: TranslationResult = {
+            id: restResp.metadata?.requestId || `rest-${Date.now()}`,
+            query,
+            definitions: restResp.definitions || [],
+            examples: restResp.examples || [],
+            conjugations: restResp.conjugations || {},
+            audio: restResp.audio as any,
+            related: restResp.related as any,
+            entry: restResp.entry as any,
+            timestamp: Date.now()
+          };
+          setStreamingResult('');
+          setTranslationResult(mapped);
+          dispatch({ type: 'SET_LOADING', payload: false });
+          dispatch({ type: 'ADD_TO_HISTORY', payload: {
+            query,
+            language: 'spanish',
+            result: formatTranslationResult(mapped)
+          }});
+          return;
+        } catch (restErr: any) {
+          console.error('[TranslatePage] REST translation failed:', restErr);
+          dispatch({ type: 'SET_LOADING', payload: false });
+          dispatch({ type: 'SET_ERROR', payload: restErr instanceof Error ? restErr.message : 'REST translation failed' });
+          return;
+        }
       }
 
-      // Ensure we have a socket instance
+      // Otherwise prefer WebSocket streaming path
       if (!socket) {
         throw new Error('WebSocket connection not available. Please try again.');
       }
 
-      // If the socket is not connected, try a quick reconnect and await connect
       if (!socket.connected) {
         console.log('🔄 Socket not connected, attempting quick reconnect before sending...');
         try {
-          // Initiate connect if needed
           socket.connect();
-
-          // Await a short connect window (up to 3 seconds)
           await new Promise<void>((resolve, reject) => {
             if (socket.connected) return resolve();
             const onConnect = () => {
               socket.off('connect_error', onError);
               resolve();
             };
-            const onError = () => {
-              // do not reject immediately; allow fallback to timeout
-            };
+            const onError = () => {};
             socket.once('connect', onConnect);
             socket.once('connect_error', onError);
             const timer = setTimeout(() => {
@@ -226,7 +265,6 @@ function TranslatePageContent() {
               socket.off('connect_error', onError);
               reject(new Error('WebSocket connection timeout'));
             }, 3000);
-            // If already connected by the time we schedule, resolve
             if (socket.connected) {
               clearTimeout(timer);
               socket.off('connect', onConnect);
@@ -236,7 +274,40 @@ function TranslatePageContent() {
           });
         } catch (e) {
           console.error('❌ Reconnect attempt failed before send:', e);
-          throw new Error('WebSocket connection not available. Please try again.');
+          // fallback to REST if reconnect fails
+          try {
+            const anonId = getOrCreateAnonId();
+            const restResp = await translateViaRest({
+              text: query,
+              sourceLang: 'en',
+              targetLang: 'es',
+              context: undefined,
+              userId: anonId,
+            });
+            const mapped: TranslationResult = {
+              id: restResp.metadata?.requestId || `rest-${Date.now()}`,
+              query,
+              definitions: restResp.definitions || [],
+              examples: restResp.examples || [],
+              conjugations: restResp.conjugations || {},
+              audio: restResp.audio as any,
+              related: restResp.related as any,
+              entry: restResp.entry as any,
+              timestamp: Date.now()
+            };
+            setStreamingResult('');
+            setTranslationResult(mapped);
+            dispatch({ type: 'SET_LOADING', payload: false });
+            dispatch({ type: 'ADD_TO_HISTORY', payload: {
+              query,
+              language: 'spanish',
+              result: formatTranslationResult(mapped)
+            }});
+            return;
+          } catch (restErr: any) {
+            console.error('❌ REST fallback after reconnect failed:', restErr);
+            throw new Error('Translation service not available. Please try again later.');
+          }
         }
       }
 

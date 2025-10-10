@@ -17,8 +17,17 @@ export function SearchContainer({ onQuerySubmit, onQueryClear, isLoading }: Sear
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[SearchContainer] handleSubmit called, query:', query);
     if (query.trim()) {
-      onQuerySubmit(query.trim());
+      try {
+        onQuerySubmit(query.trim());
+        // Small tick to confirm the call was made
+        setTimeout(() => console.log('[SearchContainer] onQuerySubmit invoked for query:', query.trim()), 50);
+      } catch (err) {
+        console.error('[SearchContainer] onQuerySubmit threw error:', err);
+      }
+    } else {
+      console.log('[SearchContainer] submit ignored - query empty');
     }
   };
 

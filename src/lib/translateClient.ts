@@ -64,6 +64,7 @@ export class RestTranslateError extends Error {
 export const translateViaRest = async (params: RestTranslateParams): Promise<RestTranslateResponse> => {
   const response = await fetch('/api/translate/request', {
     method: 'POST',
+    credentials: 'include', // ensure cookies (anon_id) are sent/received for guest persistence
     headers: {
       'Content-Type': 'application/json',
     },
@@ -96,3 +97,28 @@ export const translateViaRest = async (params: RestTranslateParams): Promise<Res
 
   return (await response.json()) as RestTranslateResponse;
 };
+
+/**
+ * Return a stable anon_id persisted in localStorage for guest requests.
+ * Falls back to a timestamp-random id if crypto.randomUUID is not available.
+ */
+export function getOrCreateAnonId(): string {
+  if (typeof window === 'undefined') {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  try {
+    let id: string | null = localStorage.getItem('anon_id');
+    const gen =
+      typeof crypto !== 'undefined' && typeof (crypto as any).randomUUID === 'function'
+        ? (crypto as any).randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const finalId = id || gen;
+    // persist finalId (guaranteed string)
+    localStorage.setItem('anon_id', finalId);
+    return finalId;
+  } catch (e) {
+    // In case localStorage is not available, return a volatile id
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+}
