@@ -114,6 +114,8 @@ function TranslatePageContent() {
   const [currentQuery, setCurrentQuery] = useState<string>('');
   const [streamingResult, setStreamingResult] = useState<string>('');
   const [translationResult, setTranslationResult] = useState<TranslationResult | null>(null);
+  // Consider any streaming text or a finalized result as a successful outcome
+  const hasResult = Boolean(translationResult) || Boolean(streamingResult);
 
   // Refresh conversations on page focus
   useEffect(() => {
@@ -142,6 +144,8 @@ function TranslatePageContent() {
 
     const handleTranslationDelta = (delta: TranslationDelta) => {
       console.log('📄 Translation delta received:', delta.index, '/', delta.total);
+      // Clear any stale error once we start receiving deltas
+      dispatch({ type: 'SET_ERROR', payload: null });
       setStreamingResult(prev => prev + delta.chunk);
     };
 
@@ -149,6 +153,8 @@ function TranslatePageContent() {
       console.log('✅ Frontend received translation result:', result.id, 'keys:', Object.keys(result), 'definitions count:', result.definitions?.length || 0);
 
       // Set the translation result for display
+      // Ensure any prior error is cleared so the UI shows results
+      dispatch({ type: 'SET_ERROR', payload: null });
       setTranslationResult(result);
 
       // Convert TranslationResult to string for storage
@@ -157,7 +163,7 @@ function TranslatePageContent() {
       dispatch({ type: 'SET_LOADING', payload: false });
       dispatch({ type: 'ADD_TO_HISTORY', payload: {
         query: result.query,
-        language: 'spanish', // Default language, can be made dynamic
+        language: 'spanish', // Default language label, can be made dynamic (UI label only)
         result: resultString
       }});
     };
@@ -190,6 +196,10 @@ function TranslatePageContent() {
 
   const handleQuerySubmit = async (query: string) => {
     try {
+      // Always clear stale error and set loading at the start of a submission
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+
       // Diagnostic: log environment and socket state
       console.log('[TranslatePage] handleQuerySubmit called', { query, isReadyForTranslation, socketExists: !!socket, socketId: socket?.id, socketConnected: !!socket?.connected, isConnected });
 
@@ -306,14 +316,16 @@ function TranslatePageContent() {
             return;
           } catch (restErr: any) {
             console.error('❌ REST fallback after reconnect failed:', restErr);
-            throw new Error('Translation service not available. Please try again later.');
+            // Surface the REST fallback error, but do not throw to avoid masking later success
+            dispatch({ type: 'SET_LOADING', payload: false });
+            dispatch({ type: 'SET_ERROR', payload: restErr instanceof Error ? restErr.message : 'Translation service not available. Please try again later.' });
+            return;
           }
         }
       }
 
       // Reset any previous error state and set loading
-      dispatch({ type: 'SET_LOADING', payload: true });
-      dispatch({ type: 'SET_ERROR', payload: null });
+      // (handled at submission start)
 
       setCurrentQuery(query);
       setStreamingResult('');
@@ -321,7 +333,7 @@ function TranslatePageContent() {
       const requestId = generateRequestId();
       const translationRequest = {
         query,
-        language: 'spanish', // Default language, can be made dynamic
+        language: 'en', // Normalize to server-expected code; server sets targetLang:'es'
         timestamp: Date.now(),
         id: requestId
       };
@@ -417,11 +429,11 @@ function TranslatePageContent() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              {state.isLoading && !streamingResult ? (
+              {state.isLoading && !hasResult ? (
                 <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
                   <LoadingSkeleton />
                 </div>
-              ) : state.error ? (
+              ) : (!hasResult && state.error) ? (
                 <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
                   <ErrorDisplay error={state.error} onRetry={handleRetry} />
                 </div>
