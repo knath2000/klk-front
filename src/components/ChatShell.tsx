@@ -60,13 +60,12 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
             sidebar-shell
             ${isMobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}
             fixed inset-y-0 left-0 w-72
-            lg:relative lg:translate-x-0 lg:block
-            lg:sticky lg:top-0 lg:flex-shrink-0
+            lg:fixed lg:inset-y-0 lg:left-0 lg:translate-x-0 lg:block
+            lg:flex-shrink-0
             ${isSidebarCollapsed ? 'lg:w-16' : 'lg:w-80'}
-            z-[60] lg:z-auto
+            z-[60]
             transition-transform duration-300 ease-in-out
             overflow-y-auto
-            lg:min-h-screen
           `}
         >
           <ConversationSidebarCollapsible
@@ -79,7 +78,7 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
         {/* Main content */}
         <main
           className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
-            isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-0'
+            isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-80'
           }`}
         >
           <div className="flex-1 flex flex-col">{children}</div>
