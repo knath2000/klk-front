@@ -120,6 +120,18 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
     }
   }, []);
 
+  // Hydrate selected country from localStorage if present
+  useEffect(() => {
+    try {
+      const storedCountry = localStorage.getItem('chatSelectedCountry');
+      if (storedCountry) {
+        setChatState(prev => ({ ...prev, selectedCountry: storedCountry }));
+      }
+    } catch (e) {
+      // ignore localStorage errors
+    }
+  }, []);
+
   // Single derived loading state effect: align with provider if available, fallback for unauthenticated
   useEffect(() => {
     if (!isConnected) {
@@ -408,7 +420,13 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
   }, [chatState.messages, chatState.isTyping]);
 
   const handleCountrySelect = (countryKey: string) => {
+    console.log('Country selected:', countryKey);
     setChatState(prev => ({ ...prev, selectedCountry: countryKey }));
+    try {
+      localStorage.setItem('chatSelectedCountry', countryKey);
+    } catch (e) {
+      // ignore storage errors
+    }
   };
 
   const handleModelChange = (modelId: string) => {
@@ -426,16 +444,46 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
   const currentModel = chatState.currentModel;
 
   const handleSendMessage = useCallback(async (message: string) => {
-    if (!selectedCountry || !socket) {
-      console.error('❌ Cannot send message: no country selected or socket not connected');
+    // Require a selected country client-side
+    if (!selectedCountry) {
+      console.error('❌ Cannot send message: no country selected');
       return;
     }
 
-    // If socket exists but is not connected, try a quick reconnect window
-    if (!socket.connected) {
+    // If we don't yet have a socket instance, ask the context to connect and wait briefly for it.
+    if (!socket) {
+      console.log('🔌 No socket instance available; requesting WebSocket context to connect...');
+      try {
+        if (typeof connect === 'function') {
+          connect();
+        }
+        // Wait up to 3s for isConnected to become true
+        await new Promise<void>((resolve, reject) => {
+          const maxWait = 3000;
+          const intervalMs = 100;
+          let waited = 0;
+          const poll = setInterval(() => {
+            if (isConnected) {
+              clearInterval(poll);
+              return resolve();
+            }
+            waited += intervalMs;
+            if (waited >= maxWait) {
+              clearInterval(poll);
+              return reject(new Error('WebSocket connection timeout'));
+            }
+          }, intervalMs);
+        });
+      } catch (err) {
+        console.warn('🔌 Socket did not become available in time; send will be attempted only if socket connects later.', err);
+        // We continue — handleSend below will handle socket.connected checks and attempt reconnect if possible.
+      }
+    }
+
+    // If socket exists but is not connected, try a quick reconnect window (existing logic)
+    if (socket && !socket.connected) {
       console.log('🔄 Socket not connected, attempting quick reconnect before sending...');
       try {
-        // Attempt to trigger context connect (if exposed)
         if (typeof connect === 'function') {
           connect();
         } else {
@@ -510,25 +558,27 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
     console.log('📤 MESSAGE SENT with ID:', messageId);
   }, [selectedCountry, socket, connect, isConnected, conversationId, currentModel]);
 
-  const footerSlot = useMemo(() => (
-    <div className="relative z-10 p-6 pt-2 pl-safe-l pr-safe-r mt-[clamp(8px,1.5vh,16px)]">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-[#343541] border border-gray-700 rounded-lg p-3">
-          <ChatInput
-            onSendMessage={handleSendMessage}
-            disabled={!isConnected || !selectedCountry}
-            selectedCountry={selectedCountry}
-          />
-        </div>
-      </div>
-    </div>
-  ), [handleSendMessage, isConnected, selectedCountry]);
-
+  // Provide an up-to-date footer slot to the shell whenever selection or connection state changes.
   useEffect(() => {
     if (!onFooterChange) return;
-    onFooterChange(footerSlot);
+
+    const slot = (
+      <div className="relative z-10 p-6 pt-2 pl-safe-l pr-safe-r mt-[clamp(8px,1.5vh,16px)]">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-[#343541] border border-gray-700 rounded-lg p-3">
+            <ChatInput
+              onSendMessage={handleSendMessage}
+              disabled={!selectedCountry}
+              selectedCountry={selectedCountry}
+            />
+          </div>
+        </div>
+      </div>
+    );
+
+    onFooterChange(slot);
     return () => onFooterChange(null);
-  }, [footerSlot, onFooterChange]);
+  }, [selectedCountry, isConnected, handleSendMessage, onFooterChange]);
 
   const selectedPersona = chatState.personas.find(p => p.country_key === chatState.selectedCountry);
 
@@ -575,6 +625,9 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
   };
 
   const isEmptyState = chatState.messages.length === 0 && !isLoadingHistory;
+
+  // Debug render-state to help diagnose disabled input issues
+  console.log('ChatView render:', { selectedCountry, isConnected, messagesCount: chatState.messages.length });
 
   return (
     <div className="flex flex-col gap-[var(--row-gap)] min-h-[100svh] h-[100vh] h-[100lvh]">
@@ -736,13 +789,19 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
                   className="w-full max-w-2xl"
                 >
                   <div className="bg-[#343541] border border-gray-700 rounded-lg p-3">
-                    <div className="flex items-center gap-2">
-                      <Plus className="w-5 h-5 text-gray-400" />
-                      <div className="flex-1 px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-xl text-left text-white/70">
-                        Selecciona un país primero...
+                    {!selectedCountry ? (
+                      <div className="flex items-center gap-2">
+                        <Plus className="w-5 h-5 text-gray-400" />
+                        <div className="flex-1 px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-xl text-left text-white/70">
+                          Selecciona un país primero...
+                        </div>
+                        <Mic className="w-5 h-5 text-gray-400" />
                       </div>
-                      <Mic className="w-5 h-5 text-gray-400" />
-                    </div>
+                    ) : (
+                      <div className="p-4 text-center text-white/80">
+                        Estás listo. Escribe tu primer mensaje abajo.
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               </motion.div>
