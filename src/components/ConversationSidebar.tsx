@@ -3,10 +3,11 @@
 import React, { useRef, useState } from 'react';
 import { useConversations } from '@/context/ConversationsContext';
 import { useAuth } from '@/context/AuthContext';
-import { Plus, Search, User, ChevronRight, LogOut, Zap } from 'lucide-react';
+import { Plus, Search, User, ChevronRight, LogOut, Zap, Trash } from 'lucide-react';
 import clsx from 'clsx';
 import Link from 'next/link';
 import ModelSelector from '@/components/ModelSelector';
+import { getNeonAuthToken } from '@/lib/neonAuth';
 
 interface AIModel {
   id: string;
@@ -18,7 +19,7 @@ interface AIModel {
 }
 
 export default function ConversationSidebarEnhanced() {
-  const { list, activeId, setActive, loading, error, historyLoadingId, startNewConversation } = useConversations();
+  const { list, activeId, setActive, refresh, loading, error, historyLoadingId, startNewConversation } = useConversations();
   const { user, signOut } = useAuth();
   const listRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -164,33 +165,76 @@ export default function ConversationSidebarEnhanced() {
 
                 return (
                   <li key={c.id} className="px-2">
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={isActive}
-                      tabIndex={-1}
-                      className={clsx(
-                        'w-full text-left px-3 py-2 rounded-xl transition',
-                        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400/60',
-                        isActive
-                          ? 'bg-white/20 ring-1 ring-white/30 text-white'
-                          : 'hover:bg-white/10 text-white/90'
-                      )}
-                      onClick={() => setActive(c.id)}
-                      aria-label={`${c.title ?? 'Untitled'} – updated ${new Date(updatedIso).toLocaleString()}`}
-                    >
-                      <div className="text-sm font-medium truncate">
-                        {c.title ?? 'Untitled'}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-white/70">
-                        <time dateTime={updatedIso}>
-                          {new Date(updatedIso).toLocaleString()}
-                        </time>
-                        {typeof c.message_count === 'number' && (
-                          <span aria-hidden>• {c.message_count} msgs</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={isActive}
+                        tabIndex={-1}
+                        className={clsx(
+                          'w-full text-left px-3 py-2 rounded-xl transition text-left overflow-hidden',
+                          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400/60',
+                          isActive
+                            ? 'bg-white/20 ring-1 ring-white/30 text-white'
+                            : 'hover:bg-white/10 text-white/90'
                         )}
-                      </div>
-                    </button>
+                        onClick={() => setActive(c.id)}
+                        aria-label={`${c.title ?? 'Untitled'} – updated ${new Date(updatedIso).toLocaleString()}`}
+                      >
+                        <div className="text-sm font-medium truncate">
+                          {c.title ?? 'Untitled'}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-white/70">
+                          <time dateTime={updatedIso}>
+                            {new Date(updatedIso).toLocaleString()}
+                          </time>
+                          {typeof c.message_count === 'number' && (
+                            <span aria-hidden>• {c.message_count} msgs</span>
+                          )}
+                        </div>
+                      </button>
+
+                      {/* Delete conversation control */}
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const confirmed = window.confirm('Delete this conversation? This is permanent.');
+                          if (!confirmed) return;
+                          try {
+                            const token = await getNeonAuthToken();
+                            const res = await fetch(`/api/conversations/${c.id}`, {
+                              method: 'DELETE',
+                              headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                            });
+                            if (res.status === 204 || res.ok) {
+                              // If the deleted conversation was active, clear local storage so context picks a new active on refresh.
+                              if (isActive) {
+                                if (typeof window !== 'undefined') {
+                                  localStorage.removeItem('chatConversationId');
+                                }
+                              }
+                              // Refresh the conversations list from the backend
+                              try {
+                                await refresh();
+                              } catch (err) {
+                                console.warn('Failed to refresh conversations after delete:', err);
+                              }
+                            } else {
+                              const text = await res.text().catch(() => '');
+                              console.error('Failed to delete conversation:', res.status, text);
+                              alert('Failed to delete conversation');
+                            }
+                          } catch (err) {
+                            console.error('Error deleting conversation:', err);
+                            alert('Error deleting conversation');
+                          }
+                        }}
+                        title="Delete conversation"
+                        className="ml-2 p-2 rounded-md text-red-400 hover:text-red-200 hover:bg-white/5 transition"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </button>
+                    </div>
                   </li>
                 );
               })}
