@@ -341,24 +341,54 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
         type: (m.type ?? m.role) as 'user' | 'assistant',
         content: m.content ?? m.text ?? '',
         timestamp:
-          typeof m.timestamp === 'number'
-            ? m.timestamp
-            : m.created_at
-              ? new Date(m.created_at).getTime()
-              : m.createdAt
-                ? new Date(m.createdAt).getTime()
-                : Date.now(),
+          typeof m.timestamp === 'number' ? m.timestamp
+          : m.created_at ? new Date(m.created_at).getTime()
+          : m.createdAt ? new Date(m.createdAt).getTime()
+          : Date.now(),
         country_key: m.country_key ?? m.persona_id
       }));
 
+      // Derive a resolved country/persona for this conversation.
+      // Preferred source: ConversationsContext list (conversation summary persona_id).
+      // Fallback: first message in history that contains country_key/persona_id.
+      let resolvedCountryKey: string | null = null;
+      try {
+        const convSummary = conversationsCtx?.list?.find(c => c.id === data.conversationId);
+        if (convSummary && (convSummary as any).persona_id) {
+          resolvedCountryKey = (convSummary as any).persona_id as string;
+        } else {
+          const firstWithCountry = normalizedMessages.find(m => !!m.country_key);
+          if (firstWithCountry && firstWithCountry.country_key) {
+            resolvedCountryKey = firstWithCountry.country_key as string;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to derive persona from conversation summary or history', e);
+      }
+
+      // Update messages and, if we resolved a country, update selectedCountry and persist it.
       setChatState(prev => ({
         ...prev,
-        messages: normalizedMessages
+        messages: normalizedMessages,
+        selectedCountry: resolvedCountryKey ?? prev.selectedCountry
       }));
-      // Loading state is derived from provider, so no explicit clear needed here
-      // Ensure conversationId is set
+
+      // Persist conversationId and selected country if available
       setConversationId(data.conversationId);
-      localStorage.setItem('chatConversationId', data.conversationId);
+      try {
+        localStorage.setItem('chatConversationId', data.conversationId);
+        if (resolvedCountryKey) {
+          localStorage.setItem('chatSelectedCountry', resolvedCountryKey);
+        }
+      } catch (e) {
+        // ignore storage errors
+      }
+
+      if (!resolvedCountryKey) {
+        console.warn(`No persona found for conversation ${data.conversationId}; Chat input will remain disabled until a country is selected.`);
+      } else {
+        console.log(`Persona for conversation ${data.conversationId} resolved: ${resolvedCountryKey}`);
+      }
     };
 
     socket.on('history_loaded', handleHistoryLoaded);
