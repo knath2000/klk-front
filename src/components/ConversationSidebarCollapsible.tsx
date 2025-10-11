@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { useConversations } from '@/context/ConversationsContext';
 import { useAuth } from '@/context/AuthContext';
 import { Plus, Search, User, ChevronRight, LogOut, Zap, ChevronLeft, MessageSquare, Languages } from 'lucide-react';
@@ -8,6 +8,7 @@ import clsx from 'clsx';
 import Link from 'next/link';
 import ModelSelector from '@/components/ModelSelector';
 import { usePathname } from 'next/navigation';
+import { Virtuoso } from 'react-virtuoso';
 
 interface AIModel {
   id: string;
@@ -260,53 +261,56 @@ export default function ConversationSidebarCollapsible({
           )}
 
           {!loading && !error && filteredList.length > 0 && (
-            <ul className="py-2">
-              {filteredList.map((c) => {
-                const isActive = c.id === activeId;
-                const updatedIso = typeof c.updated_at === 'string'
-                  ? c.updated_at
-                  : c.updated_at?.toISOString?.() ?? new Date().toISOString();
+            <div className="h-[calc(100vh-260px)]">
+              <Virtuoso
+                data={filteredList}
+                itemContent={(index: number, c: any) => {
+                  const isActive = c.id === activeId;
+                  const updatedIso = typeof c.updated_at === 'string'
+                    ? c.updated_at
+                    : c.updated_at?.toISOString?.() ?? new Date().toISOString();
 
-                return (
-                  <li key={c.id} className={isCollapsed ? 'px-1' : 'px-2'}>
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={isActive}
-                      tabIndex={-1}
-                      className={clsx(
-                        'flex items-center px-3 py-2 rounded-xl transition',
-                        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400/60',
-                        isCollapsed ? 'w-10 h-10 justify-center' : 'w-full text-left',
-                        isActive
-                          ? 'bg-white/20 ring-1 ring-white/30 text-white'
-                          : 'hover:bg-white/10 text-white/90'
-                      )}
-                      onClick={() => setActive(c.id)}
-                      aria-label={`${c.title ?? 'Untitled'} – updated ${new Date(updatedIso).toLocaleString()}`}
-                    >
-                      {isCollapsed ? (
-                        <MessageSquare className="w-4 h-4" />
-                      ) : (
-                        <>
-                          <div className="text-sm font-medium truncate">
-                            {c.title ?? 'Untitled'}
+                  return (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={isActive}
+                        tabIndex={-1}
+                        className={clsx(
+                          'w-full text-left py-2 px-3 rounded hover:bg-gray-800 transition-colors',
+                          isActive ? 'bg-gray-800' : ''
+                        )}
+                        onClick={() => setActive(c.id)}
+                        aria-label={`${c.title ?? 'Untitled'} – updated ${new Date(updatedIso).toLocaleString()}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="truncate">
+                            <div className="font-medium text-white truncate">{c.title || 'Untitled'}</div>
+                            <div className="text-xs text-white/60 truncate">{c.preview || ''}</div>
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-white/70">
-                            <time dateTime={updatedIso}>
-                              {new Date(updatedIso).toLocaleString()}
-                            </time>
-                            {typeof c.message_count === 'number' && (
-                              <span aria-hidden>• {c.message_count} msgs</span>
-                            )}
+                          <div className="text-xs text-white/50 ml-2 whitespace-nowrap">
+                            {new Date(updatedIso).toLocaleTimeString()}
                           </div>
-                        </>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                }}
+                overscan={6}
+                components={{
+                  // Loosely-typed List override: preserve semantic <ul> while avoiding strict cross-element ref typing issues.
+                  List: (props: any) => {
+                    const { style, children, ...rest } = props
+                    return (
+                      <ul style={style} role="listbox" aria-label="Conversations" {...(rest || {})}>
+                        {children}
+                      </ul>
+                    )
+                  }
+                }}
+              />
+            </div>
           )}
 
           {!!historyLoadingId && !!activeId && historyLoadingId === activeId && !loading && (

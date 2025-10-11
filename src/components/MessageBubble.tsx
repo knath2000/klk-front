@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { Message } from '@/types/chat';
 import clsx from 'clsx';
+import StreamMarkdown from './markdown/StreamMarkdown';
 
 interface MessageBubbleProps {
   message: Message;
@@ -54,7 +55,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       >
         {/* Message Content */}
         <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-          {message.content}
+          {((message.type ?? (message as any).role) === 'assistant') ? (
+            <StreamMarkdown text={message.content || ''} />
+          ) : (
+            <>{message.content}</>
+          )}
         </div>
 
         {/* Message Type Label */}

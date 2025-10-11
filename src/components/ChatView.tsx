@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback, ReactNode } from 'react';
-import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { LazyMotion, domAnimation, AnimatePresence, motion as m } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import useAnimationsReady from '@/hooks/useAnimationsReady';
 import {
@@ -10,6 +10,7 @@ import {
   ChatState
 } from '@/types/chat';
 import CountrySelector from './CountrySelector';
+import { Virtuoso } from 'react-virtuoso';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import ChatInput from './ChatInput';
@@ -90,7 +91,7 @@ type HistoryLoadedPayload = {
 };
 
 interface ChatViewProps {
-  onFooterChange?: (node: ReactNode | null) => void;
+  onFooterChange?: (node: React.ReactNode | null) => void;
 }
 
 const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
@@ -102,7 +103,7 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
     personas: [],
     currentModel: 'meta-llama/llama-3.2-3b-instruct' // Default model (cheapest, fast): Llama 3.2 3B Instruct
   });
-
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false); // Derived from provider or local fallback
 
@@ -862,22 +863,33 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
           {/* Messages */}
           <AnimatePresence>
             {!isEmptyState && (
-              <div className="flex flex-col">
-                {chatState.messages.map((message) => (
-                  <MessageBubble
-                    key={message.id}
-                    message={message}
-                  />
-                ))}
+              <div className="h-[calc(100vh-220px)]">
+                <Virtuoso
+                  data={chatState.messages}
+                  itemContent={(index, message) => (
+                    <MessageBubble key={message.id} message={message} />
+                  )}
+                  followOutput={isAtBottom ? 'smooth' : false}
+                  atBottomThreshold={60}
+                  overscan={6}
+                  className="virt-list"
+                  style={{ padding: 0 }}
+                  atBottomStateChange={setIsAtBottom}
+                  components={{
+                    Footer: () =>
+                      chatState.isTyping ? (
+                        <div className="px-4 pb-3">
+                          <TypingIndicator
+                            isVisible={chatState.isTyping}
+                            countryName={selectedPersona?.displayName}
+                          />
+                        </div>
+                      ) : null
+                  }}
+                />
               </div>
             )}
           </AnimatePresence>
-
-          {/* Typing Indicator */}
-          <TypingIndicator
-            isVisible={chatState.isTyping}
-            countryName={selectedPersona?.displayName}
-          />
 
           <div ref={messagesEndRef} />
         </div>
