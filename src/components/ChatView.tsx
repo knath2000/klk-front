@@ -95,13 +95,14 @@ interface ChatViewProps {
 }
 
 const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
+  const DEFAULT_CLIENT_MODEL = process.env.NEXT_PUBLIC_OPENROUTER_MODEL || 'google/gemma-3-27b-it';
   const [chatState, setChatState] = useState<ChatState>({
     messages: [],
     selectedCountry: null,
     isTyping: false,
     isConnected: false,
     personas: [],
-    currentModel: 'meta-llama/llama-3.2-3b-instruct' // Default model (cheapest, fast): Llama 3.2 3B Instruct
+    currentModel: DEFAULT_CLIENT_MODEL
   });
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -352,10 +353,17 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
       // Preferred source: ConversationsContext list (conversation summary persona_id).
       // Fallback: first message in history that contains country_key/persona_id.
       let resolvedCountryKey: string | null = null;
+      // Also derive a resolved model for this conversation (DB summary may include it)
+      let resolvedModel: string | null = null;
+      
       try {
         const convSummary = conversationsCtx?.list?.find(c => c.id === data.conversationId);
         if (convSummary && (convSummary as any).persona_id) {
           resolvedCountryKey = (convSummary as any).persona_id as string;
+        }
+        // Prefer model from conversation summary if provided
+        if (convSummary && (convSummary as any).model) {
+          resolvedModel = (convSummary as any).model as string;
         } else {
           const firstWithCountry = normalizedMessages.find(m => !!m.country_key);
           if (firstWithCountry && firstWithCountry.country_key) {
@@ -366,11 +374,30 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
         console.warn('Failed to derive persona from conversation summary or history', e);
       }
 
-      // Update messages and, if we resolved a country, update selectedCountry and persist it.
+      // Normalize legacy slugs → new Google slugs
+      const legacyToNewModelMap: Record<string, string> = {
+        'meta-llama/llama-3.2-3b-instruct': 'google/gemma-3-27b-it',
+        'meta-llama/llama-3.3-8b-instruct:free': 'google/gemini-2.5-flash-lite',
+        'meta-llama/llama-3.3-70b-instruct': 'google/gemini-2.5-flash'
+      };
+      if (resolvedModel && legacyToNewModelMap[resolvedModel]) {
+        resolvedModel = legacyToNewModelMap[resolvedModel];
+      }
+
+      // If no resolvedModel from DB, look for hints in history messages (rare)
+      if (!resolvedModel) {
+        const modelHint = (normalizedMessages as any[]).find((m: any) => m && m.model)?.model as string | undefined;
+        if (modelHint) {
+          resolvedModel = legacyToNewModelMap[modelHint] || modelHint;
+        }
+      }
+
+      // Update messages and, if we resolved a country or model, update selectedCountry/currentModel and persist them.
       setChatState(prev => ({
         ...prev,
         messages: normalizedMessages,
-        selectedCountry: resolvedCountryKey ?? prev.selectedCountry
+        selectedCountry: resolvedCountryKey ?? prev.selectedCountry,
+        currentModel: resolvedModel ?? prev.currentModel
       }));
 
       // Persist conversationId and selected country if available
@@ -379,6 +406,15 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
         localStorage.setItem('chatConversationId', data.conversationId);
         if (resolvedCountryKey) {
           localStorage.setItem('chatSelectedCountry', resolvedCountryKey);
+        }
+        if (resolvedModel) {
+          localStorage.setItem('chatCurrentModel', resolvedModel);
+        } else {
+          // Ensure stale chatCurrentModel is cleared if it matched legacy slugs
+          const existing = localStorage.getItem('chatCurrentModel');
+          if (existing && legacyToNewModelMap[existing]) {
+            localStorage.removeItem('chatCurrentModel');
+          }
         }
       } catch (e) {
         // ignore storage errors
@@ -581,13 +617,27 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
       messages: [...prev.messages, userMessage]
     }));
 
-    // Send to server with the base message ID
+    // Normalize model before sending: map legacy slugs -> new Google slugs, handle 'default'
+    const legacyToNewModelMap: Record<string, string> = {
+      'meta-llama/llama-3.2-3b-instruct': 'google/gemma-3-27b-it',
+      'meta-llama/llama-3.3-8b-instruct:free': 'google/gemini-2.5-flash-lite',
+      'meta-llama/llama-3.3-70b-instruct': 'google/gemini-2.5-flash'
+    };
+
+    let payloadModel = (chatState.currentModel || DEFAULT_CLIENT_MODEL || 'google/gemma-3-27b-it').trim();
+    if (!payloadModel || payloadModel.toLowerCase() === 'default') {
+      payloadModel = DEFAULT_CLIENT_MODEL;
+    } else if (legacyToNewModelMap[payloadModel]) {
+      payloadModel = legacyToNewModelMap[payloadModel];
+      console.log('[Model Normalization] remapped legacy client model to', payloadModel);
+    }
+
     socket?.emit('user_message', {
       message,
       selected_country_key: selectedCountry,
       client_ts: Date.now(),
       message_id: messageId, // Send base ID to server
-      model: currentModel,
+      model: payloadModel,
       conversationId: currentConversationId
     });
 

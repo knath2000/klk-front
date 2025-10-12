@@ -64,22 +64,66 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
         setLoading(false);
         return;
       }
+
       const res = await fetch(`${backendUrl}/api/conversations`, {
         method: 'GET',
         headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
         },
       });
+
       if (!res.ok) {
         const t = await res.text().catch(() => '');
         setError(`HTTP ${res.status}: ${res.statusText} ${t.slice(0, 120)}`);
         setLoading(false);
         return;
       }
+
       const data = await res.json();
-      const rows: ConversationSummary[] = Array.isArray(data) ? data : [];
-      setList(rows);
+      const rows: any[] = Array.isArray(data) ? data : [];
+
+      // Normalize legacy model slugs (if conversation summaries include model)
+      const legacyToNewModelMap: Record<string, string> = {
+        'meta-llama/llama-3.2-3b-instruct': 'google/gemma-3-27b-it',
+        'meta-llama/llama-3.3-8b-instruct:free': 'google/gemini-2.5-flash-lite',
+        'meta-llama/llama-3.3-70b-instruct': 'google/gemini-2.5-flash'
+      };
+
+      const normalizedRows = rows.map((r: any) => {
+        if (r && typeof r === 'object' && r.model && legacyToNewModelMap[r.model]) {
+          return { ...r, model: legacyToNewModelMap[r.model] };
+        }
+        return r;
+      });
+
+      setList(normalizedRows);
+
+      // Persist fixes back to backend for any changed models (best-effort; non-blocking)
+      (async () => {
+        try {
+          const updates = normalizedRows
+            .map((r: any, i: number) => ({ newRow: r, oldRow: rows[i] }))
+            .filter(pair => pair.oldRow && pair.oldRow.model && pair.oldRow.model !== pair.newRow.model);
+
+          await Promise.all(updates.map(async (pair) => {
+            try {
+              await fetch(`${backendUrl}/api/conversations/${pair.newRow.id}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ model: pair.newRow.model })
+              });
+            } catch (e) {
+              console.warn('Failed to PATCH conversation model for', pair.newRow.id, e);
+            }
+          }));
+        } catch (e) {
+          // ignore
+        }
+      })();
 
       // Validate existing localStorage conversation id
       const stored = typeof window !== 'undefined' ? localStorage.getItem('chatConversationId') : null;
