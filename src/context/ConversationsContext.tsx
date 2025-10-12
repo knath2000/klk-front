@@ -25,6 +25,8 @@ type ConversationsContextType = {
   sidebarOpen: boolean;
   toggleSidebar: () => void;
   startNewConversation: (opts?: { auto?: boolean }) => Promise<void>;
+  unreadCounts: Record<string, number>;
+  clearUnread: (conversationId: string) => void;
 };
 
 const ConversationsContext = createContext<ConversationsContextType | undefined>(undefined);
@@ -38,6 +40,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
   const [error, setError] = useState<string | null>(null);
   const [historyLoadingId, setHistoryLoadingId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const pendingHistoryIdRef = useRef<string | null>(null);
   const lastFetchedUserIdRef = useRef<string | null>(null);
 
@@ -179,6 +182,28 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
     }
   }, [isConnected]);
 
+  // Increment unread counts when WebSocket notifies of new messages
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleMessageReceived = (data: { conversationId: string; messageId?: string }) => {
+      const convId = data.conversationId;
+      // If the message is for the currently active conversation, don't increment
+      setUnreadCounts(prev => {
+        if (convId === activeId) {
+          return prev;
+        }
+        const next = { ...prev, [convId]: (prev[convId] || 0) + 1 };
+        return next;
+      });
+    };
+
+    socket.on('message_received', handleMessageReceived);
+    return () => {
+      socket.off('message_received', handleMessageReceived);
+    };
+  }, [socket, activeId]);
+
   const notifyHistoryResolved = useCallback((conversationId: string) => {
     if (pendingHistoryIdRef.current === conversationId) {
       pendingHistoryIdRef.current = null;
@@ -192,6 +217,13 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
     if (!id || id === activeId) return;
     if (!list.some(c => c.id === id)) return;
     setActiveId(id);
+    // Clear unread for this conversation when activated
+    setUnreadCounts(prev => {
+      if (!prev[id]) return prev;
+      const copy = { ...prev };
+      delete copy[id];
+      return copy;
+    });
     if (typeof window !== 'undefined') {
       localStorage.setItem('chatConversationId', id);
     }
@@ -299,7 +331,16 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
     sidebarOpen,
     toggleSidebar,
     startNewConversation,
-  }), [list, activeId, setActive, fetchConversations, loading, error, historyLoadingId, notifyHistoryResolved, sidebarOpen, toggleSidebar, startNewConversation]);
+    unreadCounts,
+    clearUnread: (conversationId: string) => {
+      setUnreadCounts(prev => {
+        if (!prev[conversationId]) return prev;
+        const copy = { ...prev };
+        delete copy[conversationId];
+        return copy;
+      });
+    }
+  }), [list, activeId, setActive, fetchConversations, loading, error, historyLoadingId, notifyHistoryResolved, sidebarOpen, toggleSidebar, startNewConversation, unreadCounts]);
 
   return (
     <ConversationsContext.Provider value={value}>

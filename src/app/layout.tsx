@@ -1,23 +1,21 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import ChatSidebarOverlay from '@/components/ChatSidebarOverlay'
+import { Inter } from 'next/font/google'
+import AuthProvider from '@/context/AuthProvider'
+import WebSocketProvider from '@/context/WebSocketProvider'
 import StackAuthBridge from '@/components/StackAuthBridge'
-import { AuthProvider } from '@/context/AuthContext'
-import { WebSocketProvider } from '@/context/WebSocketContext'
-import { ConversationsProvider } from '@/context/ConversationsContext'
+import ConversationsProvider from '@/context/ConversationsContext'
 
-const inter = Inter({ subsets: ['latin'], display: 'swap' })
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'AI Chat con Sabor Local',
   description: 'Chat with AI that speaks local Spanish slang',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -31,6 +29,8 @@ export default function RootLayout({
               <WebSocketProvider>
                 <StackAuthBridge>
                   <ConversationsProvider>
+                    {/* Global ChatGPT-style sidebar overlay trigger + panel */}
+                    <ChatSidebarOverlay />
                     {children}
                   </ConversationsProvider>
                 </StackAuthBridge>
