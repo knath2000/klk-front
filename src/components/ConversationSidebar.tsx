@@ -23,7 +23,7 @@ export default function ConversationSidebarEnhanced() {
   const { user, signOut } = useAuth();
   const listRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentModel, setCurrentModel] = useState('meta-llama/llama-3.2-3b-instruct');
+  const [currentModel, setCurrentModel] = useState('google/gemma-3-27b-it');
 
   // Filter conversations based on search query
   const filteredList = list.filter(conv =>

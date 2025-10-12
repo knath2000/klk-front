@@ -34,7 +34,7 @@ export default function ConversationSidebarCollapsible({
   const { user, signOut } = useAuth();
   const listRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentModel, setCurrentModel] = useState('meta-llama/llama-3.2-3b-instruct');
+  const [currentModel, setCurrentModel] = useState('google/gemma-3-27b-it');
   const pathname = usePathname();
 
   // Filter conversations based on search query

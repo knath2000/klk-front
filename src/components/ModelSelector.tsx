@@ -30,30 +30,30 @@ export default function ModelSelector({
   // Mock models data - in real app, this would come from API
   useEffect(() => {
     const mockModels: AIModel[] = [
-      // Default (cheapest, fast)
+      // Default (fast)
       {
-        id: 'meta-llama/llama-3.2-3b-instruct',
-        name: 'Llama 3.2 3B Instruct',
-        display_name: 'Llama 3.2 3B (Default)',
-        description: 'Default: fast, low cost. Good colloquial Spanish and slang for general chat.',
+        id: 'google/gemma-3-27b-it',
+        name: 'Gemma 3 27B',
+        display_name: 'Gemma 3 27B (Default)',
+        description: 'Default: fast and efficient Google Gemma model tuned for conversational Spanish.',
         inference_speed: 'fast',
         is_available: true,
       },
       // Mid-tier (better accuracy, moderate cost)
       {
-        id: 'meta-llama/llama-3.3-8b-instruct:free',
-        name: 'Llama 3.3 8B Instruct (Free)',
-        display_name: 'Llama 3.3 8B (Mid)',
-        description: 'Mid-tier: stronger idiom and regional nuance; slightly slower and pricier.',
+        id: 'google/gemini-2.5-flash-lite',
+        name: 'Gemini 2.5 Flash Lite',
+        display_name: 'Gemini 2.5 Flash Lite (Mid)',
+        description: 'Mid-tier: balance of latency and quality for improved regional nuance.',
         inference_speed: 'medium',
         is_available: true,
       },
       // Premium (highest accuracy, slowest)
       {
-        id: 'meta-llama/llama-3.3-70b-instruct',
-        name: 'Llama 3.3 70B Instruct',
-        display_name: 'Llama 3.3 70B (Premium)',
-        description: 'Premium: best colloquial fluency and nuance; slowest and highest cost.',
+        id: 'google/gemini-2.5-flash',
+        name: 'Gemini 2.5 Flash',
+        display_name: 'Gemini 2.5 Flash (Premium)',
+        description: 'Premium: highest quality Gemini flash model for deep multi-turn persona fidelity.',
         inference_speed: 'slow',
         is_available: true,
       },
