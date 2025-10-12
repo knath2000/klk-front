@@ -2,11 +2,10 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import ChatSidebarOverlay from '@/components/ChatSidebarOverlay'
-import { Inter } from 'next/font/google'
-import AuthProvider from '@/context/AuthProvider'
-import WebSocketProvider from '@/context/WebSocketProvider'
+import { AuthProvider } from '@/context/AuthContext'
+import { WebSocketProvider } from '@/context/WebSocketContext'
 import StackAuthBridge from '@/components/StackAuthBridge'
-import ConversationsProvider from '@/context/ConversationsContext'
+import { ConversationsProvider } from '@/context/ConversationsContext'
 
 const inter = Inter({ subsets: ['latin'] })
 

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useConversations } from '@/context/ConversationsContext';
 import ModelSelector from './ModelSelector';
