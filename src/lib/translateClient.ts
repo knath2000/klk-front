@@ -62,19 +62,27 @@ export class RestTranslateError extends Error {
 }
 
 export const translateViaRest = async (params: RestTranslateParams): Promise<RestTranslateResponse> => {
+  // Defensive validation: ensure we have a valid non-empty text to send
+  if (!params || typeof params.text !== 'string' || params.text.trim().length === 0) {
+    throw new RestTranslateError('Invalid translation request: "text" is required', 400);
+  }
+
+  // Build a safe body ensuring no undefined fields are serialized
+  const safeBody = {
+    text: String(params.text),
+    sourceLang: params.sourceLang || 'en',
+    targetLang: params.targetLang || 'es',
+    context: params.context ?? null,
+    userId: params.userId ?? undefined,
+  };
+
   const response = await fetch('/api/translate/request', {
     method: 'POST',
     credentials: 'include', // ensure cookies (anon_id) are sent/received for guest persistence
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      text: params.text,
-      sourceLang: params.sourceLang,
-      targetLang: params.targetLang,
-      context: params.context,
-      userId: params.userId,
-    }),
+    body: JSON.stringify(safeBody),
   });
 
   const retryAfterHeader = response.headers.get('Retry-After');

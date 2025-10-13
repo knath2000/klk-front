@@ -103,7 +103,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     (!requireAuthFlag && process.env.NODE_ENV === 'production');
   const allowGuestTranslation = process.env.NEXT_PUBLIC_ALLOW_GUEST_TRANSLATION === 'true';
   const [runtimeRequireAuth, setRuntimeRequireAuth] = useState<boolean>(false);
-  const shouldConnect = (isAuthenticated || !requireAuth || allowGuestTranslation) && !runtimeRequireAuth;
+  const shouldConnect = isAuthenticated && !runtimeRequireAuth;
 
   useEffect(() => {
     console.log('[WebSocket] Auth configuration', {
@@ -116,7 +116,24 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
   useEffect(() => {
     if (!isAuthenticated) {
+      // Clear cached token and any stored session id to prevent stale reconnects
       tokenCache = null;
+      try {
+        localStorage.removeItem('websocket_session_id');
+      } catch {}
+
+      // If a socket exists, disconnect it to avoid accidental reconnects under a stale session
+      try {
+        if (socketRef.current) {
+          manualDisconnectRef.current = true;
+          socketRef.current.disconnect();
+          socketRef.current = null;
+          setSocket(null);
+        }
+      } catch (e) {
+        console.warn('Error while disconnecting stale socket on logout:', e);
+      }
+
       // Keep runtimeRequireAuth sticky for guests to honor server Token required responses.
     } else if (runtimeRequireAuth) {
       requireAuthRuntimeRef.current = false;

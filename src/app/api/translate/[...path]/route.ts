@@ -46,7 +46,36 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const url = new URL(`${BACKEND_URL}/api/translate/${pathString}`);
   
   try {
-    const body = await request.json();
+    // Defensive parse & logging to diagnose guest translation payloads
+    let body: any;
+    try {
+      body = await request.json();
+    } catch (parseErr) {
+      console.error('[Translate Proxy] Failed to parse incoming request JSON:', parseErr);
+      // Try to read raw text as fallback
+      try {
+        const raw = await request.text();
+        console.warn('[Translate Proxy] Raw request body (fallback):', raw?.slice(0, 200));
+        body = raw ? JSON.parse(raw) : {};
+      } catch (rawErr) {
+        console.error('[Translate Proxy] Failed to recover raw request body:', rawErr);
+        return NextResponse.json({ error: 'Bad Request', message: 'Invalid JSON body in proxy' }, { status: 400 });
+      }
+    }
+
+    // Log incoming body briefly for diagnostics (avoid huge dumps)
+    console.log('[Translate Proxy] Incoming POST body preview:', {
+      textPreview: typeof body?.text === 'string' ? body.text.substring(0, 100) : body?.text,
+      hasSourceLang: !!body?.sourceLang,
+      hasTargetLang: !!body?.targetLang,
+      hasUserId: !!body?.userId
+    });
+
+    // Defensive defaults / validation before forwarding
+    if (!body || typeof body !== 'object' || !body.text) {
+      return NextResponse.json({ error: 'Bad Request', message: 'Missing or invalid "text" field in translation request' }, { status: 400 });
+    }
+
     const response = await fetch(url.toString(), {
       method: 'POST',
       headers: {
