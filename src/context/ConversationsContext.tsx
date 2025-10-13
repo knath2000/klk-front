@@ -128,7 +128,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
         }
       })();
 
-      // Validate existing localStorage conversation id
+      // Validates existing localStorage conversation id
       const stored = typeof window !== 'undefined' ? localStorage.getItem('chatConversationId') : null;
       if (stored && rows.some(r => r.id === stored)) {
         setActiveId(stored);
