@@ -78,12 +78,13 @@ export const translateViaRest = async (params: RestTranslateParams): Promise<Res
 
   // Diagnostic: log the outgoing safe body for debugging guest translation requests
   const safeBodyPreview = {
-    text: safeBody.text?.slice(0, 200),
+    text: safeBody.text, // Log full text for clarity
+    typeOfText: typeof safeBody.text,
     sourceLang: safeBody.sourceLang,
     targetLang: safeBody.targetLang,
     hasUserId: !!safeBody.userId,
   };
-  console.log('[translateViaRest] Sending body preview:', safeBodyPreview);
+  console.log('[translateViaRest] Sending safe body:', safeBodyPreview);
 
   const response = await fetch('/api/translate/request', {
     method: 'POST',

@@ -204,6 +204,7 @@ function TranslatePageContent() {
 
       // Diagnostic: log environment and socket state
       console.log('[TranslatePage] handleQuerySubmit called', { query, isReadyForTranslation, socketExists: !!socket, socketId: socket?.id, socketConnected: !!socket?.connected, isConnected });
+      console.log('[TranslatePage] Raw query entering handleQuerySubmit:', { query, type: typeof query });
 
       // If the socket is not available, always use REST fallback (covers guest and env cases)
       const socketAvailable = !!socket && (socket.connected || isConnected);

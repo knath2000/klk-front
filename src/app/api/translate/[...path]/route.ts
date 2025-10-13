@@ -58,8 +58,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         console.warn('[Translate Proxy] Raw request body (fallback):', raw?.slice(0, 200));
         body = raw ? JSON.parse(raw) : {};
       } catch (rawErr) {
-        console.error('[Translate Proxy] Failed to recover raw request body:', rawErr);
-        return NextResponse.json({ error: 'Bad Request', message: 'Invalid JSON body in proxy' }, { status: 400 });
+        console.error('[Translate Proxy] Failed to recover raw request body; returning 400:', rawErr);
+        return NextResponse.json({ error: 'Bad Request', message: 'Malformed JSON body in proxy request' }, { status: 400 });
       }
     }
 
@@ -72,8 +72,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     });
 
     // Defensive defaults / validation before forwarding
-    if (!body || typeof body !== 'object' || !body.text) {
-      return NextResponse.json({ error: 'Bad Request', message: 'Missing or invalid "text" field in translation request' }, { status: 400 });
+    if (!body || typeof body !== 'object' || !body.text || typeof body.text !== 'string' || body.text.trim().toLowerCase() === 'undefined') {
+      console.error('[Translate Proxy] Rejecting invalid payload: Missing, invalid, or "undefined" text field.');
+      return NextResponse.json({ error: 'Bad Request', message: 'Invalid or missing "text" field in translation request' }, { status: 400 });
     }
 
     const response = await fetch(url.toString(), {
