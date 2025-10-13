@@ -210,46 +210,53 @@ function TranslatePageContent() {
 
       if (!socketAvailable) {
         console.warn('[TranslatePage] Socket unavailable; using REST fallback for translation', { query });
-        dispatch({ type: 'SET_LOADING', payload: true });
-        dispatch({ type: 'SET_ERROR', payload: null });
+        // UI validation: reject empty queries early
+        if (!query || !String(query).trim()) {
+          dispatch({ type: 'SET_LOADING', payload: false });
+          dispatch({ type: 'SET_ERROR', payload: 'Please enter text before translating' });
+          return;
+        }
+
+        // Build safe REST params with sensible defaults and log them
+        const anonId = getOrCreateAnonId();
+        const safeParams = {
+          text: String(query || '').trim(),
+          sourceLang: 'en',
+          targetLang: 'es',
+          context: undefined,
+          userId: anonId
+        };
+
+        console.log('[TranslatePage] REST fallback - sending safeParams preview:', {
+          textPreview: safeParams.text.slice(0, 200),
+          sourceLang: safeParams.sourceLang,
+          targetLang: safeParams.targetLang,
+          hasUserId: !!safeParams.userId
+        });
 
         try {
-          const anonId = getOrCreateAnonId();
-          console.log('[TranslatePage] REST fallback: calling translateViaRest', { anonId, query });
-          const restResp = await translateViaRest({
-            text: query,
-            sourceLang: 'en',
-            targetLang: 'es',
-            context: undefined,
-            userId: anonId,
-          });
-          console.log('[TranslatePage] REST fallback response received', { requestId: restResp.metadata?.requestId, definitions: restResp.definitions?.length ?? 0 });
-
-          // Map REST response to the frontend TranslationResult shape (best-effort)
+          const restResp = await translateViaRest(safeParams);
+          // Map REST response into translationResult shape used by the page
           const mapped: TranslationResult = {
-            id: restResp.metadata?.requestId || `rest-${Date.now()}`,
-            query,
+            id: restResp.metadata?.requestId || `translate_rest_${Date.now()}`,
+            query: safeParams.text,
             definitions: restResp.definitions || [],
             examples: restResp.examples || [],
             conjugations: restResp.conjugations || {},
-            audio: restResp.audio as any,
-            related: restResp.related as any,
-            entry: restResp.entry as any,
+            audio: restResp.audio || undefined,
+            related: restResp.related || undefined,
+            entry: (restResp.entry as any) || undefined,
             timestamp: Date.now()
           };
-          setStreamingResult('');
+
           setTranslationResult(mapped);
           dispatch({ type: 'SET_LOADING', payload: false });
-          dispatch({ type: 'ADD_TO_HISTORY', payload: {
-            query,
-            language: 'spanish',
-            result: formatTranslationResult(mapped)
-          }});
+          dispatch({ type: 'ADD_TO_HISTORY', payload: { query: mapped.query, language: 'spanish', result: formatTranslationResult(mapped) }});
           return;
         } catch (restErr: any) {
           console.error('[TranslatePage] REST translation failed:', restErr);
           dispatch({ type: 'SET_LOADING', payload: false });
-          dispatch({ type: 'SET_ERROR', payload: restErr instanceof Error ? restErr.message : 'REST translation failed' });
+          dispatch({ type: 'SET_ERROR', payload: restErr?.message || 'Backend error' });
           return;
         }
       }
@@ -343,9 +350,9 @@ function TranslatePageContent() {
       sendTranslationRequest(socket, translationRequest);
       console.log('📤 Translation request sent:', requestId);
     } catch (error) {
-      console.error('❌ Submission error:', error);
+      console.error('handleQuerySubmit error', error);
       dispatch({ type: 'SET_LOADING', payload: false });
-      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to send translation request' });
+      dispatch({ type: 'SET_ERROR', payload: (error as Error).message || 'Unknown error' });
     }
   };
 
