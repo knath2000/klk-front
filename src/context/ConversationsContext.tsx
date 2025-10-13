@@ -160,6 +160,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
 
   // Guarded emit for load_history: only when activeId changes or reconnects, and no pending for that id
   useEffect(() => {
+    // Only attempt to load history when we have an active conversation and an established socket connection
     if (!activeId || !socket || !isConnected) return;
     if (pendingHistoryIdRef.current === activeId) return; // Already pending
 
@@ -173,6 +174,20 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
       setHistoryLoadingId(null);
     }
   }, [activeId, socket, isConnected]);
+
+  // If we attempted to load history before the socket was connected, resend on reconnect.
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+    if (!historyLoadingId || !activeId) return;
+    // If the conversation we are waiting for is still the active one, re-emit load_history
+    if (historyLoadingId === activeId) {
+      try {
+        socket.emit('load_history', { conversationId: activeId });
+      } catch (e) {
+        // ignore; WebSocketContext will handle connection problems
+      }
+    }
+  }, [isConnected, socket, historyLoadingId, activeId]);
 
   // Clear pending on disconnect
   useEffect(() => {
