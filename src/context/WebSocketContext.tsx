@@ -16,6 +16,7 @@ interface WebSocketContextType {
   disconnect: () => void;
   error: string | null;
   latency: number | null;
+  requiresAuth: boolean;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined);
@@ -469,6 +470,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     disconnect,
     error,
     latency,
+    // Derived flag: true when the server has indicated a token is required for WebSocket/chat
+    requiresAuth: error === 'token-required'
   };
 
   return (

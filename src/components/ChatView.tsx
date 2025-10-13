@@ -104,11 +104,19 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
     personas: [],
     currentModel: DEFAULT_CLIENT_MODEL
   });
+  // Toast state for sign-in prompt when guests attempt to send a chat message
+  const [showSignInToast, setShowSignInToast] = useState<boolean>(false);
+  const showSignIn = () => {
+    setShowSignInToast(true);
+    // Auto-hide after 4.5 seconds
+    setTimeout(() => setShowSignInToast(false), 4500);
+  };
+  const [backendReachable, setBackendReachable] = useState<boolean>(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false); // Derived from provider or local fallback
 
-  const { socket, isConnected, connect, error: wsError } = useWebSocket();
+  const { socket, isConnected, connect, error: wsError, requiresAuth } = useWebSocket();
   const { user } = useAuth();
   const conversationsCtx = useOptionalConversations();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -274,6 +282,7 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
           }
 
           setChatState(prev => ({ ...prev, personas: data.personas }));
+          setBackendReachable(true);
           console.log('🎉 PERSONAS LOADED SUCCESSFULLY:', data.personas.length, 'personas');
           hasFetchedPersonasRef.current = true;
           personaFetchKeyRef.current = fetchKey;
@@ -304,6 +313,7 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
               ...prev,
               personas: fallbackPersonas
             }));
+            setBackendReachable(false);
             hasFetchedPersonasRef.current = true;
             personaFetchKeyRef.current = fetchKey;
             personaFetchInFlightRef.current = false;
@@ -516,6 +526,12 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
   const currentModel = chatState.currentModel;
 
   const handleSendMessage = useCallback(async (message: string) => {
+    // If user is not authenticated, show the in-app sign-in toast and do not proceed with chat send.
+    if (!user) {
+      showSignIn();
+      return;
+    }
+
     // Require a selected country client-side
     if (!selectedCountry) {
       console.error('❌ Cannot send message: no country selected');
@@ -749,12 +765,13 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
                       transition={{ delay: 0.2 }}
                       className="flex items-center gap-2"
                     >
+                      {/* Show 'Conectado' if socket is connected OR backend appears reachable; guests will see 'Conectado' if backend reachable */}
                       <div className={clsx(
                         "w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin",
-                        chatState.isConnected ? "bg-emerald-400 shadow-emerald-400/50" : "bg-red-400 shadow-red-400/50"
+                        (chatState.isConnected || backendReachable) ? "bg-emerald-400 shadow-emerald-400/50" : "bg-red-400 shadow-red-400/50"
                       )} />
                       <span className="text-sm text-white/80">
-                        {chatState.isConnected ? 'Conectado' : 'Desconectado'}
+                        {(chatState.isConnected || backendReachable) ? 'Conectado' : 'Desconectado'}
                       </span>
                     </m.div>
                   </LazyMotion>
@@ -767,12 +784,13 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
                       Conversa con IA que habla como la gente del lugar
                     </p>
                     <div className="flex items-center gap-2">
+                      {/* Show 'Conectado' if socket is connected OR backend appears reachable; guests will see 'Conectado' if backend reachable */}
                       <div className={clsx(
                         "w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin",
-                        chatState.isConnected ? "bg-emerald-400 shadow-emerald-400/50" : "bg-red-400 shadow-red-400/50"
+                        (chatState.isConnected || backendReachable) ? "bg-emerald-400 shadow-emerald-400/50" : "bg-red-400 shadow-red-400/50"
                       )} />
                       <span className="text-sm text-white/80">
-                        {chatState.isConnected ? 'Conectado' : 'Desconectado'}
+                        {(chatState.isConnected || backendReachable) ? 'Conectado' : 'Desconectado'}
                       </span>
                     </div>
                   </>
@@ -972,6 +990,21 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
           </AnimatePresence>
 
           <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      {/* Non-blocking Sign-in toast for guests who try to chat */}
+      <div aria-hidden={!showSignInToast} className={`fixed right-4 bottom-24 z-50 transition-opacity duration-300 ${showSignInToast ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        <div className="bg-white/6 backdrop-blur-md border border-white/20 text-white rounded-lg px-4 py-3 shadow-lg max-w-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <div className="font-semibold">Inicia sesión para chatear</div>
+              <div className="text-sm text-white/80">Inicia sesión para usar el chat en tiempo real y ver historial.</div>
+            </div>
+            <div>
+              <a href="/auth/signin" className="text-sm font-medium underline text-white/90">Inicia sesión</a>
+            </div>
+          </div>
         </div>
       </div>
     </div>
