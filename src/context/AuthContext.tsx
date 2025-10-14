@@ -46,7 +46,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } else {
           setUser(null);
         }
+      } else if (response.status === 404) {
+        // For 404, specifically treat as no user found (guest state), not a critical error
+        console.log('User endpoint returned 404, treating as unauthenticated guest.');
+        setUser(null);
+      } else if (response.status === 401) {
+        // For 401, clearly unauthenticated
+        console.log('User endpoint returned 401, treating as unauthenticated.');
+        setUser(null);
       } else {
+        // Other errors are still logged as errors
         setUser(null);
       }
     } catch (error) {
