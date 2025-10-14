@@ -82,7 +82,7 @@ export default function Navigation() {
             whileHover={{ scale: 1.02 }}
             className="flex items-center space-x-2"
           >
-            <Link href="/" className="flex items-center space-x-2 group">
+            <Link href="/chat" className="flex items-center space-x-2 group">
               <div className="w-6 h-6 rounded bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
                 <span className="text-white font-bold text-xs">AC</span>
               </div>
@@ -100,6 +100,22 @@ export default function Navigation() {
               <ChevronLeft className="w-4 h-4" />
             </motion.button>
           </motion.div>
+
+          {/* Primary Navigation Links */}
+          <div className="flex-1 flex justify-center space-x-4">
+            <Link href="/chat" className={cn(
+              "px-3 py-1 text-sm font-medium rounded-md transition-colors",
+              pathname === "/chat" ? "bg-blue-600 text-white shadow-lg" : "text-gray-300 hover:text-white hover:bg-gray-700"
+            )}>
+              Chat
+            </Link>
+            <Link href="/translate" className={cn(
+              "px-3 py-1 text-sm font-medium rounded-md transition-colors",
+              pathname === "/translate" ? "bg-blue-600 text-white shadow-lg" : "text-gray-300 hover:text-white hover:bg-gray-700"
+            )}>
+              Translate
+            </Link>
+          </div>
 
           {/* Right-aligned Get Plus button */}
           <div className="flex items-center space-x-2">

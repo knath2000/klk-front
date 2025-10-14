@@ -1,10 +1,9 @@
 'use client';
-
 import { ReactNode, useState } from 'react';
 import ChatShell from '@/components/ChatShell';
 import ChatView from '@/components/ChatView';
 
-function Home() {
+export default function ChatPage() {
   const [footerSlot, setFooterSlot] = useState<ReactNode | null>(null);
 
   return (
@@ -32,5 +31,3 @@ function Home() {
     </div>
   );
 }
-
-export default Home;
