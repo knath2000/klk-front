@@ -155,9 +155,9 @@ function TranslatePageContent() {
       console.log('✅ Frontend received translation result:', result.id, 'keys:', Object.keys(result), 'definitions count:', result.definitions?.length || 0);
 
       // Set the translation result for display
-      // Ensure any prior error is cleared so the UI shows results
-      dispatch({ type: 'SET_ERROR', payload: null });
       setTranslationResult(result);
+      // Ensure any prior error is cleared _after_ setting result, so hasResult is true
+      dispatch({ type: 'SET_ERROR', payload: null });
 
       // Convert TranslationResult to string for storage
       const resultString = formatTranslationResult(result);
@@ -466,7 +466,7 @@ function TranslatePageContent() {
                 <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
                   <LoadingSkeleton />
                 </div>
-              ) : (!hasResult && state.error) ? (
+              ) : (state.error && !currentQuery && !streamingResult && !translationResult) ? ( // Only show error if no other data is present
                 <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
                   <ErrorDisplay error={state.error} onRetry={handleRetry} />
                 </div>
