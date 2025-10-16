@@ -60,20 +60,20 @@ export function ResultsContainer({ query, streamingResult, onStreamingUpdate, re
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm"
+                  className="bg-white dark:bg-gray-800 rounded-lg p-mobile md:p-6 shadow-sm"
                 >
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                    <div className="flex items-baseline gap-3">
-                      <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                    <div className="flex items-baseline gap-3 flex-wrap">
+                      <h3 className="text-2xl font-semibold text-gray-900 dark:text-white break-words">
                         {result.entry.headword}
                       </h3>
                       {result.entry.pronunciation?.ipa && (
-                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                        <span className="text-sm text-gray-600 dark:text-gray-300 break-words">
                           [{result.entry.pronunciation.ipa}]
                         </span>
                       )}
                       {result.entry.pronunciation?.syllabification && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 break-words">
                           {result.entry.pronunciation.syllabification}
                         </span>
                       )}
@@ -135,7 +135,7 @@ export function ResultsContainer({ query, streamingResult, onStreamingUpdate, re
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm"
+                    className="bg-white dark:bg-gray-800 rounded-lg p-mobile md:p-6 shadow-sm box-border overflow-hidden"
                   >
                     <div className="flex items-start gap-3">
                       <div className="w-6 h-6 mt-0.5 flex items-center justify-center rounded-full bg-blue-500 text-white text-xs flex-shrink-0">
@@ -166,21 +166,21 @@ export function ResultsContainer({ query, streamingResult, onStreamingUpdate, re
                         {/* Spanish translation (primary), with English gloss as sublabel */}
                         {sense.translation_es ? (
                           <>
-                            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1 break-words">
                               {sense.translation_es}
                             </h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 break-words">
                               {sense.gloss}
                             </p>
                           </>
                         ) : (
-                          <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                          <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1 break-words">
                             {sense.gloss}
                           </h4>
                         )}
 
                         {sense.usage_notes && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 break-words">
                             {sense.usage_notes}
                           </p>
                         )}
@@ -191,8 +191,8 @@ export function ResultsContainer({ query, streamingResult, onStreamingUpdate, re
                             <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Examples:</h5>
                             {sense.examples.map((ex, exIdx) => (
                               <div key={exIdx} className="text-sm">
-                                <p className="text-gray-900 dark:text-white italic">"{ex.es}"</p>
-                                <p className="text-gray-600 dark:text-gray-400">"{ex.en}"</p>
+                                <p className="text-gray-900 dark:text-white italic break-words">"{ex.es}"</p>
+                                <p className="text-gray-600 dark:text-gray-400 break-words">"{ex.en}"</p>
                               </div>
                             ))}
                           </div>
@@ -473,7 +473,7 @@ export function ResultsContainer({ query, streamingResult, onStreamingUpdate, re
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden"
+      className="bg-white dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden max-w-full box-border mobile-safe-area"
     >
 
       {/* Tab Navigation */}
@@ -502,7 +502,7 @@ export function ResultsContainer({ query, streamingResult, onStreamingUpdate, re
       </div>
 
       {/* Tab Content */}
-      <div className="p-6">
+      <div className="p-mobile md:p-6">
         {(() => {
           const animationsReady = useAnimationsReady();
           const reduceMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
