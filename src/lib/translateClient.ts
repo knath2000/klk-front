@@ -95,9 +95,17 @@ export const translateViaRest = async (params: RestTranslateParams): Promise<Res
     userId: safeBody.userId || ''
   });
 
-  const response = await fetch(`/api/translate/request?${recoveryQuery.toString()}`, {
+  // Prefer direct backend URL in production to avoid Next.js proxy timeouts
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const useDirect = typeof backendUrl === 'string' && backendUrl.startsWith('http');
+  const endpoint = useDirect
+    ? `${backendUrl.replace(/\/+$/, '')}/api/translate/request`
+    : `/api/translate/request`;
+
+  const response = await fetch(`${endpoint}?${recoveryQuery.toString()}`, {
     method: 'POST',
     credentials: 'include', // ensure cookies (anon_id) are sent/received for guest persistence
+    mode: 'cors',
     headers: {
       'Content-Type': 'application/json',
     },

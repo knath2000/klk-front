@@ -251,6 +251,7 @@ function TranslatePageContent() {
           };
 
           setTranslationResult(mapped);
+          setCurrentQuery(safeParams.text); // Set currentQuery so ResultsContainer renders
           dispatch({ type: 'SET_LOADING', payload: false });
           dispatch({ type: 'ADD_TO_HISTORY', payload: { query: mapped.query, language: 'spanish', result: formatTranslationResult(mapped) }});
           return;
@@ -317,6 +318,7 @@ function TranslatePageContent() {
             };
             setStreamingResult('');
             setTranslationResult(mapped);
+            setCurrentQuery(query); // Set currentQuery so ResultsContainer renders
             dispatch({ type: 'SET_LOADING', payload: false });
             dispatch({ type: 'ADD_TO_HISTORY', payload: {
               query,
