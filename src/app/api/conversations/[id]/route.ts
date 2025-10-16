@@ -17,15 +17,27 @@ export async function DELETE(req: Request, context: any) {
       method: 'DELETE',
       headers: {
         ...(authHeader ? { Authorization: authHeader } : {}),
-        'Content-Type': 'application/json'
+        // Do not force Content-Type for DELETE without body; backend may return 204
       }
     });
 
-    const text = await backendRes.text();
-    return new NextResponse(text, {
-      status: backendRes.status,
-      headers: { 'Content-Type': backendRes.headers.get('content-type') || 'text/plain' }
-    });
+    // If backend returned 204 No Content, relay it exactly without a body.
+    if (backendRes.status === 204) {
+      return new NextResponse(null, { status: 204 });
+    }
+
+    // Otherwise forward body based on content-type
+    const contentType = backendRes.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const json = await backendRes.json();
+      return NextResponse.json(json, { status: backendRes.status });
+    } else {
+      const text = await backendRes.text();
+      return new NextResponse(text, {
+        status: backendRes.status,
+        headers: { 'Content-Type': contentType || 'text/plain' }
+      });
+    }
   } catch (err: any) {
     console.error('Proxy DELETE /api/conversations/:id error', err);
     return NextResponse.json({ error: 'Proxy failed' }, { status: 500 });

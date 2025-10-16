@@ -53,9 +53,10 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
 
   const generateTempId = () => `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  const fetchConversations = useCallback(async () => {
+  // Add optional `force` flag to allow explicit refresh after actions like delete
+  const fetchConversations = useCallback(async (force = false) => {
     const userId = user?.id;
-    if (!userId || userId === lastFetchedUserIdRef.current) {
+    if (!userId || (!force && userId === lastFetchedUserIdRef.current)) {
       return;
     }
     lastFetchedUserIdRef.current = userId;
@@ -374,7 +375,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
             return copy;
           });
           // Refresh listing
-          await fetchConversations();
+          await fetchConversations(true);
           return true;
         } else {
           console.error('Failed to delete conversation via proxy', res.status);
