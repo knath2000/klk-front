@@ -53,6 +53,11 @@
   --section-gap: clamp(18px, 3vw, 44px);
   --row-gap: clamp(12px, 2.4vw, 28px);
   --card-pad: clamp(16px, 2.8vw, 30px);
+  --row-gap-mobile: clamp(8px, 2vh, 16px);
+  --safe-top: env(safe-area-inset-top);
+  --safe-b: env(safe-area-inset-bottom);
+  --safe-l: env(safe-area-inset-left);
+  --safe-r: env(safe-area-inset-right);
 
   /* Radii */
   --radius-sm: 14px;
@@ -475,5 +480,86 @@ body {
     --surface-200: rgba(18, 27, 49, 0.9);
     --surface-strong: rgba(24, 34, 60, 0.92);
     --glass-border: rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* Add shared safe-area variables and mobile spacing token */
+:root {
+  /* ... existing code ... */
+  --row-gap-mobile: clamp(8px, 2vh, 16px);
+  --safe-top: env(safe-area-inset-top);
+  --safe-b: env(safe-area-inset-bottom);
+  --safe-l: env(safe-area-inset-left);
+  --safe-r: env(safe-area-inset-right);
+}
+
+/* Mobile-safe wrapper — use on top-level shells (nav, chat shell, drawers) */
+.mobile-safe-area {
+  padding-top: calc(var(--safe-top) + 0.75rem);
+  padding-left: var(--safe-l);
+  padding-right: var(--safe-r);
+}
+
+/* Drawer inner container helpers — respect left/right/bottom safe areas */
+.drawer-inner {
+  padding-left: var(--safe-l);
+  padding-right: var(--safe-r);
+  padding-bottom: var(--safe-b);
+}
+
+/* Small helpers for compact mobile density */
+.row-gap-mobile {
+  --row-gap: var(--row-gap-mobile);
+}
+
+/* Compact paddings used on mobile surfaces */
+.p-mobile { padding: 1rem; }
+.p-mobile-sm { padding: 0.75rem; }
+.hero-compact { padding: 1rem; }
+
+/* Constrain drawer width for small screens and provide top offset helper */
+.drawer-width {
+  width: min(80vw, 320px);
+  max-width: 320px;
+  box-sizing: border-box;
+}
+
+/* Place fixed drawers / overlays below the notch when used on fixed elements */
+.drawer-top-offset {
+  top: var(--safe-top);
+}
+
+/* Ensure touchable controls meet Apple HIG on mobile */
+.min-touch {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Media-query tweaks for mobile density */
+@media (max-width: 768px) {
+  /* Tighten card spacing and radii on small screens */
+  .card, .glass-card, .rounded-xl {
+    padding: 1rem !important;
+    border-radius: 12px !important;
+  }
+
+  /* Compact control grid helper */
+  .control-grid-compact {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  /* Tighter hero typography on small screens */
+  .hero-title {
+    font-size: clamp(20px, 5vw, 26px);
+  }
+
+  /* Slightly reduce heavy blur/shadow for mobile performance */
+  .backdrop-blur-md {
+    --tw-backdrop-blur: blur(6px);
   }
 }

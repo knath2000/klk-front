@@ -732,11 +732,11 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
   console.log('ChatView render:', { selectedCountry, isConnected, messagesCount: chatState.messages.length });
 
   return (
-    <div className="flex flex-col gap-[var(--row-gap)] min-h-[100svh] h-[100vh] h-[100lvh]">
+    <div className="flex flex-col gap-[var(--row-gap)] row-gap-mobile min-h-[100svh] h-[100vh] h-[100lvh]">
       {/* Header with glass design */}
       <div className="relative z-10 px-4 md:px-6 pl-safe-l pr-safe-r pt-4 md:pt-6 mt-0">
         <div className="max-w-7xl mx-auto flex flex-col gap-[var(--row-gap)]">
-          <div className="bg-[#343541] border border-gray-700 rounded-lg p-4 py-3">
+          <div className="bg-[#343541] border border-gray-700 rounded-lg p-mobile py-3">
             <div className="flex items-center justify-between flex-wrap gap-3 xs:flex-nowrap">
               {/* Title Section */}
               <div>
@@ -745,7 +745,7 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
                     <m.h1
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="text-[clamp(22px,5vw,26px)] md:text-3xl font-bold text-white mb-2"
+                      className="hero-title md:text-3xl font-bold text-white mb-2"
                     >
                       🇪🇸 AI Chat con Sabor Local
                     </m.h1>
@@ -777,7 +777,7 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
                   </LazyMotion>
                 ) : (
                   <>
-                    <h1 className="text-[clamp(22px,5vw,26px)] md:text-3xl font-bold text-white mb-2">
+                    <h1 className="hero-title md:text-3xl font-bold text-white mb-2">
                       🇪🇸 AI Chat con Sabor Local
                     </h1>
                     <p className="text-base md:text-lg md:text-xl text-white/80 leading-1.4">
@@ -808,7 +808,7 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
             </div>
 
             {/* Controls Row - Adjusted gap for mobile */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[clamp(12px,3vh,16px)]">
+            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-[var(--row-gap-mobile)] control-grid-compact">
               {animationsReady ? (
                 <LazyMotion features={domAnimation}>
                   <m.div

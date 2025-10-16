@@ -36,9 +36,8 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
         {/* Mobile hamburger menu button */}
         <button
           onClick={() => setIsMobileDrawerOpen(true)}
-          className={`lg:hidden fixed top-4 z-[60] p-2 bg-[#202123] rounded-md border border-gray-600 hover:bg-[#2a2b32] transition-colors ${
-            isSidebarCollapsed ? 'left-4' : 'left-4'
-          }`}
+          className={`lg:hidden fixed z-[60] p-2 bg-[#202123] rounded-md border border-gray-600 hover:bg-[#2a2b32] transition-colors ${isSidebarCollapsed ? 'left-4' : 'left-4'} mobile-safe-area min-touch`}
+          style={{ top: 'calc(var(--safe-top) + 0.5rem)' }}
           aria-label="Open conversations menu"
         >
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,7 +58,7 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
           className={`
             sidebar-shell
             ${isMobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}
-            fixed inset-y-0 left-0 w-72
+            fixed left-0 w-72 drawer-width drawer-inner drawer-top-offset
             lg:fixed lg:inset-y-0 lg:left-0 lg:translate-x-0 lg:block
             lg:flex-shrink-0
             ${isSidebarCollapsed ? 'lg:w-16' : 'lg:w-80'}
@@ -67,6 +66,7 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
             transition-transform duration-300 ease-in-out
             overflow-y-auto
           `}
+          style={{ top: 'var(--safe-top)' }}
         >
           <ConversationSidebarCollapsible
             isCollapsed={isSidebarCollapsed}

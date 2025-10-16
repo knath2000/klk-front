@@ -18,6 +18,8 @@ const config: Config = {
         'safe-b': 'env(safe-area-inset-bottom)',
         'safe-l': 'env(safe-area-inset-left)',
         'safe-r': 'env(safe-area-inset-right)',
+        /* Combined safe-top token (safe-area + fallback padding) */
+        'safe-pt': 'calc(env(safe-area-inset-top) + 12px)',
       },
       colors: {
         'glass-light': 'rgba(255, 255, 255, 0.15)',
