@@ -86,7 +86,16 @@ export const translateViaRest = async (params: RestTranslateParams): Promise<Res
   };
   console.log('[translateViaRest] Sending safe body:', safeBodyPreview);
 
-  const response = await fetch('/api/translate/request', {
+  // Build redundant query string for recovery if body gets corrupted in transit
+  const recoveryQuery = new URLSearchParams({
+    text: safeBody.text,
+    sourceLang: safeBody.sourceLang,
+    targetLang: safeBody.targetLang,
+    context: safeBody.context || '',
+    userId: safeBody.userId || ''
+  });
+
+  const response = await fetch(`/api/translate/request?${recoveryQuery.toString()}`, {
     method: 'POST',
     credentials: 'include', // ensure cookies (anon_id) are sent/received for guest persistence
     headers: {

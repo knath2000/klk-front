@@ -77,6 +77,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Bad Request', message: 'Invalid or missing "text" field in translation request' }, { status: 400 });
     }
 
+    // Mirror critical fields into query string for backend recovery if body gets corrupted
+    const recoveryParams = new URLSearchParams({
+      text: body.text,
+      sourceLang: body.sourceLang || 'en',
+      targetLang: body.targetLang || 'es',
+      context: body.context || '',
+      userId: body.userId || ''
+    });
+    url.search = recoveryParams.toString();
+
     const response = await fetch(url.toString(), {
       method: 'POST',
       headers: {
