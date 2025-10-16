@@ -7,8 +7,10 @@ import { Plus, Search, User, ChevronRight, LogOut, Zap, ChevronLeft, MessageSqua
 import clsx from 'clsx';
 import Link from 'next/link';
 import ModelSelector from '@/components/ModelSelector';
+import ConfirmationModal from '@/components/ConfirmationModal';
 import { usePathname } from 'next/navigation';
 import { Virtuoso } from 'react-virtuoso';
+import { showToast } from '@/components/Toast';
 
 interface AIModel {
   id: string;
@@ -30,12 +32,14 @@ export default function ConversationSidebarCollapsible({
   onToggleCollapse,
   onMobileClose
 }: ConversationSidebarProps) {
-  const { list, activeId, setActive, loading, error, historyLoadingId, startNewConversation, deleteConversation } = useConversations();
+  const { list, activeId, setActive, loading, error, historyLoadingId, startNewConversation, deleteConversation, deleteAllConversations } = useConversations();
   const { user, signOut } = useAuth();
   const listRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentModel, setCurrentModel] = useState('google/gemma-3-27b-it');
   const pathname = usePathname();
+  const [openDeleteAllModal, setOpenDeleteAllModal] = useState(false);
+  const [deleteAllLoading, setDeleteAllLoading] = useState(false);
 
   // Filter conversations based on search query
   const filteredList = list.filter(conv =>
@@ -237,9 +241,43 @@ export default function ConversationSidebarCollapsible({
         >
           <div className={`px-4 py-3 border-b border-gray-700 ${isCollapsed ? 'px-2' : ''}`}>
             {!isCollapsed && (
-              <h2 className="text-sm font-semibold text-white/90">Your conversations</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-white/90">Your conversations</h2>
+                <button
+                  onClick={() => setOpenDeleteAllModal(true)}
+                  title="Delete all conversations"
+                  className="text-xs text-red-400 hover:text-red-200 hover:bg-white/5 px-2 py-1 rounded"
+                >
+                  Delete all
+                </button>
+              </div>
             )}
           </div>
+
+          <ConfirmationModal
+            open={openDeleteAllModal}
+            title="Delete all conversations"
+            description="This will permanently remove ALL your conversations and associated data. This action cannot be undone. Type DELETE to confirm."
+            loading={deleteAllLoading}
+            onCancel={() => setOpenDeleteAllModal(false)}
+            onConfirm={async () => {
+              try {
+                setDeleteAllLoading(true);
+                const ok = await deleteAllConversations?.();
+                if (!ok) {
+                  showToast('Failed to delete all conversations. Please try again later.', 'error');
+                  return;
+                }
+                setOpenDeleteAllModal(false);
+                showToast('All conversations deleted', 'success');
+              } catch (err) {
+                console.error('Error during bulk delete:', err);
+                showToast('Error deleting conversations. See console for details.', 'error');
+              } finally {
+                setDeleteAllLoading(false);
+              }
+            }}
+          />
 
           {loading && (
             <div className={`text-white/80 flex items-center gap-2 ${isCollapsed ? 'p-2 justify-center' : 'p-4'}`}>

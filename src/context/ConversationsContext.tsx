@@ -27,6 +27,8 @@ type ConversationsContextType = {
   startNewConversation: (opts?: { auto?: boolean }) => Promise<void>;
   // Delete conversation helper: calls Next.js proxy which forwards to backend (NeonDB)
   deleteConversation: (conversationId: string) => Promise<boolean>;
+  // Delete all conversations for the current user (requires explicit confirmation)
+  deleteAllConversations: () => Promise<boolean>;
   unreadCounts: Record<string, number>;
   clearUnread: (conversationId: string) => void;
 };
@@ -43,6 +45,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
   const [historyLoadingId, setHistoryLoadingId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const [deleteAllLoading, setDeleteAllLoading] = useState<boolean>(false);
   const pendingHistoryIdRef = useRef<string | null>(null);
   const lastFetchedUserIdRef = useRef<string | null>(null);
 
@@ -384,6 +387,50 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
       } catch (e) {
         console.error('deleteConversation error', e);
         return false;
+      }
+    },
+    // Delete all conversations for the current user (requires explicit confirmation)
+    deleteAllConversations: async () => {
+      if (!user?.id) {
+        console.warn('deleteAllConversations blocked: no authenticated user');
+        return false;
+      }
+
+      if (deleteAllLoading) return false;
+      const confirmed = window.confirm('Delete ALL your conversations? This action is irreversible. Click OK to proceed.');
+      if (!confirmed) return false;
+
+      setDeleteAllLoading(true);
+      try {
+        const token = await getNeonAuthToken();
+        const url = `/api/conversations?confirm=true`;
+        const res = await fetch(url, {
+          method: 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+        });
+
+        if (res.status === 204 || res.ok) {
+          // Clear local state
+          setList([]);
+          setActiveId(null);
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('chatConversationId');
+          }
+          setHistoryLoadingId(null);
+          setUnreadCounts({});
+          // Ensure we refresh to reflect server state
+          await fetchConversations(true);
+          return true;
+        } else {
+          const text = await res.text().catch(() => '');
+          console.error('Failed to delete all conversations', res.status, text);
+          return false;
+        }
+      } catch (e) {
+        console.error('deleteAllConversations error', e);
+        return false;
+      } finally {
+        setDeleteAllLoading(false);
       }
     },
     unreadCounts,
