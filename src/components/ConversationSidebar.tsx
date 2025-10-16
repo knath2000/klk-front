@@ -19,7 +19,7 @@ interface AIModel {
 }
 
 export default function ConversationSidebarEnhanced() {
-  const { list, activeId, setActive, refresh, loading, error, historyLoadingId, startNewConversation } = useConversations();
+  const { list, activeId, setActive, refresh, loading, error, historyLoadingId, startNewConversation, deleteConversation } = useConversations();
   const { user, signOut } = useAuth();
   const listRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -201,31 +201,12 @@ export default function ConversationSidebarEnhanced() {
                           const confirmed = window.confirm('Delete this conversation? This is permanent.');
                           if (!confirmed) return;
                           try {
-                            const token = await getNeonAuthToken();
-                            const res = await fetch(`/api/conversations/${c.id}`, {
-                              method: 'DELETE',
-                              headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-                            });
-                            if (res.status === 204 || res.ok) {
-                              // If the deleted conversation was active, clear local storage so context picks a new active on refresh.
-                              if (isActive) {
-                                if (typeof window !== 'undefined') {
-                                  localStorage.removeItem('chatConversationId');
-                                }
-                              }
-                              // Refresh the conversations list from the backend
-                              try {
-                                await refresh();
-                              } catch (err) {
-                                console.warn('Failed to refresh conversations after delete:', err);
-                              }
-                            } else {
-                              const text = await res.text().catch(() => '');
-                              console.error('Failed to delete conversation:', res.status, text);
+                            const ok = await deleteConversation?.(c.id);
+                            if (!ok) {
                               alert('Failed to delete conversation');
                             }
                           } catch (err) {
-                            console.error('Error deleting conversation:', err);
+                            console.error('Error deleting conversation via context helper:', err);
                             alert('Error deleting conversation');
                           }
                         }}

@@ -3,7 +3,7 @@
 import React, { useRef, useState, useMemo } from 'react';
 import { useConversations } from '@/context/ConversationsContext';
 import { useAuth } from '@/context/AuthContext';
-import { Plus, Search, User, ChevronRight, LogOut, Zap, ChevronLeft, MessageSquare, Languages } from 'lucide-react';
+import { Plus, Search, User, ChevronRight, LogOut, Zap, ChevronLeft, MessageSquare, Languages, Trash } from 'lucide-react';
 import clsx from 'clsx';
 import Link from 'next/link';
 import ModelSelector from '@/components/ModelSelector';
@@ -30,7 +30,7 @@ export default function ConversationSidebarCollapsible({
   onToggleCollapse,
   onMobileClose
 }: ConversationSidebarProps) {
-  const { list, activeId, setActive, loading, error, historyLoadingId, startNewConversation } = useConversations();
+  const { list, activeId, setActive, loading, error, historyLoadingId, startNewConversation, deleteConversation } = useConversations();
   const { user, signOut } = useAuth();
   const listRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -271,14 +271,14 @@ export default function ConversationSidebarCollapsible({
                     : c.updated_at?.toISOString?.() ?? new Date().toISOString();
 
                   return (
-                    <li key={c.id}>
+                    <li key={c.id} className="flex items-center justify-between">
                       <button
                         type="button"
                         role="option"
                         aria-selected={isActive}
                         tabIndex={-1}
                         className={clsx(
-                          'w-full text-left py-2 px-3 rounded hover:bg-gray-800 transition-colors',
+                          'flex-1 text-left py-2 px-3 rounded hover:bg-gray-800 transition-colors mr-2',
                           isActive ? 'bg-gray-800' : ''
                         )}
                         onClick={() => setActive(c.id)}
@@ -293,6 +293,28 @@ export default function ConversationSidebarCollapsible({
                             {new Date(updatedIso).toLocaleTimeString()}
                           </div>
                         </div>
+                      </button>
+
+                      {/* Delete button outside the main button to avoid nested buttons */}
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const confirmed = window.confirm('Delete this conversation? This is permanent.');
+                          if (!confirmed) return;
+                          try {
+                            const ok = await deleteConversation?.(c.id);
+                            if (!ok) {
+                              alert('Failed to delete conversation');
+                            }
+                          } catch (err) {
+                            console.error('Error deleting conversation via context helper:', err);
+                            alert('Error deleting conversation');
+                          }
+                        }}
+                        title="Delete conversation"
+                        className="ml-1 p-2 rounded-md text-red-400 hover:text-red-200 hover:bg-white/5 transition"
+                      >
+                        <Trash className="w-4 h-4" />
                       </button>
                     </li>
                   );

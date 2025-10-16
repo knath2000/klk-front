@@ -25,6 +25,8 @@ type ConversationsContextType = {
   sidebarOpen: boolean;
   toggleSidebar: () => void;
   startNewConversation: (opts?: { auto?: boolean }) => Promise<void>;
+  // Delete conversation helper: calls Next.js proxy which forwards to backend (NeonDB)
+  deleteConversation: (conversationId: string) => Promise<boolean>;
   unreadCounts: Record<string, number>;
   clearUnread: (conversationId: string) => void;
 };
@@ -346,6 +348,43 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
     sidebarOpen,
     toggleSidebar,
     startNewConversation,
+    // Delete conversation helper: calls Next.js proxy which forwards to backend (NeonDB)
+    deleteConversation: async (conversationId: string) => {
+      try {
+        const token = await getNeonAuthToken();
+        const res = await fetch(`/api/conversations/${conversationId}`, {
+          method: 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined
+        });
+
+        if (res.status === 204 || res.ok) {
+          // If deleted conversation was active, clear local storage and active state
+          if (conversationId === activeId) {
+            setActiveId(null);
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('chatConversationId');
+            }
+            setHistoryLoadingId(null);
+          }
+          // Remove unread count
+          setUnreadCounts(prev => {
+            if (!prev[conversationId]) return prev;
+            const copy = { ...prev };
+            delete copy[conversationId];
+            return copy;
+          });
+          // Refresh listing
+          await fetchConversations();
+          return true;
+        } else {
+          console.error('Failed to delete conversation via proxy', res.status);
+          return false;
+        }
+      } catch (e) {
+        console.error('deleteConversation error', e);
+        return false;
+      }
+    },
     unreadCounts,
     clearUnread: (conversationId: string) => {
       setUnreadCounts(prev => {
