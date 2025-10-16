@@ -282,6 +282,13 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
       return;
     }
 
+    // 🔹 GUARD: Only create conversation if explicitly requested by user action
+    // Do NOT auto-create on page load (isAuto=true means skip auto-creation)
+    if (isAuto) {
+      console.log('⏭️  Auto-creation skipped: conversation will be created on first message send');
+      return;
+    }
+
     // Optimistically add placeholder
     setList(prev => [placeholder, ...prev]);
     setActiveId(tempId);

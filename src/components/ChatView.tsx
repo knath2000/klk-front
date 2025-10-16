@@ -124,6 +124,7 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
   const hasFetchedPersonasRef = useRef(false);
   const personaFetchKeyRef = useRef<string | null>(null);
   const personaFetchInFlightRef = useRef(false);
+  const pendingConversationCreationRef = useRef(false);
   // Gate animations so framer-motion feature bundle is loaded after idle
   const animationsReady = useAnimationsReady();
 
@@ -607,12 +608,33 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
       }
     }
 
+    // ✅ LAZY CONVERSATION CREATION: Only create a real conversation if we don't have one yet
+    // and this is the first message being sent (prevents empty conversations)
+    if (!conversationId || conversationId.startsWith('temp-')) {
+      if (!pendingConversationCreationRef.current && conversationsCtx?.startNewConversation) {
+        console.log('🔄 First message detected: Creating conversation...');
+        pendingConversationCreationRef.current = true;
+        try {
+          await conversationsCtx.startNewConversation({ auto: false });
+          console.log('✅ Conversation created successfully');
+        } catch (err) {
+          console.error('❌ Failed to create conversation on first message:', err);
+          pendingConversationCreationRef.current = false;
+          return;
+        }
+        pendingConversationCreationRef.current = false;
+        
+        // Wait a brief moment for conversationId to update from context
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+
     console.log('📤 SENDING MESSAGE:', { message, country: selectedCountry });
 
     // Generate consistent message ID that matches server expectations
     const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // Generate conversationId if this is the first message
+    // Generate conversationId if this is the first message (fallback if lazy creation didn't work)
     let currentConversationId = conversationId;
     if (!currentConversationId) {
       currentConversationId = `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -658,7 +680,7 @@ const ChatView: React.FC<ChatViewProps> = ({ onFooterChange }) => {
     });
 
     console.log('📤 MESSAGE SENT with ID:', messageId);
-  }, [selectedCountry, socket, connect, isConnected, conversationId, currentModel]);
+  }, [selectedCountry, socket, connect, isConnected, conversationId, currentModel, conversationsCtx, user]);
 
   // Provide an up-to-date footer slot to the shell whenever selection or connection state changes.
   useEffect(() => {
