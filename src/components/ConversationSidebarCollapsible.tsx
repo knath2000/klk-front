@@ -82,11 +82,13 @@ export default function ConversationSidebarCollapsible({
       <div className={`h-full bg-[#202123] border-r border-gray-700 flex flex-col transition-all duration-300 ${
         isCollapsed ? 'w-16' : 'w-full md:w-60 lg:w-64 xl:w-72'
       }`}>
-        {/* Collapse Toggle Button */}
+        {/* collapse toggle moved outside inner content to position relative to outer aside */}
+        {/* Desktop collapse/expand toggle: position relative to outer <aside> (so it moves with the sidebar).
+            Hide on small screens because mobile drawer uses its own close button */}
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="absolute -right-3 top-6 z-10 p-1.5 bg-[#202123] border border-gray-600 rounded-full hover:bg-[#2a2b32] transition-colors"
+            className="hidden lg:block absolute -right-3 top-6 z-10 p-1.5 bg-[#202123] border border-gray-600 rounded-full hover:bg-[#2a2b32] transition-colors"
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isCollapsed ? (
