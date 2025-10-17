@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, ReactNode } from 'react';
 import ConversationSidebarCollapsible from '@/components/ConversationSidebarCollapsible';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 type ChatShellProps = {
   children: ReactNode;
@@ -72,6 +73,20 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
           onMobileClose={() => setIsMobileDrawerOpen(false)}
         />
       </aside>
+
+      {/* Desktop collapse/expand toggle positioned relative to layout container so it tracks the outer aside width */}
+      <button
+        onClick={toggleSidebarCollapse}
+        className="hidden lg:block absolute z-[70] p-1.5 bg-[#202123] border border-gray-600 rounded-full hover:bg-[#2a2b32] transition-colors"
+        style={{
+          top: 'calc(var(--safe-top) + 1.5rem)',
+          left: isSidebarCollapsed ? '4rem' : '20rem',
+          transform: 'translateX(-50%)'
+        }}
+        aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        {isSidebarCollapsed ? <ChevronRight className="w-4 h-4 text-gray-300" /> : <ChevronLeft className="w-4 h-4 text-gray-300" />}
+      </button>
 
       {/* Main content */}
       <main
