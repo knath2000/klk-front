@@ -6,7 +6,6 @@ import { useAuth } from '@/context/AuthContext';
 import { Plus, Search, User, ChevronRight, LogOut, Zap, ChevronLeft, MessageSquare, Languages, Trash } from 'lucide-react';
 import clsx from 'clsx';
 import Link from 'next/link';
-import ModelSelector from '@/components/ModelSelector';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import { usePathname } from 'next/navigation';
 import { Virtuoso } from 'react-virtuoso';
@@ -36,7 +35,6 @@ export default function ConversationSidebarCollapsible({
   const { user, signOut } = useAuth();
   const listRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentModel, setCurrentModel] = useState('google/gemma-3-27b-it');
   const pathname = usePathname();
   const [openDeleteAllModal, setOpenDeleteAllModal] = useState(false);
   const [deleteAllLoading, setDeleteAllLoading] = useState(false);
@@ -59,10 +57,7 @@ export default function ConversationSidebarCollapsible({
     }
   };
 
-  const handleModelChange = (modelId: string) => {
-    setCurrentModel(modelId);
-    // TODO: Implement model change logic
-  };
+  // model selector removed from sidebar; no model change handler needed
 
   const handleSignOut = async () => {
     try {
@@ -175,36 +170,7 @@ export default function ConversationSidebarCollapsible({
             </Link>
           </nav>
 
-          {/* Model Selector - Hidden when collapsed */}
-          {!isCollapsed && (
-            <div className="mb-4">
-              <ModelSelector
-                currentModel={currentModel}
-                onModelChange={handleModelChange}
-              />
-            </div>
-          )}
-
-          {/* Collapsed Model Selector Icon */}
-          {isCollapsed && (
-            <div className="flex justify-center mb-4">
-              <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center">
-                <MessageSquare className="w-4 h-4 text-gray-300" />
-              </div>
-            </div>
-          )}
-
-          {/* New Chat Button */}
-          <button
-            onClick={() => startNewConversation()}
-            className={`flex items-center gap-2 px-3 py-2 rounded-md bg-[#4b90ff] hover:bg-[#4b90ff]/90 text-white transition-colors ${
-              isCollapsed ? 'justify-center w-10 mx-auto' : 'w-full justify-center'
-            }`}
-            aria-label="Start new conversation"
-          >
-            <Plus className="w-4 h-4" />
-            {!isCollapsed && <span>New Chat</span>}
-          </button>
+          {/* Model selector removed from sidebar */}
         </div>
 
         {/* Search/Filter - Hidden when collapsed */}
