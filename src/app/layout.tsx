@@ -6,6 +6,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import { WebSocketProvider } from '@/context/WebSocketContext'
 import StackAuthBridge from '@/components/StackAuthBridge'
 import { ConversationsProvider } from '@/context/ConversationsContext'
+import { TranslationProvider } from '@/context/TranslationContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -26,13 +27,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="pb-[calc(env(safe-area-inset-bottom)+24px)]">
             <AuthProvider>
               <WebSocketProvider>
-                <StackAuthBridge>
-                  <ConversationsProvider>
-                    {/* Global ChatGPT-style sidebar overlay trigger + panel */}
-                    <ChatSidebarOverlay />
-                    {children}
-                  </ConversationsProvider>
-                </StackAuthBridge>
+                <TranslationProvider>
+                  <StackAuthBridge>
+                    <ConversationsProvider>
+                      {/* Global ChatGPT-style sidebar overlay trigger + panel */}
+                      <ChatSidebarOverlay />
+                      {children}
+                    </ConversationsProvider>
+                  </StackAuthBridge>
+                </TranslationProvider>
               </WebSocketProvider>
             </AuthProvider>
           </div>

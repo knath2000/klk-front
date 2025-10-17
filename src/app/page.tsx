@@ -523,10 +523,8 @@ function TranslatePageContent() {
 
 export default function Home() {
   return (
-    <TranslationProvider>
-      <ErrorBoundary>
-        <TranslatePageContent />
-      </ErrorBoundary>
-    </TranslationProvider>
+    <ErrorBoundary>
+      <TranslatePageContent />
+    </ErrorBoundary>
   );
 }
