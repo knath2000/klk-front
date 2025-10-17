@@ -57,10 +57,10 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
         className={`
           sidebar-shell
           ${isMobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}
-          fixed left-0 w-72 drawer-width drawer-inner drawer-top-offset
+          fixed left-0 drawer-width drawer-inner drawer-top-offset
           lg:fixed lg:inset-y-0 lg:left-0 lg:translate-x-0 lg:block
           lg:flex-shrink-0
-          ${isSidebarCollapsed ? 'lg:w-16' : 'lg:w-80'}
+          ${isSidebarCollapsed ? 'w-72 lg:w-16 xl:w-16' : 'w-72 md:w-60 lg:w-64 xl:w-72'}
           z-[60]
           transition-transform duration-300 ease-in-out
           overflow-y-auto
@@ -91,7 +91,7 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
       {/* Main content */}
       <main
         className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
-          isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-80'
+          isSidebarCollapsed ? 'lg:ml-16' : 'md:ml-60 lg:ml-64 xl:ml-72'
         }`}
       >
         <div className="flex-1 flex flex-col">{children}</div>
