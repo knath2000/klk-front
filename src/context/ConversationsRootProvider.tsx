@@ -249,7 +249,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
       title: 'New Chat',
       updated_at: new Date().toISOString(),
       message_count: 0,
-      persona_id: null,
+      persona_id: selectedCountry ?? null,
     };
 
     if (!isAuthenticated) {
@@ -280,7 +280,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
     try {
       socket.emit('create_conversation', {
         title: 'New Chat',
-        persona_id: null,
+        persona_id: selectedCountry ?? null,
       });
     } catch (e) {
       console.error('Failed to emit create_conversation', e);
@@ -295,7 +295,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
         setHistoryLoadingId(null);
       }
     }, 5000);
-  }, [user?.id, socket, isConnected, historyLoadingId]);
+  }, [user?.id, socket, isConnected, historyLoadingId, selectedCountry]);
 
   useEffect(() => {
     if (list.length === 0 && user?.id) {
@@ -309,18 +309,44 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
     const handleConversationCreated = (data: { conversationId: string; userId: string }) => {
       console.log('🆕 Conversation created:', data.conversationId);
       setList(prev => prev.map(conv => conv.id.startsWith('temp-') ? { ...conv, id: data.conversationId } : conv));
+      setMessagesMap(prev => {
+        const tempEntry = Object.entries(prev).find(([key]) => key.startsWith('temp-'));
+        if (!tempEntry) return prev;
+        const [tempIdKey, tempMessages] = tempEntry;
+        const { [tempIdKey]: _, ...rest } = prev;
+        return { ...rest, [data.conversationId]: tempMessages };
+      });
       setActiveId(data.conversationId);
       if (typeof window !== 'undefined') {
         localStorage.setItem('chatConversationId', data.conversationId);
       }
       setHistoryLoadingId(null);
+
+      // Persist selected country for the new conversation if one was chosen
+      if (selectedCountry) {
+        void (async () => {
+          try {
+            const token = await getNeonAuthToken();
+            await apiFetch(`/api/conversations/${data.conversationId}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {})
+              },
+              body: JSON.stringify({ persona_id: selectedCountry })
+            }, { retries: 1 });
+          } catch (err) {
+            console.warn('Failed to persist persona on new conversation', err);
+          }
+        })();
+      }
     };
 
     socket.on('conversation_created', handleConversationCreated);
     return () => {
       socket.off('conversation_created', handleConversationCreated);
     };
-  }, [socket]);
+  }, [socket, selectedCountry]);
 
   useEffect(() => {
     if (!socket) return;
