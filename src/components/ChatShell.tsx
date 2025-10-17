@@ -44,7 +44,7 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
           fixed left-0 drawer-width drawer-inner drawer-top-offset
           lg:fixed lg:inset-y-0 lg:left-0 lg:translate-x-0 lg:block
           lg:flex-shrink-0
-          ${isSidebarCollapsed ? 'w-72 lg:w-16 xl:w-16' : 'w-72 md:w-60 lg:w-64 xl:w-72'}
+          ${isSidebarCollapsed ? 'w-16 md:w-16 lg:w-16 xl:w-16' : 'w-72 md:w-60 lg:w-64 xl:w-72'}
           bg-[#202123]            /* opaque background to occlude page gradient */
           z-[60]
           transition-transform duration-300 ease-in-out
@@ -76,7 +76,7 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
       {/* Main content */}
       <main
         className={`flex-1 relative flex flex-col transition-all duration-300 ease-in-out bg-[#0b0c1a] ${
-          isSidebarCollapsed ? 'lg:ml-16' : 'md:ml-60 lg:ml-64 xl:ml-72'
+          isSidebarCollapsed ? 'ml-16 md:ml-16 lg:ml-16 xl:ml-16' : 'md:ml-60 lg:ml-64 xl:ml-72'
         }`}
       >
         <div className="flex-1 flex flex-col">{children}</div>
