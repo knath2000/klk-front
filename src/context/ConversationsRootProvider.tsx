@@ -61,6 +61,15 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
 
   const generateTempId = () => `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+  // Helper: generate a short title from a message text
+  const generateTitleFromText = (text?: string) => {
+    if (!text) return 'Conversation';
+    const cleaned = String(text).trim().replace(/\s+/g, ' ');
+    const words = cleaned.split(' ').slice(0, 6);
+    const candidate = words.join(' ');
+    return candidate.length > 0 ? (candidate.charAt(0).toUpperCase() + candidate.slice(1)) : 'Conversation';
+  };
+
   const setConversationMessages = useCallback((conversationId: string, msgs: Message[]) => {
     setMessagesMap(prev => ({ ...prev, [conversationId]: msgs }));
   }, []);
@@ -387,6 +396,41 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
           timestamp: typeof payload.ts === 'number' ? payload.ts : Date.parse(payload.created_at ?? '') || Date.now(),
         };
         addMessage(convId, msg);
+
+        // Auto-rename conversation on first real user message when title is placeholder
+        try {
+          // estimate new message count (current local count + 1)
+          const prevCount = (messagesMap as any)[convId]?.length ?? 0;
+          const newCount = prevCount + 1;
+          const conv = list.find(c => c.id === convId);
+          const isPlaceholderTitle = !conv?.title || conv?.title === '' || conv?.title === 'New Chat';
+          // Only consider user messages (not assistant) and only when this will be the first message
+          if (msg.type === 'user' && newCount === 1 && isPlaceholderTitle) {
+            const newTitle = generateTitleFromText(msg.content);
+            // Optimistic update of local list
+            setList(prev => prev.map(c => c.id === convId ? { ...c, title: newTitle, updated_at: new Date().toISOString() } : c));
+            // Persist rename via proxy
+            (async () => {
+              try {
+                const token = await getNeonAuthToken();
+                await apiFetch(`/api/conversations/${convId}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { Authorization: `Bearer ${token}` } : {})
+                  },
+                  body: JSON.stringify({ title: newTitle })
+                }, { retries: 1 });
+              } catch (err) {
+                console.warn('Auto-rename failed for conversation', convId, err);
+                // Reconcile with server truth
+                try { await fetchConversations(true); } catch {}
+              }
+            })();
+          }
+        } catch (err) {
+          console.warn('Auto-rename check failed', err);
+        }
       } catch (err) {
         // eslint-disable-next-line no-console
         console.warn('ConversationsRootProvider.handleMessage error', err);
@@ -478,6 +522,30 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
         return false;
       } finally {
         setDeleteAllLoading(false);
+      }
+    },
+    renameConversation: async (conversationId: string, title: string) => {
+      if (!conversationId) return false;
+      // Optimistic update
+      setList(prev => prev.map(c => c.id === conversationId ? { ...c, title, updated_at: new Date().toISOString() } : c));
+      try {
+        const token = await getNeonAuthToken();
+        await apiFetch(`/api/conversations/${conversationId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ title })
+        }, { retries: 1 });
+        // Refresh list to ensure server truth
+        await fetchConversations(true);
+        return true;
+      } catch (err) {
+        console.error('Failed to rename conversation', err);
+        // Re-fetch to revert optimistic change
+        await fetchConversations(true);
+        return false;
       }
     },
   }), [list, messagesMap, fetchConversations, addMessage, setConversationMessages, deleteAllLoading, activeId, user?.id]);

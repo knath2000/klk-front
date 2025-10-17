@@ -5,7 +5,7 @@ import clsx from 'clsx';
 import { useConversationData } from '@/context/ConversationDataContext';
 import { useConversationUI } from '@/context/ConversationUIContext';
 import { useAuth } from '@/context/AuthContext';
-import { Plus, Search, User, ChevronRight, LogOut, Zap, ChevronLeft, MessageSquare, Languages, Trash } from 'lucide-react';
+import { Plus, Search, User, ChevronRight, LogOut, Zap, ChevronLeft, MessageSquare, Languages, Trash, MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import { usePathname } from 'next/navigation';
@@ -13,6 +13,8 @@ import { Virtuoso } from 'react-virtuoso';
 import { showToast } from '@/components/Toast';
 import SidebarQuickActions from '@/components/SidebarQuickActions';
 import SidebarFooter from '@/components/SidebarFooter';
+import SidebarConversationMenu from '@/components/SidebarConversationMenu';
+import RenameConversationModal from '@/components/RenameConversationModal';
 // ModelSelector intentionally omitted from sidebar — model/persona controls belong in the chat header.
 
 interface AIModel {
@@ -37,7 +39,7 @@ export default function ConversationSidebarCollapsible({
 }: ConversationSidebarProps) {
   const data = useConversationData();
   const ui = useConversationUI();
-  const { list, deleteConversation, deleteAllConversations } = data;
+  const { list, deleteConversation, deleteAllConversations, renameConversation } = data;
   const { activeId, setActive, loading, error, historyLoadingId, startNewConversation } = { // map backwards for compatibility
     ...ui,
     loading: (data as any).loading ?? false,
@@ -52,6 +54,10 @@ export default function ConversationSidebarCollapsible({
   const pathname = usePathname();
   const [openDeleteAllModal, setOpenDeleteAllModal] = useState(false);
   const [deleteAllLoading, setDeleteAllLoading] = useState(false);
+  // UI state for contextual menu and rename modal
+  const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
+  const [renameOpenFor, setRenameOpenFor] = useState<string | null>(null);
+  const [renameInitialTitle, setRenameInitialTitle] = useState<string>('');
 
   // Filter conversations based on search query
   const filteredList = list.filter(conv =>
@@ -235,7 +241,50 @@ export default function ConversationSidebarCollapsible({
                           </div>
                         </div>
                       </button>
-                      {/* Inline delete button removed — deletion available via contextual menu */}
+
+                      {/* Ellipsis / contextual menu trigger */}
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpenFor(prev => prev === c.id ? null : c.id);
+                          }}
+                          title="More actions"
+                          aria-haspopup="true"
+                          aria-expanded={menuOpenFor === c.id}
+                          className="ml-1 p-2 rounded-md text-white/60 hover:text-white hover:bg-white/5 transition"
+                        >
+                          <MoreHorizontal className="w-5 h-5" />
+                        </button>
+
+                        {menuOpenFor === c.id && (
+                          <SidebarConversationMenu
+                            conversationId={c.id}
+                            onClose={() => setMenuOpenFor(null)}
+                            onRename={(id) => {
+                              setMenuOpenFor(null);
+                              setRenameInitialTitle(c.title ?? '');
+                              setRenameOpenFor(id);
+                            }}
+                            onDelete={async (id) => {
+                              // Confirm then call provider deleteConversation
+                              const ok = window.confirm('Delete this conversation? This is permanent.');
+                              if (!ok) return;
+                              try {
+                                const res = await deleteConversation?.(id);
+                                if (!res) {
+                                  showToast('Failed to delete conversation', 'error');
+                                } else {
+                                  showToast('Conversation deleted', 'success');
+                                }
+                              } catch (err) {
+                                console.error('Error deleting conversation:', err);
+                                showToast('Error deleting conversation', 'error');
+                              }
+                            }}
+                          />
+                        )}
+                      </div>
                     </li>
                   );
                 }}
@@ -255,7 +304,26 @@ export default function ConversationSidebarCollapsible({
             </div>
           )}
 
-          {!!historyLoadingId && !!activeId && historyLoadingId === activeId && !loading && (
+          {/* Rename modal rendered outside the virtuoso rows scope */}
+          <RenameConversationModal
+            open={!!renameOpenFor}
+            conversationId={renameOpenFor}
+            initialTitle={renameInitialTitle}
+            onCancel={() => setRenameOpenFor(null)}
+            onConfirm={async (id, title) => {
+              try {
+                const ok = await renameConversation?.(id, title);
+                if (ok) showToast('Conversation renamed', 'success');
+                return !!ok;
+              } catch (err) {
+                console.error('Rename failed', err);
+                showToast('Rename failed', 'error');
+                return false;
+              }
+            }}
+          />
+
+           {!!historyLoadingId && !!activeId && historyLoadingId === activeId && !loading && (
             <div className={`text-white/80 flex items-center gap-2 border-t border-gray-700 ${
               isCollapsed ? 'p-2 justify-center' : 'p-4'
             }`}>

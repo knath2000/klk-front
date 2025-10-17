@@ -18,6 +18,7 @@ type ConversationDataContextType = {
   setConversationMessages: (conversationId: string, messages: Message[]) => void;
   deleteConversation: (conversationId: string) => Promise<boolean>;
   deleteAllConversations: () => Promise<boolean>;
+  renameConversation?: (conversationId: string, title: string) => Promise<boolean>;
 };
 
 export const ConversationDataContext = createContext<ConversationDataContextType | undefined>(undefined);
@@ -48,6 +49,7 @@ export function useConversationData(): ConversationDataContextType {
       setConversationMessages: () => { /* no-op */ },
       deleteConversation: async () => false,
       deleteAllConversations: async () => false,
+      renameConversation: async () => false,
     };
   }
   return ctx;
