@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { useConversations } from '@/context/ConversationsContext';
+import { useConversationData } from '@/context/ConversationDataContext';
+import { useConversationUI } from '@/context/ConversationUIContext';
 import { useAuth } from '@/context/AuthContext';
 import { Plus, Search, User, ChevronRight, LogOut, Zap, Trash } from 'lucide-react';
 import clsx from 'clsx';
@@ -21,7 +22,18 @@ interface AIModel {
 }
 
 export default function ConversationSidebarEnhanced() {
-  const { list, activeId, setActive, refresh, loading, error, historyLoadingId, startNewConversation, deleteConversation, deleteAllConversations } = useConversations();
+  const data = useConversationData();
+  const ui = useConversationUI();
+  const list = data.list;
+  const activeId = ui.activeId;
+  const setActive = ui.setActive;
+  const refresh = data.fetchConversations;
+  const loading = (data as any).loading ?? false;
+  const error = (data as any).error ?? null;
+  const historyLoadingId = (data as any).historyLoadingId ?? ui.historyLoadingId ?? null;
+  const startNewConversation = (data as any).startNewConversation ?? ui.notifyHistoryResolved ?? (() => Promise.resolve());
+  const deleteConversation = data.deleteConversation;
+  const deleteAllConversations = data.deleteAllConversations;
   const { user, signOut } = useAuth();
   const listRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');

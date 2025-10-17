@@ -5,8 +5,8 @@ import ChatSidebarOverlay from '@/components/ChatSidebarOverlay'
 import { AuthProvider } from '@/context/AuthContext'
 import { WebSocketProvider } from '@/context/WebSocketContext'
 import StackAuthBridge from '@/components/StackAuthBridge'
-import { ConversationsProvider } from '@/context/ConversationsContext'
 import { TranslationProvider } from '@/context/TranslationContext'
+import { ConversationsRootProvider } from '@/context/ConversationsRootProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -29,11 +29,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <WebSocketProvider>
                 <TranslationProvider>
                   <StackAuthBridge>
-                    <ConversationsProvider>
+                    <ConversationsRootProvider>
                       {/* Global ChatGPT-style sidebar overlay trigger + panel */}
                       <ChatSidebarOverlay />
                       {children}
-                    </ConversationsProvider>
+                    </ConversationsRootProvider>
                   </StackAuthBridge>
                 </TranslationProvider>
               </WebSocketProvider>

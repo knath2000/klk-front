@@ -1,14 +1,21 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import { useConversationData } from '@/context/ConversationDataContext';
+import { useConversationUI } from '@/context/ConversationUIContext';
+import Link from 'next/link';
+import clsx from 'clsx';
+import { Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import ConversationSidebar from './ConversationSidebar';
-import { useConversations } from '@/context/ConversationsContext';
 
 export default function SidebarDrawer() {
-  const { sidebarOpen, toggleSidebar } = useConversations();
+  const data = useConversationData();
+  const ui = useConversationUI();
+  const sidebarOpen = ui.sidebarOpen;
+  const toggleSidebar = ui.toggleSidebar;
 
   useEffect(() => {
     if (sidebarOpen) {

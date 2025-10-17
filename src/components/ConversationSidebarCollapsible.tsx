@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useRef, useState, useMemo } from 'react';
-import { useConversations } from '@/context/ConversationsContext';
+import React, { useRef, useState, useMemo, useCallback } from 'react';
+import clsx from 'clsx';
+import { useConversationData } from '@/context/ConversationDataContext';
+import { useConversationUI } from '@/context/ConversationUIContext';
 import { useAuth } from '@/context/AuthContext';
 import { Plus, Search, User, ChevronRight, LogOut, Zap, ChevronLeft, MessageSquare, Languages, Trash } from 'lucide-react';
-import clsx from 'clsx';
 import Link from 'next/link';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import { usePathname } from 'next/navigation';
@@ -31,7 +32,16 @@ export default function ConversationSidebarCollapsible({
   onToggleCollapse,
   onMobileClose
 }: ConversationSidebarProps) {
-  const { list, activeId, setActive, loading, error, historyLoadingId, startNewConversation, deleteConversation, deleteAllConversations } = useConversations();
+  const data = useConversationData();
+  const ui = useConversationUI();
+  const { list, deleteConversation, deleteAllConversations } = data;
+  const { activeId, setActive, loading, error, historyLoadingId, startNewConversation } = { // map backwards for compatibility
+    ...ui,
+    loading: (data as any).loading ?? false,
+    error: (data as any).error ?? null,
+    historyLoadingId: (data as any).historyLoadingId ?? null,
+    startNewConversation: (data as any).startNewConversation ?? (ui as any).startNewConversation,
+  };
   const { user, signOut } = useAuth();
   const listRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');

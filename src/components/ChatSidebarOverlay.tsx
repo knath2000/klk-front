@@ -1,12 +1,19 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useConversations } from '@/context/ConversationsContext';
-import ModelSelector from './ModelSelector';
 import { Virtuoso } from 'react-virtuoso';
+import { useConversationData } from '@/context/ConversationDataContext';
+import { useConversationUI } from '@/context/ConversationUIContext';
+import ModelSelector from '@/components/ModelSelector';
 
 export default function ChatSidebarOverlay() {
-  const { list: conversations, activeId, setActive, refresh, unreadCounts } = useConversations();
+  const data = useConversationData();
+  const ui = useConversationUI();
+  const conversations = data.list;
+  const activeId = ui.activeId;
+  const setActive = ui.setActive;
+  const refresh = data.fetchConversations;
+  const unreadCounts = ui.unreadCounts;
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [focusedIdx, setFocusedIdx] = useState<number>(0);
@@ -22,6 +29,12 @@ export default function ChatSidebarOverlay() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    // refresh when opened (data adapter)
+    void refresh();
+  }, [open, refresh]);
 
   useEffect(() => {
     if (!open) return;
