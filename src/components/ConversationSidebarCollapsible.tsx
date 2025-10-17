@@ -79,9 +79,10 @@ export default function ConversationSidebarCollapsible({
 
   return (
     <aside className="h-full relative">
-      <div className={`h-full bg-[#202123] border-r border-gray-700 flex flex-col transition-all duration-300 ${
-        isCollapsed ? 'w-16' : 'w-full md:w-60 lg:w-64 xl:w-72'
-      }`}>
+      <div
+        className={`h-full bg-[#202123] border-r border-gray-700 flex flex-col transition-all duration-300 ${isCollapsed ? 'w-16 md:w-16 lg:w-16 xl:w-16' : 'w-full md:w-60 lg:w-64 xl:w-72'}`}
+        style={{ willChange: 'width' }}
+      >
         {/* Desktop collapse/expand toggle will be rendered by ChatShell as a sibling overlay */}
         {/* Mobile Close Button */}
         {onMobileClose && (
