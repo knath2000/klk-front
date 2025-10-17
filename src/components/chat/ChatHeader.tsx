@@ -1,13 +1,18 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import clsx from 'clsx';
+import CountrySelector from '@/components/CountrySelector';
+import ModelSelector from '@/components/ModelSelector';
+import type { Persona } from '@/types/chat';
+import { showToast } from '@/components/Toast';
 
 export type ChatHeaderProps = {
   activeConversation: {
     id?: string;
     title?: string | null;
     updated_at?: string | Date;
+    persona_id?: string | null;
   } | null;
   sidebarOpen: boolean;
   toggleSidebar: () => void;
@@ -22,6 +27,57 @@ export default function ChatHeader({
   sidebarOpen,
   toggleSidebar,
 }: ChatHeaderProps) {
+  const [personas, setPersonas] = useState<Persona[]>([]);
+  const [localSelectedCountry, setLocalSelectedCountry] = useState<string | null>(activeConversation?.persona_id ?? null);
+  const [currentModel, setCurrentModel] = useState<string>('google/gemma-3-27b-it');
+
+  // Sync localSelectedCountry when activeConversation changes
+  useEffect(() => {
+    setLocalSelectedCountry(activeConversation?.persona_id ?? null);
+  }, [activeConversation?.persona_id]);
+
+  // Load personas from backend manifest
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const backend = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+        const res = await fetch(`${backend}/api/personas`);
+        if (!res.ok) throw new Error('Failed fetching personas');
+        const json = await res.json();
+        if (mounted && Array.isArray(json.personas)) {
+          setPersonas(json.personas);
+        }
+      } catch (err) {
+        // silent: persona list is non-essential for baseline UI
+        console.warn('Failed to fetch personas for header', err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const handleCountrySelect = async (countryKey: string) => {
+    setLocalSelectedCountry(countryKey);
+    // If we have an active conversation, persist selection
+    if (activeConversation?.id) {
+      try {
+        const backend = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+        const url = `${backend}/api/conversations/${activeConversation.id}`;
+        await fetch(url, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ persona_id: countryKey }),
+        });
+        showToast('Persona updated', 'success');
+      } catch (err) {
+        console.error('Failed to persist persona selection', err);
+        showToast('Failed to save persona selection', 'error');
+      }
+    } else {
+      showToast('Persona selected (will apply after creating a conversation)', 'info');
+    }
+  };
+
   return (
     <header className={clsx('flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700')}>
       <div className="flex items-center gap-3">
@@ -51,9 +107,23 @@ export default function ChatHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        {/* Placeholder for model selector / controls */}
-        <div className="text-xs text-gray-500 dark:text-gray-400">Model</div>
+      <div className="flex items-center gap-3">
+        {/* Horizontal toolbar: Country selector (personas) + Model selector */}
+        <div className="hidden sm:block">
+          <CountrySelector
+            personas={personas}
+            selectedCountry={localSelectedCountry}
+            onCountrySelect={handleCountrySelect}
+          />
+        </div>
+
+        <div className="hidden sm:block">
+          <ModelSelector
+            currentModel={currentModel}
+            onModelChange={(m) => setCurrentModel(m)}
+            conversationId={activeConversation?.id ?? undefined}
+          />
+        </div>
       </div>
     </header>
   );
