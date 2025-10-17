@@ -11,6 +11,9 @@ import ConfirmationModal from '@/components/ConfirmationModal';
 import { usePathname } from 'next/navigation';
 import { Virtuoso } from 'react-virtuoso';
 import { showToast } from '@/components/Toast';
+import ModelSelector from '@/components/ModelSelector';
+import { createPortal } from 'react-dom';
+import { useEffect } from 'react';
 
 interface AIModel {
   id: string;
@@ -45,6 +48,8 @@ export default function ConversationSidebarCollapsible({
   const { user, signOut } = useAuth();
   const listRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentModel, setCurrentModel] = useState<string>('google/gemma-3-27b-it');
+  const [modelModalOpen, setModelModalOpen] = useState(false);
   const pathname = usePathname();
   const [openDeleteAllModal, setOpenDeleteAllModal] = useState(false);
   const [deleteAllLoading, setDeleteAllLoading] = useState(false);
@@ -167,7 +172,28 @@ export default function ConversationSidebarCollapsible({
             </Link>
           </nav>
 
-          {/* Model selector removed from sidebar */}
+          {/* Model selector: visible when expanded; compact trigger when collapsed */}
+          {!isCollapsed ? (
+            <div className="mb-3">
+              <ModelSelector
+                currentModel={currentModel}
+                onModelChange={(m) => setCurrentModel(m)}
+                conversationId={activeId ?? undefined}
+              />
+            </div>
+          ) : (
+            <div className="mb-3 flex justify-center">
+              <button
+                onClick={() => setModelModalOpen(true)}
+                className="w-10 h-10 rounded-md flex items-center justify-center bg-gray-800 hover:bg-gray-700 text-gray-300"
+                aria-label="Open model selector"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Search/Filter - Hidden when collapsed */}
@@ -395,6 +421,41 @@ export default function ConversationSidebarCollapsible({
           )}
         </div>
       </div>
+
+      {/* Modal for collapsed-mode model selection */}
+      {modelModalOpen &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[80] bg-black/50"
+              onClick={() => setModelModalOpen(false)}
+              aria-hidden="true"
+            />
+            <div className="fixed z-[90] left-1/2 top-1/4 -translate-x-1/2 w-full max-w-md p-4">
+              <div className="bg-white dark:bg-gray-900 rounded-md shadow-lg ring-1 ring-black/10 dark:ring-white/10 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-sm font-semibold text-gray-700 dark:text-white">Select model</div>
+                  <button
+                    onClick={() => setModelModalOpen(false)}
+                    className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <ModelSelector
+                  currentModel={currentModel}
+                  onModelChange={(m) => {
+                    setCurrentModel(m);
+                    setModelModalOpen(false);
+                  }}
+                  conversationId={activeId ?? undefined}
+                />
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
     </aside>
   );
 }

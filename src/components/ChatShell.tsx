@@ -75,10 +75,22 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
 
       {/* Main content */}
       <main
-        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
+        className={`flex-1 relative flex flex-col transition-all duration-300 ease-in-out ${
           isSidebarCollapsed ? 'lg:ml-16' : 'md:ml-60 lg:ml-64 xl:ml-72'
         }`}
       >
+        {/* Decorative gradient & orbs scoped to the main content so sidebar collapse doesn't reveal a full-viewport background */}
+        <div className="absolute inset-0 -z-20">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 opacity-80" />
+          <div
+            className="absolute top-40 right-40 w-64 h-64 bg-blue-400/15 rounded-full blur-3xl animate-glass-pulse"
+            style={{ animationDelay: '2s' }}
+          />
+          <div
+            className="absolute bottom-40 left-40 w-80 h-80 bg-indigo-400/10 rounded-full blur-3xl animate-glass-float"
+            style={{ animationDelay: '3s' }}
+          />
+        </div>
         <div className="flex-1 flex flex-col">{children}</div>
         {footerSlot}
       </main>
