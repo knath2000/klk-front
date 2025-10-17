@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, ReactNode } from 'react';
+import { useConversationUI } from '@/context/ConversationUIContext';
 import ConversationSidebarCollapsible from '@/components/ConversationSidebarCollapsible';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -11,24 +12,7 @@ type ChatShellProps = {
 
 export default function ChatShellFullHeight({ children, footerSlot }: ChatShellProps) {
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
-  // Load sidebar state from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('sidebar-collapsed');
-    if (saved !== null) {
-      setIsSidebarCollapsed(JSON.parse(saved));
-    }
-  }, []);
-
-  // Save sidebar state to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('sidebar-collapsed', JSON.stringify(isSidebarCollapsed));
-  }, [isSidebarCollapsed]);
-
-  const toggleSidebarCollapse = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
+  const { isSidebarCollapsed, setSidebarCollapsed, toggleSidebarCollapsed } = useConversationUI();
 
   return (
     <div className="relative flex min-h-screen items-stretch">
@@ -70,14 +54,14 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
       >
         <ConversationSidebarCollapsible
           isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={toggleSidebarCollapse}
+          onToggleCollapse={toggleSidebarCollapsed}
           onMobileClose={() => setIsMobileDrawerOpen(false)}
         />
       </aside>
 
       {/* Desktop collapse/expand toggle positioned relative to layout container so it tracks the outer aside width */}
       <button
-        onClick={toggleSidebarCollapse}
+        onClick={toggleSidebarCollapsed}
         className="hidden lg:block absolute z-[70] p-1.5 bg-[#202123] border border-gray-600 rounded-full hover:bg-[#2a2b32] transition-colors"
         style={{
           top: 'calc(var(--safe-top) + 1.5rem)',

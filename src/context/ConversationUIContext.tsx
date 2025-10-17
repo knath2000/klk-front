@@ -8,6 +8,9 @@ type ConversationUIContextType = {
   setActive: (id: string) => void;
   sidebarOpen: boolean;
   toggleSidebar: () => void;
+  isSidebarCollapsed: boolean;
+  setSidebarCollapsed: (v: boolean) => void;
+  toggleSidebarCollapsed: () => void;
   unreadCounts: Record<string, number>;
   clearUnread: (conversationId: string) => void;
   historyLoadingId: string | null;
@@ -45,6 +48,9 @@ export function useConversationUI(): ConversationUIContextType {
       setActive: () => {},
       sidebarOpen: false,
       toggleSidebar: () => {},
+      isSidebarCollapsed: false,
+      setSidebarCollapsed: () => {},
+      toggleSidebarCollapsed: () => {},
       unreadCounts: {},
       clearUnread: () => {},
       historyLoadingId: null,

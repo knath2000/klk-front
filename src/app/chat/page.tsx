@@ -1,18 +1,27 @@
 'use client';
 import { ReactNode, useState } from 'react';
+import { useConversationUI } from '@/context/ConversationUIContext';
 import ChatShell from '@/components/ChatShell';
 import ChatView from '@/components/ChatView';
 
 export default function ChatPage() {
+  const { isSidebarCollapsed } = useConversationUI();
   const [footerSlot, setFooterSlot] = useState<ReactNode | null>(null);
 
   return (
     <div className="min-h-screen">
       {/* Background gradient — do not extend beneath the left sidebar on larger screens */}
-      <div className="fixed top-0 bottom-0 left-0 right-0 -z-20 md:left-60 md:right-0 lg:left-64 lg:right-0 xl:left-72 xl:right-0">
+      <div 
+        className={`fixed top-0 bottom-0 left-0 right-0 -z-20 ${
+          // Keep md offset for medium screens; at lg/xl choose offsets based on collapse state
+          isSidebarCollapsed 
+            ? 'md:left-60 md:right-0 lg:left-16 lg:right-0 xl:left-16 xl:right-0'
+            : 'md:left-60 md:right-0 lg:left-64 lg:right-0 xl:left-72 xl:right-0'
+        }`}
+      >
         {/* Chat-specific gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 opacity-80" />
- 
+        
         {/* Additional floating orbs for chat */}
         <div
           className="absolute top-40 right-40 w-64 h-64 bg-blue-400/15 rounded-full blur-3xl animate-glass-pulse"

@@ -32,6 +32,30 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
   const pendingHistoryIdRef = useRef<string | null>(null);
   const lastFetchedUserIdRef = useRef<string | null>(null);
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>({});
+  // Sidebar collapsed state (persisted) — expose via ConversationUIContext so UI components can react
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      if (typeof window === 'undefined') return false;
+      const stored = localStorage.getItem('sidebar-collapsed');
+      return stored ? JSON.parse(stored) : false;
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('sidebar-collapsed', JSON.stringify(isSidebarCollapsed));
+      }
+    } catch {
+      // ignore persistence errors
+    }
+  }, [isSidebarCollapsed]);
+
+  const toggleSidebarCollapsed = useCallback(() => {
+    setIsSidebarCollapsed(prev => !prev);
+  }, []);
 
   const backendUrl = getBackendUrl();
 
@@ -439,6 +463,9 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
     setActive,
     sidebarOpen,
     toggleSidebar,
+    isSidebarCollapsed,
+    setSidebarCollapsed: (v: boolean) => setIsSidebarCollapsed(v),
+    toggleSidebarCollapsed,
     unreadCounts,
     clearUnread: (conversationId: string) => {
       setUnreadCounts(prev => {
@@ -451,7 +478,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
     historyLoadingId,
     notifyHistoryResolved,
     startNewConversation,
-  }), [activeId, setActive, sidebarOpen, toggleSidebar, unreadCounts, historyLoadingId, notifyHistoryResolved, startNewConversation]);
+  }), [activeId, setActive, sidebarOpen, toggleSidebar, unreadCounts, historyLoadingId, notifyHistoryResolved, startNewConversation, isSidebarCollapsed, toggleSidebarCollapsed]);
 
   return (
     <ConversationDataContext.Provider value={valueForData}>
