@@ -61,6 +61,7 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
           lg:fixed lg:inset-y-0 lg:left-0 lg:translate-x-0 lg:block
           lg:flex-shrink-0
           ${isSidebarCollapsed ? 'w-72 lg:w-16 xl:w-16' : 'w-72 md:w-60 lg:w-64 xl:w-72'}
+          bg-[#202123]            /* opaque background to occlude page gradient */
           z-[60]
           transition-transform duration-300 ease-in-out
           overflow-y-auto

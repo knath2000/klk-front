@@ -8,8 +8,8 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Dynamic background specific to chat */}
-      <div className="fixed inset-0 -z-20">
+      {/* Background gradient — do not extend beneath the left sidebar on larger screens */}
+      <div className="fixed top-0 bottom-0 left-0 right-0 -z-20 md:left-60 md:right-0 lg:left-64 lg:right-0 xl:left-72 xl:right-0">
         {/* Chat-specific gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 opacity-80" />
  
