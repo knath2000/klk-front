@@ -205,7 +205,26 @@ export default function ConversationSidebarCollapsible({
           <div className={`px-4 py-3 border-b border-gray-700 ${isCollapsed ? 'px-2' : ''}`}>
             {!isCollapsed && (
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-white/90">Your conversations</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-semibold text-white/90">Your conversations</h2>
+                  <button
+                    onClick={async () => {
+                      try {
+                        // startNewConversation comes from the composed ui/data mapping above
+                        await startNewConversation?.({ auto: false });
+                        showToast('New conversation started', 'success');
+                      } catch (err) {
+                        console.error('Failed to start new conversation', err);
+                        showToast('Failed to start conversation', 'error');
+                      }
+                    }}
+                    title="New chat"
+                    className="text-sm text-white/80 bg-white/5 hover:bg-white/10 px-2 py-1 rounded flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden md:inline">New chat</span>
+                  </button>
+                </div>
                 <button
                   onClick={() => setOpenDeleteAllModal(true)}
                   title="Delete all conversations"

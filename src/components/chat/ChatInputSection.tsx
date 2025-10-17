@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import ChatInput from '../ChatInput';
 import { useConversations } from '@/context/ConversationsContext';
 import { useWebSocket } from '@/context/WebSocketContext';
+import { useConversationUI } from '@/context/ConversationUIContext';
 
 export type ChatInputSectionProps = {
   conversationId: string | null;
@@ -24,6 +25,7 @@ export default function ChatInputSection({
 }: ChatInputSectionProps): React.ReactElement {
   const conv = useConversations();
   const { socket, isConnected } = useWebSocket();
+  const ui = useConversationUI();
   const pendingMessageRef = useRef<string | null>(null);
   const waitingForConversationRef = useRef<boolean>(false);
 
@@ -35,13 +37,15 @@ export default function ChatInputSection({
       // Ensure we have an active conversation
       const targetConvId = conv.activeId;
       if (!targetConvId) return;
+      // compute effective selected country (convo-level or UI-level)
+      const effectiveCountry = selectedCountry ?? ui.selectedCountry ?? null;
       // emit via socket if available
       try {
         if (socket && isConnected) {
           socket.emit('user_message', {
             conversationId: targetConvId,
             message: msg,
-            selected_country_key: selectedCountry ?? null,
+            selected_country_key: effectiveCountry ?? null,
             client_ts: Date.now(),
             message_id: `local-${Date.now()}-${Math.random().toString(36).slice(2,8)}`
           });
@@ -68,10 +72,11 @@ export default function ChatInputSection({
     if (targetConvId) {
       try {
         if (socket && isConnected) {
+          const effectiveCountry = selectedCountry ?? ui.selectedCountry ?? null;
           socket.emit('user_message', {
             conversationId: targetConvId,
             message: msg,
-            selected_country_key: selectedCountry ?? null,
+            selected_country_key: effectiveCountry ?? null,
             client_ts: Date.now(),
             message_id: `local-${Date.now()}-${Math.random().toString(36).slice(2,8)}`
           });
