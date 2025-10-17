@@ -12,9 +12,17 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
-  const roleOrType = (message.type ?? (message as any).role) as 'user' | 'assistant' | undefined;
-  const isUser = roleOrType === 'user';
-  const isAssistant = roleOrType === 'assistant';
+  // Robust role detection: prefer explicit typed fields but accept legacy shapes
+  const roleOrType = (message.type ?? (message as any).role ?? (message as any).sender) as 'user' | 'assistant' | undefined;
+  const isUser =
+    roleOrType === 'user' ||
+    (message as any).isUser === true ||
+    (message as any).role === 'user' ||
+    (message as any).sender === 'user';
+  const isAssistant =
+    roleOrType === 'assistant' ||
+    (message as any).role === 'assistant' ||
+    (message as any).sender === 'assistant';
 
   // Robust timestamp derivation (number or ISO string fallbacks)
   const _ts =
