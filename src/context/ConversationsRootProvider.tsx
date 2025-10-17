@@ -190,12 +190,8 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
     }
   }, [isConnected, socket, historyLoadingId, activeId]);
 
-  useEffect(() => {
-    if (!isConnected) {
-      pendingHistoryIdRef.current = null;
-      setHistoryLoadingId(null);
-    }
-  }, [isConnected]);
+  // Temporary selected country for UI when conversation not yet created
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
   useEffect(() => {
     if (!socket) return;
@@ -478,6 +474,9 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
     historyLoadingId,
     notifyHistoryResolved,
     startNewConversation,
+    // expose temporary selectedCountry for pre-conversation state
+    selectedCountry,
+    setSelectedCountry,
   }), [activeId, setActive, sidebarOpen, toggleSidebar, unreadCounts, historyLoadingId, notifyHistoryResolved, startNewConversation, isSidebarCollapsed, toggleSidebarCollapsed]);
 
   return (

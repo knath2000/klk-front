@@ -6,6 +6,7 @@ import CountrySelector from '@/components/CountrySelector';
 import ModelSelector from '@/components/ModelSelector';
 import type { Persona } from '@/types/chat';
 import { showToast } from '@/components/Toast';
+import { useConversationUI } from '@/context/ConversationUIContext';
 
 export type ChatHeaderProps = {
   activeConversation: {
@@ -30,6 +31,7 @@ export default function ChatHeader({
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [localSelectedCountry, setLocalSelectedCountry] = useState<string | null>(activeConversation?.persona_id ?? null);
   const [currentModel, setCurrentModel] = useState<string>('google/gemma-3-27b-it');
+  const ui = useConversationUI();
 
   // Sync localSelectedCountry when activeConversation changes
   useEffect(() => {
@@ -58,6 +60,8 @@ export default function ChatHeader({
 
   const handleCountrySelect = async (countryKey: string) => {
     setLocalSelectedCountry(countryKey);
+    // Update shared UI state so pre-conversation input unlocks
+    ui.setSelectedCountry?.(countryKey);
     // If we have an active conversation, persist selection
     if (activeConversation?.id) {
       try {

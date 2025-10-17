@@ -17,6 +17,9 @@ type ConversationUIContextType = {
   notifyHistoryResolved: (conversationId: string) => void;
   // Allow creating conversations from UI layer
   startNewConversation?: (opts?: { auto?: boolean }) => Promise<void>;
+  // Temporary selected country when no conversation exists yet
+  selectedCountry?: string | null;
+  setSelectedCountry?: (countryKey: string | null) => void;
 };
 
 export const ConversationUIContext = createContext<ConversationUIContextType | undefined>(undefined);
@@ -56,6 +59,8 @@ export function useConversationUI(): ConversationUIContextType {
       historyLoadingId: null,
       notifyHistoryResolved: () => {},
       startNewConversation: async () => {},
+      selectedCountry: null,
+      setSelectedCountry: () => {},
     };
   }
   return ctx;

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useState, KeyboardEvent } from 'react';
 import { ChatInputProps } from '@/types/chat';
 import clsx from 'clsx';
+import { useConversationUI } from '@/context/ConversationUIContext';
 
 const ChatInput: React.FC<ChatInputProps> = ({
   onSendMessage,
@@ -12,9 +13,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
   selectedCountry
 }) => {
   const [message, setMessage] = useState('');
+  const ui = useConversationUI();
+  const effectiveSelectedCountry = selectedCountry ?? ui.selectedCountry ?? null;
 
   const handleSend = () => {
-    if (message.trim() && !disabled && selectedCountry) {
+    if (message.trim() && !disabled && effectiveSelectedCountry) {
       onSendMessage(message.trim());
       setMessage('');
     }
@@ -27,7 +30,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
-  const canSend = message.trim() && !disabled && selectedCountry;
+  const canSend = message.trim() && !disabled && effectiveSelectedCountry;
 
   return (
     <div className="flex items-end gap-3 p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
@@ -39,7 +42,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder={
-            selectedCountry
+            effectiveSelectedCountry
               ? "Escribe tu mensaje..."
               : "Selecciona un país primero..."
           }
@@ -47,7 +50,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           className={clsx(
             "w-full px-4 py-3 pr-12 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none",
             disabled && "opacity-50 cursor-not-allowed",
-            !selectedCountry && "placeholder-red-400"
+            !effectiveSelectedCountry && "placeholder-red-400"
           )}
         />
 
