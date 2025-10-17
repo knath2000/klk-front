@@ -13,6 +13,7 @@ type ChatShellProps = {
 export default function ChatShellFullHeight({ children, footerSlot }: ChatShellProps) {
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const { isSidebarCollapsed, setSidebarCollapsed, toggleSidebarCollapsed } = useConversationUI();
+  const sidebarWidth = isSidebarCollapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-expanded-width)';
 
   return (
     <div className="relative flex min-h-screen items-stretch">
@@ -41,16 +42,14 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
         className={`
           sidebar-shell
           ${isMobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}
-          fixed left-0 drawer-width drawer-inner drawer-top-offset
+          fixed left-0 drawer-inner drawer-top-offset
           lg:fixed lg:inset-y-0 lg:left-0 lg:translate-x-0 lg:block
           lg:flex-shrink-0
-          ${isSidebarCollapsed ? 'w-16 md:w-16 lg:w-16 xl:w-16' : 'w-72 md:w-60 lg:w-64 xl:w-72'}
-          bg-[#202123]            /* opaque background to occlude page gradient */
+          bg-[#202123]
           z-[60]
-          transition-transform duration-300 ease-in-out
           overflow-y-auto
         `}
-        style={{ top: 'var(--safe-top)' }}
+        style={{ top: 'var(--safe-top)', width: sidebarWidth, transition: 'var(--sidebar-transition)' }}
       >
         <ConversationSidebarCollapsible
           isCollapsed={isSidebarCollapsed}
@@ -65,7 +64,7 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
         className="hidden lg:block absolute z-[70] p-1.5 bg-[#202123] border border-gray-600 rounded-full hover:bg-[#2a2b32] transition-colors"
         style={{
           top: 'calc(var(--safe-top) + 1.5rem)',
-          left: isSidebarCollapsed ? '4rem' : '20rem',
+          left: isSidebarCollapsed ? 'calc(var(--sidebar-collapsed-width) + 1rem)' : 'calc(var(--sidebar-expanded-width) + 1rem)',
           transform: 'translateX(-50%)'
         }}
         aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -75,9 +74,8 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
 
       {/* Main content */}
       <main
-        className={`flex-1 relative flex flex-col transition-all duration-300 ease-in-out bg-[#0b0c1a] ${
-          isSidebarCollapsed ? 'ml-16 md:ml-16 lg:ml-16 xl:ml-16' : 'md:ml-60 lg:ml-64 xl:ml-72'
-        }`}
+        className={`flex-1 relative flex flex-col transition-all duration-300 ease-in-out bg-[#0b0c1a]`}
+        style={{ marginLeft: isSidebarCollapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-expanded-width)', transition: 'var(--sidebar-transition)' }}
       >
         <div className="flex-1 flex flex-col">{children}</div>
         {footerSlot}

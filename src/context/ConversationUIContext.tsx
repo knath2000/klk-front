@@ -20,6 +20,9 @@ type ConversationUIContextType = {
   // Temporary selected country when no conversation exists yet
   selectedCountry?: string | null;
   setSelectedCountry?: (countryKey: string | null) => void;
+  // Flag to open the global search UI for conversations (quick action)
+  searchOpen?: boolean;
+  setSearchOpen?: (v: boolean) => void;
 };
 
 export const ConversationUIContext = createContext<ConversationUIContextType | undefined>(undefined);
@@ -61,6 +64,8 @@ export function useConversationUI(): ConversationUIContextType {
       startNewConversation: async () => {},
       selectedCountry: null,
       setSelectedCountry: () => {},
+      searchOpen: false,
+      setSearchOpen: () => {},
     };
   }
   return ctx;

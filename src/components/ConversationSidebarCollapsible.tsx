@@ -11,6 +11,8 @@ import ConfirmationModal from '@/components/ConfirmationModal';
 import { usePathname } from 'next/navigation';
 import { Virtuoso } from 'react-virtuoso';
 import { showToast } from '@/components/Toast';
+import SidebarQuickActions from '@/components/SidebarQuickActions';
+import SidebarFooter from '@/components/SidebarFooter';
 // ModelSelector intentionally omitted from sidebar — model/persona controls belong in the chat header.
 
 interface AIModel {
@@ -99,75 +101,20 @@ export default function ConversationSidebarCollapsible({
 
         {/* Header Section - Logo and User Account */}
         <div className={`p-4 border-b border-gray-700 ${isCollapsed ? 'px-2' : ''}`}>
-          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} mb-4`}>
-            {/* Logo/Brand */}
-            <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-2'}`}>
-              <div className="w-6 h-6 rounded bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
-                <span className="text-white font-bold text-xs">AC</span>
-              </div>
-              {!isCollapsed && (
-                <span className="text-lg font-bold text-gray-200">AI Chat Español</span>
-              )}
-            </div>
-
-            {/* User Account Menu */}
-            {user && !isCollapsed ? (
-              <div className="relative">
-                <button
-                  className="flex items-center space-x-2 px-2 py-1.5 rounded bg-gray-200/10 hover:bg-gray-200/20 text-gray-200 hover:text-white transition-all duration-200"
-                  onClick={() => {/* TODO: Implement user menu */}}
-                >
-                  <div className="w-5 h-5 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center">
-                    <User className="w-2.5 h-2.5 text-white" />
-                  </div>
-                  <span className="text-sm font-medium hidden md:block">
-                    {user.name || user.email}
-                  </span>
-                </button>
-              </div>
-            ) : user && isCollapsed ? (
-              <div className="w-5 h-5 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center">
-                <User className="w-2.5 h-2.5 text-white" />
-              </div>
-            ) : !isCollapsed ? (
-              <Link
-                href="/auth/signin"
-                className="px-3 py-1.5 text-sm font-medium text-gray-200 hover:text-white hover:bg-gray-200/10 rounded transition-all duration-200"
-              >
-                Sign In
-              </Link>
-            ) : null}
-          </div>
-
-          {/* Primary Navigation */}
-          <nav className={`flex ${isCollapsed ? 'flex-col gap-2 items-center' : 'items-center gap-2'} mb-4`}>
-            <Link
-              href="/"
-              className={clsx(
-                'flex items-center gap-2 px-3 py-2 rounded-md transition-colors',
-                pathname === '/' ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10',
-                isCollapsed ? 'w-10 justify-center' : 'w-full justify-start'
-              )}
-              aria-label="Chat workspace"
-            >
-              <MessageSquare className="w-4 h-4" />
-              {!isCollapsed && <span className="text-sm font-medium">Chat</span>}
-            </Link>
-            <Link
-              href="/translate"
-              className={clsx(
-                'flex items-center gap-2 px-3 py-2 rounded-md transition-colors',
-                pathname?.startsWith('/translate') ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10',
-                isCollapsed ? 'w-10 justify-center' : 'w-full justify-start'
-              )}
-              aria-label="Translation workspace"
-            >
-              <Languages className="w-4 h-4" />
-              {!isCollapsed && <span className="text-sm font-medium">Translate</span>}
-            </Link>
-          </nav>
-
-          {/* Model / model-selector removed from sidebar (moved to chat header) */}
+          {/* Replace header + quick actions with SidebarQuickActions component */}
+          <SidebarQuickActions
+            isCollapsed={isCollapsed}
+            onNewChat={async () => {
+              try {
+                await startNewConversation?.({ auto: false });
+                showToast('New conversation started', 'success');
+              } catch (err) {
+                console.error('Failed to start new conversation', err);
+                showToast('Failed to start conversation', 'error');
+              }
+            }}
+            onToggleSearch={() => ui.setSearchOpen?.(!ui.searchOpen)}
+          />
         </div>
 
         {/* Search/Filter - Hidden when collapsed */}
@@ -204,34 +151,8 @@ export default function ConversationSidebarCollapsible({
         >
           <div className={`px-4 py-3 border-b border-gray-700 ${isCollapsed ? 'px-2' : ''}`}>
             {!isCollapsed && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-semibold text-white/90">Your conversations</h2>
-                  <button
-                    onClick={async () => {
-                      try {
-                        // startNewConversation comes from the composed ui/data mapping above
-                        await startNewConversation?.({ auto: false });
-                        showToast('New conversation started', 'success');
-                      } catch (err) {
-                        console.error('Failed to start new conversation', err);
-                        showToast('Failed to start conversation', 'error');
-                      }
-                    }}
-                    title="New chat"
-                    className="text-sm text-white/80 bg-white/5 hover:bg-white/10 px-2 py-1 rounded flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span className="hidden md:inline">New chat</span>
-                  </button>
-                </div>
-                <button
-                  onClick={() => setOpenDeleteAllModal(true)}
-                  title="Delete all conversations"
-                  className="text-xs text-red-400 hover:text-red-200 hover:bg-white/5 px-2 py-1 rounded"
-                >
-                  Delete all
-                </button>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-white/90">Chats</h2>
               </div>
             )}
           </div>
@@ -314,28 +235,7 @@ export default function ConversationSidebarCollapsible({
                           </div>
                         </div>
                       </button>
-
-                      {/* Delete button outside the main button to avoid nested buttons */}
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          const confirmed = window.confirm('Delete this conversation? This is permanent.');
-                          if (!confirmed) return;
-                          try {
-                            const ok = await deleteConversation?.(c.id);
-                            if (!ok) {
-                              alert('Failed to delete conversation');
-                            }
-                          } catch (err) {
-                            console.error('Error deleting conversation via context helper:', err);
-                            alert('Error deleting conversation');
-                          }
-                        }}
-                        title="Delete conversation"
-                        className="ml-1 p-2 rounded-md text-red-400 hover:text-red-200 hover:bg-white/5 transition"
-                      >
-                        <Trash className="w-4 h-4" />
-                      </button>
+                      {/* Inline delete button removed — deletion available via contextual menu */}
                     </li>
                   );
                 }}
@@ -365,54 +265,8 @@ export default function ConversationSidebarCollapsible({
           )}
         </div>
 
-        {/* Footer: User Info + Upgrade */}
-        <div className={`p-4 border-t border-gray-700 ${isCollapsed ? 'px-2' : ''}`}>
-          {user ? (
-            <>
-              <div className={`flex items-center gap-3 mb-3 ${isCollapsed ? 'justify-center' : ''}`}>
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center">
-                  <User className="w-4 h-4 text-white" />
-                </div>
-                {!isCollapsed && (
-                  <div>
-                    <p className="text-sm font-medium text-white/90">{user.name || 'User'}</p>
-                    <p className="text-xs text-white/60">Free Plan</p>
-                  </div>
-                )}
-              </div>
-              <div className={`space-y-2 ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
-                <Link
-                  href="/enterprise"
-                  className={`flex items-center gap-2 text-sm text-white/90 hover:text-white bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/30 rounded px-3 py-2 hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-200 ${
-                    isCollapsed ? 'w-10 h-10 justify-center p-0' : 'w-full'
-                  }`}
-                >
-                  <Zap className="w-4 h-4" />
-                  {!isCollapsed && <span>Get Plus</span>}
-                </Link>
-                <button
-                  onClick={handleSignOut}
-                  className={`flex items-center gap-2 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded px-3 py-2 transition-all duration-200 ${
-                    isCollapsed ? 'w-10 h-10 justify-center p-0' : 'w-full'
-                  }`}
-                >
-                  <LogOut className="w-4 h-4" />
-                  {!isCollapsed && <span>Sign Out</span>}
-                </button>
-              </div>
-            </>
-          ) : (
-            <Link
-              href="/enterprise"
-              className={`flex items-center gap-2 text-sm text-white/90 hover:text-white bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/30 rounded px-3 py-2 hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-200 ${
-                isCollapsed ? 'w-10 h-10 justify-center p-0' : 'w-full'
-              }`}
-            >
-              <Zap className="w-4 h-4" />
-              {!isCollapsed && <span>Get Plus</span>}
-            </Link>
-          )}
-        </div>
+        {/* Footer: composed SidebarFooter */}
+        <SidebarFooter isCollapsed={isCollapsed} />
       </div>
 
       {/* Sidebar no longer renders a modal for model selection */}

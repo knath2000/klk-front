@@ -192,6 +192,8 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
 
   // Temporary selected country for UI when conversation not yet created
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  // Global quick-search UI flag (toggled by sidebar quick actions)
+  const [searchOpen, setSearchOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (!socket) return;
@@ -503,7 +505,10 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
     // expose temporary selectedCountry for pre-conversation state
     selectedCountry,
     setSelectedCountry,
-  }), [activeId, setActive, sidebarOpen, toggleSidebar, unreadCounts, historyLoadingId, notifyHistoryResolved, startNewConversation, isSidebarCollapsed, toggleSidebarCollapsed]);
+    // expose search UI flag and setter for quick actions
+    searchOpen,
+    setSearchOpen,
+  }), [activeId, setActive, sidebarOpen, toggleSidebar, unreadCounts, historyLoadingId, notifyHistoryResolved, startNewConversation, isSidebarCollapsed, toggleSidebarCollapsed, selectedCountry]);
 
   return (
     <ConversationDataContext.Provider value={valueForData}>

@@ -59,6 +59,10 @@
   --safe-l: env(safe-area-inset-left);
   --safe-r: env(safe-area-inset-right);
 
+  --sidebar-expanded-width: 19rem;
+  --sidebar-collapsed-width: 4rem;
+  --sidebar-transition: width 300ms ease-in-out, background-color 300ms ease-in-out;
+
   /* Radii */
   --radius-sm: 14px;
   --radius-md: 18px;
