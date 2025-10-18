@@ -8,16 +8,23 @@ type Props = {
   isCollapsed: boolean;
   onNewChat: () => Promise<void> | void;
   onToggleSearch: () => void;
+  user?: { name?: string | null } | null;
 };
 
-export default function SidebarQuickActions({ isCollapsed, onNewChat, onToggleSearch }: Props) {
+export default function SidebarQuickActions({ isCollapsed, onNewChat, onToggleSearch, user }: Props) {
   const pathname = usePathname();
-  const actions = [
+  const actionsBase = [
     { id: 'new', icon: <Plus className="w-4 h-4" />, label: 'New chat', onClick: onNewChat },
     { id: 'search', icon: <Search className="w-4 h-4" />, label: 'Search chats', onClick: onToggleSearch },
     { id: 'translate', icon: <Languages className="w-4 h-4" />, label: 'Translate', href: '/translate' },
     { id: 'library', icon: <BookOpen className="w-4 h-4" />, label: 'Library', onClick: () => { /* stub */ } },
     { id: 'projects', icon: <FolderPlus className="w-4 h-4" />, label: 'Projects', onClick: () => { /* stub */ } },
+  ];
+
+  // If user is not signed in, prepend a Sign In quick action for high visibility
+  const actions = user ? actionsBase : [
+    { id: 'signin', icon: <BookOpen className="w-4 h-4" />, label: 'Sign In', href: '/auth/signin' },
+    ...actionsBase
   ];
 
   return (

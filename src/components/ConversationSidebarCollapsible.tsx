@@ -107,7 +107,6 @@ export default function ConversationSidebarCollapsible({
 
         {/* Header Section - Logo and User Account */}
         <div className={`p-4 border-b border-gray-700 ${isCollapsed ? 'px-2' : ''}`}>
-          {/* Replace header + quick actions with SidebarQuickActions component */}
           <SidebarQuickActions
             isCollapsed={isCollapsed}
             onNewChat={async () => {
@@ -120,6 +119,7 @@ export default function ConversationSidebarCollapsible({
               }
             }}
             onToggleSearch={() => ui.setSearchOpen?.(!ui.searchOpen)}
+            user={user}
           />
         </div>
 
