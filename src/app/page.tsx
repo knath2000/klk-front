@@ -5,13 +5,12 @@ import ChatShell from '@/components/ChatShell';
 import ChatView from '@/components/ChatView';
 
 export default function Home() {
-  const [footerSlot, setFooterSlot] = useState<ReactNode | null>(null);
-
+  // Footer/input rendering is handled by ChatViewContainer; no footerSlot needed.
   return (
     <div className="min-h-screen">
       {/* Main chat interface (sidebar for authenticated users) */}
-      <ChatShell footerSlot={footerSlot}>
-        <ChatView onFooterChange={setFooterSlot} />
+      <ChatShell>
+        <ChatView />
       </ChatShell>
     </div>
   );
