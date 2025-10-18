@@ -1,6 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { Plus, Search, BookOpen, FolderPlus } from 'lucide-react';
+import { Languages } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 type Props = {
   isCollapsed: boolean;
@@ -9,9 +11,11 @@ type Props = {
 };
 
 export default function SidebarQuickActions({ isCollapsed, onNewChat, onToggleSearch }: Props) {
+  const pathname = usePathname();
   const actions = [
     { id: 'new', icon: <Plus className="w-4 h-4" />, label: 'New chat', onClick: onNewChat },
     { id: 'search', icon: <Search className="w-4 h-4" />, label: 'Search chats', onClick: onToggleSearch },
+    { id: 'translate', icon: <Languages className="w-4 h-4" />, label: 'Translate', href: '/translate' },
     { id: 'library', icon: <BookOpen className="w-4 h-4" />, label: 'Library', onClick: () => { /* stub */ } },
     { id: 'projects', icon: <FolderPlus className="w-4 h-4" />, label: 'Projects', onClick: () => { /* stub */ } },
   ];
@@ -28,21 +32,40 @@ export default function SidebarQuickActions({ isCollapsed, onNewChat, onToggleSe
       </div>
 
       <nav aria-label="Quick actions" className={isCollapsed ? 'flex flex-col items-center gap-2' : 'flex flex-col gap-2'}>
-        {actions.map(a => (
-          <button
-            key={a.id}
-            onClick={() => a.onClick?.()}
-            title={a.label}
-            className={`
-              flex items-center gap-3 rounded-md px-3 py-2 transition-colors
-              text-white/90 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400/60
-              ${isCollapsed ? 'w-10 h-10 justify-center p-0' : 'w-full justify-start'}
-            `}
-          >
-            <span className={isCollapsed ? 'mx-auto' : ''}>{a.icon}</span>
-            {!isCollapsed && <span className="text-sm font-medium">{a.label}</span>}
-          </button>
-        ))}
+        {actions.map(a => {
+          const isActive = !!(a.href && pathname?.startsWith(a.href));
+          const baseClass = `
+            flex items-center gap-3 rounded-md px-3 py-2 transition-colors
+            text-white/90 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400/60
+            ${isCollapsed ? 'w-10 h-10 justify-center p-0' : 'w-full justify-start'}
+          `;
+
+          if (a.href) {
+            return (
+              <Link
+                key={a.id}
+                href={a.href}
+                title={a.label}
+                className={`${baseClass} ${isActive ? 'bg-white/10 text-white' : ''}`}
+              >
+                <span className={isCollapsed ? 'mx-auto' : ''}>{a.icon}</span>
+                {!isCollapsed && <span className="text-sm font-medium">{a.label}</span>}
+              </Link>
+            );
+          }
+
+          return (
+            <button
+              key={a.id}
+              onClick={() => a.onClick?.()}
+              title={a.label}
+              className={baseClass}
+            >
+              <span className={isCollapsed ? 'mx-auto' : ''}>{a.icon}</span>
+              {!isCollapsed && <span className="text-sm font-medium">{a.label}</span>}
+            </button>
+          );
+        })}
       </nav>
     </header>
   );
