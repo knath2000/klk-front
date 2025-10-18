@@ -12,6 +12,7 @@ export type ChatInputSectionProps = {
   onSend?: (msg: string) => void;
   disabled?: boolean;
   selectedCountry?: string | null;
+  isConnected?: boolean;
 };
 
 /**
@@ -23,10 +24,13 @@ export default function ChatInputSection({
   onSend,
   disabled = false,
   selectedCountry = null,
+  isConnected: isConnectedProp,
 }: ChatInputSectionProps): React.ReactElement {
   const conv = useConversations();
   const { socket, isConnected } = useWebSocket();
   const ui = useConversationUI();
+  // Allow caller to override context-derived connection state for reuse in unified footer
+  const localIsConnected = typeof isConnectedProp === 'boolean' ? isConnectedProp : isConnected;
   const pendingMessageRef = useRef<{ text: string; id: string; countryKey: string | null } | null>(null);
   const waitingForConversationRef = useRef<boolean>(false);
 
@@ -49,7 +53,7 @@ export default function ChatInputSection({
       conv.addMessage(targetConvId, userMessage);
       // emit via socket if available
       try {
-        if (socket && isConnected) {
+        if (socket && localIsConnected) {
           socket.emit('user_message', {
             conversationId: targetConvId,
             message: msg,
@@ -69,7 +73,7 @@ export default function ChatInputSection({
 
     void tryFlush();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conv.activeId, socket, isConnected]);
+  }, [conv.activeId, socket, localIsConnected]);
 
   const handleSend = async (msg: string) => {
     // forward to any optional caller
@@ -97,7 +101,7 @@ export default function ChatInputSection({
       };
       conv.addMessage(targetConvId, optimisticMessage);
       try {
-        if (socket && isConnected) {
+        if (socket && localIsConnected) {
           socket.emit('user_message', {
             conversationId: targetConvId,
             message: msg,
@@ -171,7 +175,7 @@ export default function ChatInputSection({
 
   return (
     <div className="p-3">
-      <ChatInput onSendMessage={handleSend} disabled={disabled || !isConnected} selectedCountry={selectedCountry ?? ui.selectedCountry ?? null} />
+      <ChatInput onSendMessage={handleSend} disabled={disabled || !localIsConnected} selectedCountry={selectedCountry ?? ui.selectedCountry ?? null} />
     </div>
   );
 }

@@ -8,10 +8,9 @@ import clsx from 'clsx';
 
 type ChatShellProps = {
   children: ReactNode;
-  footerSlot?: ReactNode;
 };
 
-export default function ChatShellFullHeight({ children, footerSlot }: ChatShellProps) {
+export default function ChatShellFullHeight({ children }: ChatShellProps) {
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const { isSidebarCollapsed, setSidebarCollapsed, toggleSidebarCollapsed } = useConversationUI();
 
@@ -76,7 +75,7 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
         )}
       >
         <div className="flex-1 flex flex-col">{children}</div>
-        {footerSlot}
+        {/* footer is rendered by ChatViewContainer now */}
       </main>
     </div>
   );

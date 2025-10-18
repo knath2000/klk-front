@@ -30,30 +30,20 @@ export default function ChatViewContainer({ onFooterChange }: Props): React.Reac
   const messagesForActive = (data.messages && ui.activeId) ? (data.messages[ui.activeId] ?? []) : [];
   const showFooter = messagesForActive.length > 0;
 
-  // Memoize the footer node so its identity is stable across renders unless
-  // one of its dependencies changes. This avoids creating a new JSX value on
-  // every render (which previously caused render-phase updates / infinite loops).
-  const footerNode = React.useMemo(() => {
-    if (!showFooter) return null;
-    return (
-      <footer className="border-t border-gray-200 dark:border-gray-700">
-        <ChatInputSection
-          conversationId={ui.activeId}
-          onSend={() => {
-            /* placeholder */
-          }}
-          disabled={!ws.isConnected}
-          selectedCountry={activeConversation?.persona_id ?? null}
-        />
-      </footer>
-    );
-  }, [showFooter, ui.activeId, ws.isConnected, activeConversation?.persona_id]);
-
-  // Only call the parent's setter when the memoized node changes.
-  React.useEffect(() => {
-    if (!onFooterChange) return;
-    onFooterChange(footerNode);
-  }, [onFooterChange, footerNode]);
+  // We render a single unified footer here (ChatInputSection). EmptyChatState
+  // will be converted to presentation-only; the input lives here to avoid duplicate inputs.
+  const footerNode = (
+    <footer className="border-t border-gray-200 dark:border-gray-700">
+      <ChatInputSection
+        conversationId={ui.activeId}
+        onSend={() => {
+          /* placeholder */
+        }}
+        disabled={!ws.isConnected}
+        selectedCountry={activeConversation?.persona_id ?? null}
+      />
+    </footer>
+  );
 
   return (
     <div className={clsx('flex w-full h-full items-stretch bg-transparent')}>
@@ -71,6 +61,9 @@ export default function ChatViewContainer({ onFooterChange }: Props): React.Reac
             isAuthenticated={!!user?.id}
           />
         </main>
+        
+        {/* Unified footer always rendered here; presentation-only EmptyChatState will no longer mount its own ChatInputSection */}
+        {footerNode}
       </div>
     </div>
   );
