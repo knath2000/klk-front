@@ -30,31 +30,30 @@ export default function ChatViewContainer({ onFooterChange }: Props): React.Reac
   const messagesForActive = (data.messages && ui.activeId) ? (data.messages[ui.activeId] ?? []) : [];
   const showFooter = messagesForActive.length > 0;
 
-  // Update ChatShell footerSlot via onFooterChange (if provided). This prevents duplicate footers
-  // and centralizes footer placement in the ChatShell layout.
-  useEffect(() => {
+  // Memoize the footer node so its identity is stable across renders unless
+  // one of its dependencies changes. This avoids creating a new JSX value on
+  // every render (which previously caused render-phase updates / infinite loops).
+  const footerNode = React.useMemo(() => {
+    if (!showFooter) return null;
+    return (
+      <footer className="border-t border-gray-200 dark:border-gray-700">
+        <ChatInputSection
+          conversationId={ui.activeId}
+          onSend={() => {
+            /* placeholder */
+          }}
+          disabled={!ws.isConnected}
+          selectedCountry={activeConversation?.persona_id ?? null}
+        />
+      </footer>
+    );
+  }, [showFooter, ui.activeId, ws.isConnected, activeConversation?.persona_id]);
+
+  // Only call the parent's setter when the memoized node changes.
+  React.useEffect(() => {
     if (!onFooterChange) return;
-
-    if (showFooter) {
-      const footer = (
-        <footer className="border-t border-gray-200 dark:border-gray-700">
-          <ChatInputSection
-            conversationId={ui.activeId}
-            onSend={() => {
-              /* placeholder */
-            }}
-            disabled={!ws.isConnected}
-            selectedCountry={activeConversation?.persona_id ?? null}
-          />
-        </footer>
-      );
-      onFooterChange(footer);
-      return;
-    }
-
-    // Hide footer when empty/hero state
-    onFooterChange(null);
-  }, [showFooter, onFooterChange, ui.activeId, ws.isConnected, activeConversation?.persona_id]);
+    onFooterChange(footerNode);
+  }, [onFooterChange, footerNode]);
 
   return (
     <div className={clsx('flex w-full h-full items-stretch bg-transparent')}>
