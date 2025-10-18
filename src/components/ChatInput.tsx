@@ -66,6 +66,23 @@ const ChatInput: React.FC<ChatInputProps> = ({
         )}
       </div>
 
+      {/* Voice Button */}
+      <button
+        type="button"
+        aria-label="Start voice input"
+        onClick={() => {
+          // placeholder voice handler: focus input for now
+          const inputEl = document.querySelector('footer input[type="text"]') as HTMLInputElement | null;
+          if (inputEl) inputEl.focus();
+        }}
+        className="w-12 h-12 rounded-full bg-pink-600 flex items-center justify-center shadow-md text-white"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M19 11v1a7 7 0 0 1-14 0v-1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+
       {/* Send Button */}
       <motion.button
         onClick={handleSend}

@@ -8,6 +8,7 @@ import { reportEvent, reportError } from '@/lib/telemetry';
 import MessageBubble from '../MessageBubble';
 import TypingIndicator from '../TypingIndicator';
 import { Message } from '@/types/chat';
+import EmptyChatState from './EmptyChatState';
 
 export type ChatMessagesListProps = {
   conversationId: string | null;
@@ -99,6 +100,15 @@ export default function ChatMessagesList({
     partialsRef.current = {};
     setIsTyping(false);
   }, [conversationId, conv.messages]);
+
+  // If there is no active conversation or it has no messages, show the empty/hero state
+  if (!conversationId || messages.length === 0) {
+    return (
+      <div className="flex-1">
+        <EmptyChatState />
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (!socket) return;
