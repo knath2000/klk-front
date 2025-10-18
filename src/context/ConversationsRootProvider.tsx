@@ -50,6 +50,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
   const [deleteAllLoading, setDeleteAllLoading] = useState<boolean>(false);
   const pendingHistoryIdRef = useRef<string | null>(null);
   const lastFetchedUserIdRef = useRef<string | null>(null);
+  const lastHistoryLoadedIdRef = useRef<string | null>(null);
   // --- Instrumentation: history & auth metrics for debugging React #310 ---
   const historyMetricsRef = useRef({
     emits_total: 0,
@@ -181,8 +182,10 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
       const stored = Storage.get<string>('chatConversationId', null);
       console.debug('[ConversationsRoot] Storage.get chatConversationId ->', stored);
       if (stored && rows.some(r => r.id === stored)) {
+        // keep lastHistoryLoaded so we don't auto-refetch if we've already loaded this id
         setActiveId(stored);
       } else if (rows.length > 0) {
+        lastHistoryLoadedIdRef.current = null;
         setActiveId(rows[0].id);
         Storage.set('chatConversationId', rows[0].id);
         historyMetricsRef.current.localStorageWrites += 1;
@@ -219,6 +222,10 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
   useEffect(() => {
     // Guard #1: activeId-driven history load (emitter 1)
     if (!activeId || !socket || !isConnected) return;
+    if (lastHistoryLoadedIdRef.current === activeId) {
+      console.debug('[ConversationsRoot] Skipping emit (already loaded history for activeId)', { activeId, lastHistoryLoaded: lastHistoryLoadedIdRef.current });
+      return;
+    }
     if (pendingHistoryIdRef.current === activeId) {
       console.debug('[ConversationsRoot] Skipping emit (pendingHistoryIdRef matches activeId)', { activeId, pending: pendingHistoryIdRef.current });
       return;
@@ -241,6 +248,9 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
     // Guard #2: historyLoadingId-driven retry emitter (emitter 2)
     if (!socket || !isConnected) return;
     if (!historyLoadingId || !activeId) return;
+    if (lastHistoryLoadedIdRef.current === activeId) {
+      return;
+    }
     if (historyLoadingId === activeId) {
       try {
         // Defensive: ensure we don't cause repeated emits if pending flag shows in-flight
@@ -298,6 +308,9 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
   const setActive = useCallback((id: string) => {
     if (!id || id === activeId) return;
     if (!list.some(c => c.id === id)) return;
+    if (id !== activeId) {
+      lastHistoryLoadedIdRef.current = null;
+    }
     setActiveId(id);
     setUnreadCounts(prev => {
       if (!prev[id]) return prev;
@@ -396,6 +409,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
         const { [tempIdKey]: _, ...rest } = prev;
         return { ...rest, [data.conversationId]: tempMessages };
       });
+      lastHistoryLoadedIdRef.current = null;
       setActiveId(data.conversationId);
       if (typeof window !== 'undefined') {
         localStorage.setItem('chatConversationId', data.conversationId);
@@ -448,6 +462,8 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
           pendingHistoryIdRef.current = null;
           setHistoryLoadingId(null);
         }
+        lastHistoryLoadedIdRef.current = convId;
+        console.debug('[ConversationsRoot] History loaded for conversation', { convId, metrics: historyMetricsRef.current });
       } catch (err) {
         // eslint-disable-next-line no-console
         console.warn('ConversationsRootProvider.handleHistory parse error', err);
