@@ -308,11 +308,13 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
     }, 5000);
   }, [user?.id, socket, isConnected, historyLoadingId, selectedCountry]);
 
-  useEffect(() => {
-    if (list.length === 0 && user?.id) {
-      void startNewConversation({ auto: true });
-    }
-  }, [list.length, startNewConversation, user?.id]);
+  // NOTE: Automatic conversation creation on mount/list-empty was removed.
+  // Creating a conversation eagerly here caused a render-loop: the effect would
+  // call startNewConversation -> setList (mutates list) -> effect re-runs.
+  // Conversation creation is intentionally lazy now: a conversation is created
+  // only when the user sends their first message (see ChatInputSection).
+  // If a future UX requires auto-creation, implement a guarded, once-only trigger
+  // (for example a ref that ensures the creation runs at most once) to avoid cycles.
 
   useEffect(() => {
     if (!socket) return;
