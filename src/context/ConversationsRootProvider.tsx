@@ -10,6 +10,25 @@ import { getBackendUrl, apiFetch, Storage, showNotification } from '@/lib/shared
 import { ConversationDataContext } from './ConversationDataContext';
 import { ConversationUIContext } from './ConversationUIContext';
 
+// -----------------------------------------------------------------------------
+// Investigation & Mitigation Plan (instrumented into file)
+//
+// Plan Summary (React #310 Auth Crash Investigation)
+// 1. Instrument: add temporary console counters/timestamps around both `load_history` emits,
+//    `setHistoryLoadingId`, and `pendingHistoryIdRef` transitions in
+//    [`ConversationsRootProvider.tsx`](klkfront/src/context/ConversationsRootProvider.tsx:186-209)
+//    to prove the re-trigger loop.
+// 2. Audit Effects: review `fetchConversations` init effect, history loader effect, and socket
+//    handlers to ensure state updates aren't cycling their dependencies.
+// 3. Analyze Auth Flow: trace `getNeonAuthToken`, `lastFetchedUserIdRef`, and localStorage usage
+//    for redundant updates when authenticated sessions initialize.
+// 4. Remediation Options: compare tighter guards versus ref-based "in-flight" control to prevent
+//    duplicate history emits; select the safest fix.
+// 5. Validation Plan: define regression checks for authed/guest chat, empty state, optimistic messaging,
+//    and finish with `pnpm run build`, documenting the mitigation in the memory bank before implementation.
+// -----------------------------------------------------------------------------
+// Temporary instrumentation below. Remove once investigation is complete.
+
 type ConversationSummary = {
   id: string;
   title?: string | null;
@@ -31,6 +50,15 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
   const [deleteAllLoading, setDeleteAllLoading] = useState<boolean>(false);
   const pendingHistoryIdRef = useRef<string | null>(null);
   const lastFetchedUserIdRef = useRef<string | null>(null);
+  // --- Instrumentation: history & auth metrics for debugging React #310 ---
+  const historyMetricsRef = useRef({
+    emits_total: 0,
+    emits_effect_activeId: 0,
+    emits_effect_historyLoadingId: 0,
+    historyResolved: 0,
+    fetchConversationsCalls: 0,
+    localStorageWrites: 0,
+  });
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>({});
   // Sidebar collapsed state (persisted) — expose via ConversationUIContext so UI components can react
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
@@ -83,6 +111,8 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
   }, []);
 
   const fetchConversations = useCallback(async (force = false) => {
+    historyMetricsRef.current.fetchConversationsCalls += 1;
+    console.debug('[ConversationsRoot] fetchConversations start', { userId: user?.id, force, calls: historyMetricsRef.current.fetchConversationsCalls, lastFetchedUserId: lastFetchedUserIdRef.current });
     const userId = user?.id;
     if (!userId || (!force && userId === lastFetchedUserIdRef.current)) {
       return;
@@ -149,11 +179,14 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
       })();
 
       const stored = Storage.get<string>('chatConversationId', null);
+      console.debug('[ConversationsRoot] Storage.get chatConversationId ->', stored);
       if (stored && rows.some(r => r.id === stored)) {
         setActiveId(stored);
       } else if (rows.length > 0) {
         setActiveId(rows[0].id);
         Storage.set('chatConversationId', rows[0].id);
+        historyMetricsRef.current.localStorageWrites += 1;
+        console.debug('[ConversationsRoot] Storage.set chatConversationId ->', rows[0].id, 'totalWrites:', historyMetricsRef.current.localStorageWrites);
       } else {
         setActiveId(null);
       }
@@ -184,26 +217,43 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
   }, [user?.id]);
 
   useEffect(() => {
+    // Guard #1: activeId-driven history load (emitter 1)
     if (!activeId || !socket || !isConnected) return;
-    if (pendingHistoryIdRef.current === activeId) return;
+    if (pendingHistoryIdRef.current === activeId) {
+      console.debug('[ConversationsRoot] Skipping emit (pendingHistoryIdRef matches activeId)', { activeId, pending: pendingHistoryIdRef.current });
+      return;
+    }
     pendingHistoryIdRef.current = activeId;
     setHistoryLoadingId(activeId);
     try {
+      historyMetricsRef.current.emits_total += 1;
+      historyMetricsRef.current.emits_effect_activeId += 1;
+      console.debug('[ConversationsRoot] Emitting load_history (effect activeId) ', { activeId, metrics: historyMetricsRef.current });
       socket.emit('load_history', { conversationId: activeId });
-    } catch {
+    } catch (e) {
+      console.warn('[ConversationsRoot] emit(load_history) failed (effect activeId)', { activeId, error: e });
       pendingHistoryIdRef.current = null;
       setHistoryLoadingId(null);
     }
   }, [activeId, socket, isConnected]);
 
   useEffect(() => {
+    // Guard #2: historyLoadingId-driven retry emitter (emitter 2)
     if (!socket || !isConnected) return;
     if (!historyLoadingId || !activeId) return;
     if (historyLoadingId === activeId) {
       try {
+        // Defensive: ensure we don't cause repeated emits if pending flag shows in-flight
+        if (pendingHistoryIdRef.current === activeId) {
+          console.debug('[ConversationsRoot] Skipping emit (pending flag set) in historyLoadingId effect', { activeId, historyLoadingId });
+          return;
+        }
+        historyMetricsRef.current.emits_total += 1;
+        historyMetricsRef.current.emits_effect_historyLoadingId += 1;
+        console.debug('[ConversationsRoot] Emitting load_history (effect historyLoadingId) ', { activeId, historyLoadingId, metrics: historyMetricsRef.current });
         socket.emit('load_history', { conversationId: activeId });
-      } catch {
-        // ignore
+      } catch (e) {
+        console.warn('[ConversationsRoot] emit(load_history) failed (historyLoadingId effect)', { activeId, historyLoadingId, error: e });
       }
     }
   }, [isConnected, socket, historyLoadingId, activeId]);
@@ -233,11 +283,15 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
   }, [socket, activeId]);
 
   const notifyHistoryResolved = useCallback((conversationId: string) => {
+    // mark resolution in instrumentation and clear flags
     if (pendingHistoryIdRef.current === conversationId) {
       pendingHistoryIdRef.current = null;
+      historyMetricsRef.current.historyResolved += 1;
+      console.debug('[ConversationsRoot] notifyHistoryResolved cleared pendingHistoryIdRef', { conversationId, metrics: historyMetricsRef.current });
     }
     if (historyLoadingId === conversationId) {
       setHistoryLoadingId(null);
+      console.debug('[ConversationsRoot] notifyHistoryResolved cleared historyLoadingId', { conversationId, metrics: historyMetricsRef.current });
     }
   }, [historyLoadingId]);
 
@@ -253,6 +307,8 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
     });
     if (typeof window !== 'undefined') {
       localStorage.setItem('chatConversationId', id);
+      historyMetricsRef.current.localStorageWrites += 1;
+      console.debug('[ConversationsRoot] setActive persisted chatConversationId', { id, localWrites: historyMetricsRef.current.localStorageWrites });
     }
   }, [activeId, list]);
 
@@ -308,6 +364,8 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
 
     if (typeof window !== 'undefined') {
       localStorage.setItem('chatConversationId', tempId);
+      historyMetricsRef.current.localStorageWrites += 1;
+      console.debug('[ConversationsRoot] startNewConversation tempId assigned & persisted', { tempId, localWrites: historyMetricsRef.current.localStorageWrites });
     }
 
     setTimeout(() => {
