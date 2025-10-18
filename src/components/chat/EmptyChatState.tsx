@@ -2,7 +2,8 @@
 
 // New EmptyChatState component: centered greeting + input hero
 import React from 'react';
-import ChatInput from '@/components/ChatInput';
+import { useWebSocket } from '@/context/WebSocketContext';
+import ChatInputSection from '@/components/chat/ChatInputSection';
 import { useAuth } from '@/context/AuthContext';
 import { useConversationUI } from '@/context/ConversationUIContext';
 import clsx from 'clsx';
@@ -13,28 +14,16 @@ export default function EmptyChatState(): React.ReactElement {
   const rawName = (user && (user.name || user.email)) ?? 'there';
   const firstName = String(rawName).split(' ')[0];
 
-  const activateAndFocusFooter = async () => {
-    try {
-      // Create or activate a conversation (provider handles dedupe)
-      if (ui?.startNewConversation) {
-        await ui.startNewConversation();
-      }
-      // Wait a tick for footer to mount and then focus
-      setTimeout(() => {
-        const footerInput = document.querySelector('footer input[type="text"]') as HTMLInputElement | null;
-        if (footerInput) {
-          footerInput.focus();
-          const val = footerInput.value || '';
-          footerInput.setSelectionRange(val.length, val.length);
-        }
-      }, 120);
-    } catch (e) {
-      // Fallback: try direct focus attempt anyway
+  const activateAndFocusFooter = () => {
+    // Only focus the footer input — do not create a conversation on focus.
+    setTimeout(() => {
       const footerInput = document.querySelector('footer input[type="text"]') as HTMLInputElement | null;
       if (footerInput) {
         footerInput.focus();
+        const val = footerInput.value || '';
+        footerInput.setSelectionRange(val.length, val.length);
       }
-    }
+    }, 50);
   };
 
   return (
@@ -52,58 +41,26 @@ export default function EmptyChatState(): React.ReactElement {
       </h1>
 
       <div className="w-full max-w-2xl">
-        {/* Visual hero input - clicking focuses the real footer input */}
+        {/* Hero input: render the real input handler so typing/sending behaves the same as footer */}
         <div
-          role="button"
-          tabIndex={0}
-          onClick={() => void activateAndFocusFooter()}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              void activateAndFocusFooter();
-            }
-          }}
           className={clsx(
             'mx-auto',
-            'flex items-center gap-4',
             'w-full',
             'rounded-full',
             'px-4 py-3',
             'bg-gray-800/60 dark:bg-gray-800',
             'shadow-lg',
-            'ring-1 ring-black/20',
-            'cursor-text',
-            'transition-shadow',
-            'hover:shadow-xl'
+            'ring-1 ring-black/20'
           )}
         >
-          <div className="flex items-center justify-center w-10 h-10 text-gray-300">
-            <span className="text-xl font-medium">+</span>
-          </div>
-
-          <div className="flex-1">
-            <div className="text-left text-gray-300 text-lg">Ask anything</div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              aria-label="Voice input"
-              className="w-10 h-10 rounded-full bg-pink-600 flex items-center justify-center shadow-md"
-              onClick={(e) => {
-                // prevent outer focus handler from stealing click
-                e.stopPropagation();
-                void activateAndFocusFooter();
-              }}
-            >
-              {/* Microphone SVG (simple) */}
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M19 11v1a7 7 0 0 1-14 0v-1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 19v3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </div>
+          <ChatInputSection
+            conversationId={ui.activeId}
+            onSend={() => {
+              /* no-op: ChatInputSection handles creation and send */
+            }}
+            disabled={!useWebSocket().isConnected}
+            selectedCountry={ui.selectedCountry ?? null}
+          />
         </div>
 
         <div className="mt-4 text-center text-sm text-gray-400">
