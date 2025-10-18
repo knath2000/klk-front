@@ -165,14 +165,23 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
   }, [backendUrl, user?.id]);
 
   useEffect(() => {
+    // Only depend on user?.id to avoid effect re-running due to fetchConversations identity changes.
     if (user?.id) {
-      void fetchConversations();
+      // Call the memoized fetchConversations from inside an async IIFE to avoid
+      // placing the function reference into the effect dependency array.
+      (async () => {
+        try {
+          await fetchConversations();
+        } catch (err) {
+          // swallowing here is fine; fetchConversations sets its own error state
+        }
+      })();
     } else {
       setList([]);
       setActiveId(null);
       lastFetchedUserIdRef.current = null;
     }
-  }, [user?.id, fetchConversations]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!activeId || !socket || !isConnected) return;
