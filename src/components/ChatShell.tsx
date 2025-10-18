@@ -13,7 +13,7 @@ type ChatShellProps = {
 export default function ChatShellFullHeight({ children, footerSlot }: ChatShellProps) {
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const { isSidebarCollapsed, setSidebarCollapsed, toggleSidebarCollapsed } = useConversationUI();
-  const sidebarWidth = isSidebarCollapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-expanded-width)';
+  const lgWidthClass = isSidebarCollapsed ? 'lg:w-[var(--sidebar-collapsed-width)]' : 'lg:w-[var(--sidebar-expanded-width)]';
 
   return (
     <div className="relative flex min-h-screen items-stretch">
@@ -40,6 +40,7 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
       {/* Sidebar - mobile drawer + desktop collapsible sidebar */}
       <aside
         className={`
+          ${lgWidthClass}
           sidebar-shell
           ${isMobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}
           fixed left-0 drawer-inner drawer-top-offset
@@ -49,7 +50,7 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
           z-[60]
           overflow-y-auto
         `}
-        style={{ top: 'var(--safe-top)', width: sidebarWidth, transition: 'var(--sidebar-transition)' }}
+        style={{ top: 'var(--safe-top)', transition: 'var(--sidebar-transition)' }}
       >
         <ConversationSidebarCollapsible
           isCollapsed={isSidebarCollapsed}
