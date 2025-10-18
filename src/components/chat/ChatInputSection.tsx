@@ -75,10 +75,18 @@ export default function ChatInputSection({
     // forward to any optional caller
     if (onSend) onSend(msg);
 
+    // Ensure a country is selected before allowing message send / conversation creation.
+    const effectiveCountry = selectedCountry ?? ui.selectedCountry ?? null;
+    if (!effectiveCountry) {
+      // Defensive: ChatInput should normally prevent this, but double-check here.
+      // eslint-disable-next-line no-console
+      console.warn('Cannot send message: no country selected');
+      return;
+    }
+
     // If we already have a conversationId (or activeId), send immediately.
     const targetConvId = conv.activeId ?? conversationId;
     const messageId = `local-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-    const effectiveCountry = selectedCountry ?? ui.selectedCountry ?? null;
     if (targetConvId) {
       const optimisticMessage: Message = {
         id: messageId,

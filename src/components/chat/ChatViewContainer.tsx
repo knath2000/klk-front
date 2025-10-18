@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 // replaced monolithic context usage with adapters
 import { useConversationData } from '@/context/ConversationDataContext';
 import { useConversationUI } from '@/context/ConversationUIContext';
@@ -30,6 +30,32 @@ export default function ChatViewContainer({ onFooterChange }: Props): React.Reac
   const messagesForActive = (data.messages && ui.activeId) ? (data.messages[ui.activeId] ?? []) : [];
   const showFooter = messagesForActive.length > 0;
 
+  // Update ChatShell footerSlot via onFooterChange (if provided). This prevents duplicate footers
+  // and centralizes footer placement in the ChatShell layout.
+  useEffect(() => {
+    if (!onFooterChange) return;
+
+    if (showFooter) {
+      const footer = (
+        <footer className="border-t border-gray-200 dark:border-gray-700">
+          <ChatInputSection
+            conversationId={ui.activeId}
+            onSend={() => {
+              /* placeholder */
+            }}
+            disabled={!ws.isConnected}
+            selectedCountry={activeConversation?.persona_id ?? null}
+          />
+        </footer>
+      );
+      onFooterChange(footer);
+      return;
+    }
+
+    // Hide footer when empty/hero state
+    onFooterChange(null);
+  }, [showFooter, onFooterChange, ui.activeId, ws.isConnected, activeConversation?.persona_id]);
+
   return (
     <div className={clsx('flex w-full h-full items-stretch bg-transparent')}>
       <div className="flex-1 flex flex-col h-full">
@@ -46,19 +72,6 @@ export default function ChatViewContainer({ onFooterChange }: Props): React.Reac
             isAuthenticated={!!user?.id}
           />
         </main>
-
-        {showFooter && (
-          <footer className="border-t border-gray-200 dark:border-gray-700">
-            <ChatInputSection
-              conversationId={ui.activeId}
-              onSend={() => {
-                /* placeholder */
-              }}
-              disabled={!ws.isConnected}
-              selectedCountry={activeConversation?.persona_id ?? null}
-            />
-          </footer>
-        )}
       </div>
     </div>
   );
