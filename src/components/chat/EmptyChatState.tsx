@@ -4,21 +4,36 @@
 import React from 'react';
 import ChatInput from '@/components/ChatInput';
 import { useAuth } from '@/context/AuthContext';
+import { useConversationUI } from '@/context/ConversationUIContext';
 import clsx from 'clsx';
 
 export default function EmptyChatState(): React.ReactElement {
   const { user } = useAuth();
+  const ui = useConversationUI();
   const rawName = (user && (user.name || user.email)) ?? 'there';
   const firstName = String(rawName).split(' ')[0];
 
-  const focusFooterInput = () => {
-    // Try to focus the bottom input (ChatInput lives in the footer)
-    const footerInput = document.querySelector('footer input[type="text"]') as HTMLInputElement | null;
-    if (footerInput) {
-      footerInput.focus();
-      // place caret at end
-      const val = footerInput.value || '';
-      footerInput.setSelectionRange(val.length, val.length);
+  const activateAndFocusFooter = async () => {
+    try {
+      // Create or activate a conversation (provider handles dedupe)
+      if (ui?.startNewConversation) {
+        await ui.startNewConversation();
+      }
+      // Wait a tick for footer to mount and then focus
+      setTimeout(() => {
+        const footerInput = document.querySelector('footer input[type="text"]') as HTMLInputElement | null;
+        if (footerInput) {
+          footerInput.focus();
+          const val = footerInput.value || '';
+          footerInput.setSelectionRange(val.length, val.length);
+        }
+      }, 120);
+    } catch (e) {
+      // Fallback: try direct focus attempt anyway
+      const footerInput = document.querySelector('footer input[type="text"]') as HTMLInputElement | null;
+      if (footerInput) {
+        footerInput.focus();
+      }
     }
   };
 
@@ -41,11 +56,11 @@ export default function EmptyChatState(): React.ReactElement {
         <div
           role="button"
           tabIndex={0}
-          onClick={focusFooterInput}
+          onClick={() => void activateAndFocusFooter()}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              focusFooterInput();
+              void activateAndFocusFooter();
             }
           }}
           className={clsx(
@@ -78,7 +93,7 @@ export default function EmptyChatState(): React.ReactElement {
               onClick={(e) => {
                 // prevent outer focus handler from stealing click
                 e.stopPropagation();
-                focusFooterInput();
+                void activateAndFocusFooter();
               }}
             >
               {/* Microphone SVG (simple) */}

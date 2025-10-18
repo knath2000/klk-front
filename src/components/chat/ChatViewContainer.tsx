@@ -25,6 +25,11 @@ export default function ChatViewContainer({ onFooterChange }: Props): React.Reac
     return data.list.find((c) => c.id === ui.activeId) ?? null;
   }, [data.list, ui.activeId]);
 
+  // Determine if the active conversation has any messages.
+  // If there are no messages we consider this the "empty/hero" state and hide the footer input.
+  const messagesForActive = (data.messages && ui.activeId) ? (data.messages[ui.activeId] ?? []) : [];
+  const showFooter = messagesForActive.length > 0;
+
   return (
     <div className={clsx('flex w-full h-full items-stretch bg-transparent')}>
       <div className="flex-1 flex flex-col h-full">
@@ -42,16 +47,18 @@ export default function ChatViewContainer({ onFooterChange }: Props): React.Reac
           />
         </main>
 
-        <footer className="border-t border-gray-200 dark:border-gray-700">
-          <ChatInputSection
-            conversationId={ui.activeId}
-            onSend={() => {
-              /* placeholder */
-            }}
-            disabled={!ws.isConnected}
-            selectedCountry={activeConversation?.persona_id ?? null}
-          />
-        </footer>
+        {showFooter && (
+          <footer className="border-t border-gray-200 dark:border-gray-700">
+            <ChatInputSection
+              conversationId={ui.activeId}
+              onSend={() => {
+                /* placeholder */
+              }}
+              disabled={!ws.isConnected}
+              selectedCountry={activeConversation?.persona_id ?? null}
+            />
+          </footer>
+        )}
       </div>
     </div>
   );
