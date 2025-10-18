@@ -4,6 +4,7 @@ import React, { useState, useEffect, ReactNode } from 'react';
 import { useConversationUI } from '@/context/ConversationUIContext';
 import ConversationSidebarCollapsible from '@/components/ConversationSidebarCollapsible';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import clsx from 'clsx';
 
 type ChatShellProps = {
   children: ReactNode;
@@ -13,7 +14,6 @@ type ChatShellProps = {
 export default function ChatShellFullHeight({ children, footerSlot }: ChatShellProps) {
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const { isSidebarCollapsed, setSidebarCollapsed, toggleSidebarCollapsed } = useConversationUI();
-  const lgWidthClass = isSidebarCollapsed ? 'lg:w-[var(--sidebar-collapsed-width)]' : 'lg:w-[var(--sidebar-expanded-width)]';
 
   return (
     <div className="relative flex min-h-screen items-stretch">
@@ -39,18 +39,13 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
 
       {/* Sidebar - mobile drawer + desktop collapsible sidebar */}
       <aside
-        className={`
-          ${lgWidthClass}
-          sidebar-shell
-          ${isMobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}
-          fixed left-0 drawer-inner drawer-top-offset
-          lg:fixed lg:inset-y-0 lg:left-0 lg:translate-x-0 lg:block
-          lg:flex-shrink-0
-          bg-[#202123]
-          z-[60]
-          overflow-y-auto
-        `}
-        style={{ top: 'var(--safe-top)', transition: 'var(--sidebar-transition)' }}
+        className={clsx(
+          'sidebar-shell drawer-width fixed left-0 drawer-inner drawer-top-offset bg-[#202123] z-[60] overflow-y-auto transition-transform duration-300 ease-in-out',
+          isMobileDrawerOpen ? 'translate-x-0' : '-translate-x-full',
+          'lg:fixed lg:inset-y-0 lg:left-0 lg:translate-x-0 lg:block lg:flex-shrink-0',
+          isSidebarCollapsed ? 'lg:[width:var(--sidebar-collapsed-width)]' : 'lg:[width:var(--sidebar-expanded-width)]'
+        )}
+        style={{ top: 'var(--safe-top)' }}
       >
         <ConversationSidebarCollapsible
           isCollapsed={isSidebarCollapsed}
@@ -75,8 +70,10 @@ export default function ChatShellFullHeight({ children, footerSlot }: ChatShellP
 
       {/* Main content */}
       <main
-        className={`flex-1 relative flex flex-col transition-all duration-300 ease-in-out bg-[#0b0c1a]`}
-        style={{ marginLeft: isSidebarCollapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-expanded-width)', transition: 'var(--sidebar-transition)' }}
+        className={clsx(
+          'flex-1 relative flex flex-col transition-all duration-300 ease-in-out bg-[#0b0c1a] ml-0',
+          isSidebarCollapsed ? 'lg:ml-[var(--sidebar-collapsed-width)]' : 'lg:ml-[var(--sidebar-expanded-width)]'
+        )}
       >
         <div className="flex-1 flex flex-col">{children}</div>
         {footerSlot}
