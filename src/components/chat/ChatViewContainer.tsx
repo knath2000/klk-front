@@ -28,7 +28,7 @@ export default function ChatViewContainer({ onFooterChange }: Props): React.Reac
   // Determine if the active conversation has any messages.
   // If there are no messages we consider this the "empty/hero" state and hide the footer input.
   const messagesForActive = (data.messages && ui.activeId) ? (data.messages[ui.activeId] ?? []) : [];
-  const showFooter = messagesForActive.length > 0 && !ui.historyLoadingId;
+  const showFooter = messagesForActive.length > 0 && !ui.historyLoadingId && ui.activeId && !ui.activeId.startsWith('temp-');
 
   // We render a single unified footer here (ChatInputSection). EmptyChatState
   // will be converted to presentation-only; the input lives here to avoid duplicate inputs.

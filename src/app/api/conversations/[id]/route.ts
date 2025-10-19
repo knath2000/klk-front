@@ -43,3 +43,41 @@ export async function DELETE(req: Request, context: any) {
     return NextResponse.json({ error: 'Proxy failed' }, { status: 500 });
   }
 }
+
+export async function PATCH(req: Request, context: any) {
+  try {
+    const conversationId = context?.params?.id;
+    if (!conversationId) {
+      console.error('Missing conversation id in route params');
+      return NextResponse.json({ error: 'Missing conversation id' }, { status: 400 });
+    }
+
+    const authHeader = req.headers.get('authorization') || '';
+    const body = await req.text();
+
+    const backendRes = await fetch(`${BACKEND_URL}/api/conversations/${conversationId}`, {
+      method: 'PATCH',
+      headers: {
+        ...(authHeader ? { Authorization: authHeader } : {}),
+        'Content-Type': 'application/json',
+      },
+      body: body || '{}',
+    });
+
+    // Forward body based on content-type
+    const contentType = backendRes.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const json = await backendRes.json();
+      return NextResponse.json(json, { status: backendRes.status });
+    } else {
+      const text = await backendRes.text();
+      return new NextResponse(text, {
+        status: backendRes.status,
+        headers: { 'Content-Type': contentType || 'text/plain' }
+      });
+    }
+  } catch (err: any) {
+    console.error('Proxy PATCH /api/conversations/:id error', err);
+    return NextResponse.json({ error: 'Proxy failed' }, { status: 500 });
+  }
+}
