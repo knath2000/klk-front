@@ -44,34 +44,15 @@ export default function EmptyChatState(): React.ReactElement {
         {/* Presentation-only scaffold: the actual interactive input is the unified footer input.
             Clicking this scaffold focuses the global footer input so we avoid duplicate inputs. */}
         {ui.selectedCountry ? (
-          <div
-            onClick={activateAndFocusFooter}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                activateAndFocusFooter();
-              }
-            }}
-            className={clsx(
-              'mx-auto',
-              'w-full',
-              'rounded-full',
-              'px-4 py-3',
-              'bg-gray-800/60 dark:bg-gray-800',
-              'shadow-lg',
-              'ring-1 ring-black/20',
-              'cursor-text'
-            )}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex-1">
-                <div className="text-left text-white text-lg opacity-90">Escribe tu mensaje...</div>
-                <div className="text-sm text-gray-400 mt-1">Presiona para enfocar el input</div>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-pink-600 flex items-center justify-center text-white">AI</div>
-            </div>
+          <div className="mx-auto w-full">
+            <ChatInputSection
+              conversationId={null}
+              onSend={() => {
+                /* placeholder */
+              }}
+              disabled={false}
+              selectedCountry={ui.selectedCountry ?? null}
+            />
           </div>
         ) : (
           <div
@@ -103,7 +84,7 @@ export default function EmptyChatState(): React.ReactElement {
         )}
 
         <div className="mt-4 text-center text-sm text-gray-400">
-          Click the bar above or use the input below to start a conversation.
+          Send your first message above. The footer input will appear after you start the conversation.
         </div>
       </div>
     </div>

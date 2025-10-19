@@ -63,7 +63,7 @@ export default function ChatViewContainer({ onFooterChange }: Props): React.Reac
         </main>
         
         {/* Unified footer always rendered here; presentation-only EmptyChatState will no longer mount its own ChatInputSection */}
-        {footerNode}
+        {showFooter && footerNode}
       </div>
     </div>
   );
