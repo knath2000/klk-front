@@ -7,6 +7,7 @@ import ModelSelector from '@/components/ModelSelector';
 import type { Persona } from '@/types/chat';
 import { showToast } from '@/components/Toast';
 import { useConversationUI } from '@/context/ConversationUIContext';
+import { getNeonAuthToken } from '@/lib/neonAuth';
 
 export type ChatHeaderProps = {
   activeConversation: {
@@ -67,9 +68,13 @@ export default function ChatHeader({
       try {
         const backend = process.env.NEXT_PUBLIC_BACKEND_URL || '';
         const url = `${backend}/api/conversations/${activeConversation.id}`;
+        const token = await getNeonAuthToken();
         await fetch(url, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
           body: JSON.stringify({ persona_id: countryKey }),
         });
         showToast('Persona updated', 'success');

@@ -273,6 +273,9 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
   // Global quick-search UI flag (toggled by sidebar quick actions)
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
 
+  // Bootstrap flag: true when conversation is being created/reconciled
+  const isBootstrappingConversation = !!activeId && (activeId.startsWith('temp-') || !!pendingHistoryIdRef.current);
+
   useEffect(() => {
     if (!socket) return;
     const handleMessageReceived = (data: { conversationId: string; messageId?: string }) => {
@@ -661,7 +664,9 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
     // expose search UI flag and setter for quick actions
     searchOpen,
     setSearchOpen,
-  }), [activeId, setActive, sidebarOpen, toggleSidebar, unreadCounts, historyLoadingId, notifyHistoryResolved, startNewConversation, isSidebarCollapsed, toggleSidebarCollapsed, selectedCountry]);
+    // expose bootstrap flag to prevent double input rendering
+    isBootstrappingConversation,
+  }), [activeId, setActive, sidebarOpen, toggleSidebar, unreadCounts, historyLoadingId, notifyHistoryResolved, startNewConversation, isSidebarCollapsed, toggleSidebarCollapsed, selectedCountry, searchOpen, isBootstrappingConversation]);
 
   return (
     <ConversationDataContext.Provider value={valueForData}>

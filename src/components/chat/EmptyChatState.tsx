@@ -8,11 +8,15 @@ import { useAuth } from '@/context/AuthContext';
 import { useConversationUI } from '@/context/ConversationUIContext';
 import clsx from 'clsx';
 
-export default function EmptyChatState(): React.ReactElement {
-  const { user } = useAuth();
+export default function EmptyChatState() {
   const ui = useConversationUI();
-  const rawName = (user && (user.name || user.email)) ?? 'there';
-  const firstName = String(rawName).split(' ')[0];
+  const { selectedCountry } = ui;
+  const { user } = useAuth();
+
+  // Don't render hero input if we're bootstrapping a conversation
+  if (ui.isBootstrappingConversation) {
+    return null;
+  }
 
   const activateAndFocusFooter = () => {
     // Only focus the footer input — do not create a conversation on focus.
@@ -37,7 +41,7 @@ export default function EmptyChatState(): React.ReactElement {
           'mb-8'
         )}
       >
-        {`Hey, ${firstName}. Ready to dive in?`}
+        {`Hey, ${user?.name || 'there'}. Ready to dive in?`}
       </h1>
 
       <div className="w-full max-w-2xl">

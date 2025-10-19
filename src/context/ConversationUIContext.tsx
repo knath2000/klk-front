@@ -23,6 +23,8 @@ type ConversationUIContextType = {
   // Flag to open the global search UI for conversations (quick action)
   searchOpen?: boolean;
   setSearchOpen?: (v: boolean) => void;
+  // Bootstrap flag: true when conversation is being created/reconciled
+  isBootstrappingConversation?: boolean;
 };
 
 export const ConversationUIContext = createContext<ConversationUIContextType | undefined>(undefined);
@@ -66,6 +68,7 @@ export function useConversationUI(): ConversationUIContextType {
       setSelectedCountry: () => {},
       searchOpen: false,
       setSearchOpen: () => {},
+      isBootstrappingConversation: false,
     };
   }
   return ctx;
