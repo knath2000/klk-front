@@ -42,6 +42,8 @@ export default function ChatInputSection({
       // Ensure we have an active conversation
       const targetConvId = conv.activeId;
       if (!targetConvId) return;
+      // Guard: do not flush while activeId is still a temporary placeholder
+      if (targetConvId.startsWith('temp-')) return;
       const effectiveCountry = countryKey ?? selectedCountry ?? ui.selectedCountry ?? null;
       const userMessage: Message = {
         id: pendingId,
