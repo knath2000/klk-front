@@ -69,14 +69,19 @@ export default function ChatHeader({
         const backend = process.env.NEXT_PUBLIC_BACKEND_URL || '';
         const url = `${backend}/api/conversations/${activeConversation.id}`;
         const token = await getNeonAuthToken();
-        await fetch(url, {
-          method: 'PATCH',
+        const response = await fetch(url, {
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {})
           },
           body: JSON.stringify({ persona_id: countryKey }),
         });
+
+        if (!response.ok) {
+          throw new Error(`Failed to update persona: ${response.status} ${response.statusText}`);
+        }
+
         showToast('Persona updated', 'success');
       } catch (err) {
         console.error('Failed to persist persona selection', err);
