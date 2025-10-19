@@ -1,6 +1,6 @@
 'use client';
 
-// New EmptyChatState component: centered greeting + input hero
+// Neww EmptyChatState component: centered greeting + input hero
 import React from 'react';
 import { useWebSocket } from '@/context/WebSocketContext';
 import ChatInputSection from '@/components/chat/ChatInputSection';
