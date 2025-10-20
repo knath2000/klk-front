@@ -425,13 +425,15 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
           try {
             const token = await getNeonAuthToken();
             await apiFetch(`/api/conversations/${data.conversationId}`, {
-              method: 'PATCH',
+              method: 'PUT',
               headers: {
                 'Content-Type': 'application/json',
                 ...(token ? { Authorization: `Bearer ${token}` } : {})
               },
               body: JSON.stringify({ persona_id: selectedCountry })
             }, { retries: 1 });
+            // Refresh list to ensure server truth
+            await fetchConversations(true);
           } catch (err) {
             console.warn('Failed to persist persona on new conversation', err);
           }
