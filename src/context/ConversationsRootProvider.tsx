@@ -62,6 +62,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
     localStorageWrites: 0,
   });
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>({});
+  const messagesMapRef = useRef(messagesMap);
   // Sidebar collapsed state (persisted) — expose via ConversationUIContext so UI components can react
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
     try {
@@ -103,6 +104,10 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
   const setConversationMessages = useCallback((conversationId: string, msgs: Message[]) => {
     setMessagesMap(prev => ({ ...prev, [conversationId]: msgs }));
   }, []);
+
+  useEffect(() => {
+    messagesMapRef.current = messagesMap;
+  }, [messagesMap]);
 
   const addMessage = useCallback((conversationId: string, msg: Message) => {
     setMessagesMap(prev => {
@@ -526,18 +531,36 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
       try {
         const convId = payload.conversationId || payload.conversation_id || payload.conversation || null;
         if (!convId) return;
+        const messageId = payload.id || payload.message_id || String(Math.random());
+        const existingMessages = messagesMapRef.current?.[convId] ?? [];
+        if (existingMessages.some(m => m.id === messageId)) {
+          return;
+        }
         const msg: Message = {
-          id: payload.id || payload.message_id || String(Math.random()),
+          id: messageId,
           type: payload.type || payload.role || (payload.sender === 'user' ? 'user' : 'assistant'),
           content: String(payload.text ?? payload.content ?? ''),
           timestamp: typeof payload.ts === 'number' ? payload.ts : Date.parse(payload.created_at ?? '') || Date.now(),
         };
         addMessage(convId, msg);
+        setList(prev => {
+          const index = prev.findIndex(c => c.id === convId);
+          if (index === -1) return prev;
+          const current = prev[index];
+          const updated = {
+            ...current,
+            message_count: (current.message_count ?? 0) + 1,
+            updated_at: new Date().toISOString(),
+          };
+          const copy = [...prev];
+          copy[index] = updated;
+          return copy;
+        });
 
         // Auto-rename conversation on first real user message when title is placeholder
         try {
           // estimate new message count (current local count + 1)
-          const prevCount = (messagesMap as any)[convId]?.length ?? 0;
+          const prevCount = existingMessages.length;
           const newCount = prevCount + 1;
           const conv = list.find(c => c.id === convId);
           const isPlaceholderTitle = !conv?.title || conv?.title === '' || conv?.title === 'New Chat';
