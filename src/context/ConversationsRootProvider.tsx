@@ -49,6 +49,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [deleteAllLoading, setDeleteAllLoading] = useState<boolean>(false);
   const pendingHistoryIdRef = useRef<string | null>(null);
+  const pendingTempIdRef = useRef<string | null>(null);
   const lastFetchedUserIdRef = useRef<string | null>(null);
   const lastHistoryLoadedIdRef = useRef<string | null>(null);
   // --- Instrumentation: history & auth metrics for debugging React #310 ---
@@ -365,6 +366,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
       return;
     }
 
+    pendingTempIdRef.current = tempId;
     setList(prev => [placeholder, ...prev]);
     setActiveId(tempId);
     setHistoryLoadingId(tempId);
@@ -376,6 +378,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
       });
     } catch (e) {
       console.error('Failed to emit create_conversation', e);
+      pendingTempIdRef.current = null;
     }
 
     if (typeof window !== 'undefined') {
@@ -404,23 +407,56 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
 
     const handleConversationCreated = (data: { conversationId: string; userId: string }) => {
       console.log('🆕 Conversation created:', data.conversationId);
-      // Add the new conversation to the list with the selected persona
-      const newConversation: ConversationSummary = {
-        id: data.conversationId,
-        title: 'New Chat',
-        updated_at: new Date().toISOString(),
-        message_count: 0,
-        persona_id: selectedCountry ?? null,
-      };
-      setList(prev => [newConversation, ...prev]);
-      // Map any temp messages to the real conversation ID
-      setMessagesMap(prev => {
-        const tempEntry = Object.entries(prev).find(([key]) => key.startsWith('temp-'));
-        if (!tempEntry) return prev;
-        const [tempIdKey, tempMessages] = tempEntry;
-        const { [tempIdKey]: _, ...rest } = prev;
-        return { ...rest, [data.conversationId]: tempMessages };
+      const tempId = pendingTempIdRef.current;
+      const nowIso = new Date().toISOString();
+      let personaForPersist = selectedCountry ?? null;
+
+      setList(prev => {
+        if (tempId) {
+          const tempIndex = prev.findIndex(c => c.id === tempId);
+          if (tempIndex !== -1) {
+            const copy = [...prev];
+            const tempConversation = copy[tempIndex];
+            personaForPersist = tempConversation.persona_id ?? personaForPersist;
+            copy[tempIndex] = {
+              ...tempConversation,
+              id: data.conversationId,
+              updated_at: nowIso,
+              message_count: tempConversation.message_count ?? 0,
+            };
+            return copy.filter((conv, idx) => idx === tempIndex || conv.id !== data.conversationId);
+          }
+        }
+
+        const existingIndex = prev.findIndex(c => c.id === data.conversationId);
+        if (existingIndex !== -1) {
+          personaForPersist = prev[existingIndex].persona_id ?? personaForPersist;
+          return prev.map((c, idx) =>
+            idx === existingIndex ? { ...c, updated_at: nowIso } : c
+          );
+        }
+
+        const newConversation: ConversationSummary = {
+          id: data.conversationId,
+          title: 'New Chat',
+          updated_at: nowIso,
+          message_count: 0,
+          persona_id: personaForPersist,
+        };
+        personaForPersist = newConversation.persona_id ?? personaForPersist;
+        return [newConversation, ...prev];
       });
+
+      if (tempId && tempId !== data.conversationId) {
+        setMessagesMap(prev => {
+          const tempMessages = prev[tempId];
+          if (!tempMessages) return prev;
+          const { [tempId]: _, ...rest } = prev;
+          return { ...rest, [data.conversationId]: tempMessages };
+        });
+      }
+
+      pendingTempIdRef.current = null;
       lastHistoryLoadedIdRef.current = null;
       setActiveId(data.conversationId);
       if (typeof window !== 'undefined') {
@@ -429,7 +465,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
       setHistoryLoadingId(null);
 
       // Persist selected country for the new conversation if one was chosen
-      if (selectedCountry) {
+      if (personaForPersist) {
         void (async () => {
           try {
             const token = await getNeonAuthToken();
@@ -439,12 +475,14 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
                 'Content-Type': 'application/json',
                 ...(token ? { Authorization: `Bearer ${token}` } : {})
               },
-              body: JSON.stringify({ persona_id: selectedCountry })
+              body: JSON.stringify({ persona_id: personaForPersist })
             }, { retries: 1 });
             // Refresh list to ensure server truth
             await fetchConversations(true);
           } catch (err) {
             console.warn('Failed to persist persona on new conversation', err);
+            // Re-fetch to revert optimistic change
+            await fetchConversations(true);
           }
         })();
       }
@@ -454,7 +492,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
     return () => {
       socket.off('conversation_created', handleConversationCreated);
     };
-  }, [socket, selectedCountry]);
+  }, [socket, selectedCountry, fetchConversations]);
 
   useEffect(() => {
     if (!socket) return;
