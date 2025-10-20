@@ -389,7 +389,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
         setHistoryLoadingId(null);
       }
     }, 5000);
-  }, [user?.id, socket, isConnected, historyLoadingId, selectedCountry]);
+  }, [user?.id, socket, isConnected, selectedCountry]);
 
   // NOTE: Automatic conversation creation on mount/list-empty was removed.
   // Creating a conversation eagerly here caused a render-loop: the effect would
