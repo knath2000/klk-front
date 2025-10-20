@@ -543,19 +543,46 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
           timestamp: typeof payload.ts === 'number' ? payload.ts : Date.parse(payload.created_at ?? '') || Date.now(),
         };
         addMessage(convId, msg);
+        let updatedCount = 0;
         setList(prev => {
           const index = prev.findIndex(c => c.id === convId);
           if (index === -1) return prev;
           const current = prev[index];
+          updatedCount = (current.message_count ?? 0) + 1;
           const updated = {
             ...current,
-            message_count: (current.message_count ?? 0) + 1,
+            message_count: updatedCount,
             updated_at: new Date().toISOString(),
           };
           const copy = [...prev];
           copy[index] = updated;
           return copy;
         });
+
+        if (!list.some(c => c.id === convId)) {
+          fetchConversations(true).catch(err => console.warn('Failed to refresh conversations after message', err));
+        } else if (updatedCount > 0) {
+          const syncConversation = async () => {
+            try {
+              const token = await getNeonAuthToken();
+              if (!token) return;
+              await apiFetch(`/api/conversations/${convId}/sync`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  messageCount: updatedCount,
+                  lastMessageAt: new Date().toISOString(),
+                }),
+              }, { retries: 0 });
+            } catch (err) {
+              console.warn('Failed to sync conversation metadata', { convId, err });
+            }
+          };
+          syncConversation().catch(() => {});
+        }
 
         // Auto-rename conversation on first real user message when title is placeholder
         try {

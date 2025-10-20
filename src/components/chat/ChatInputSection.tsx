@@ -39,43 +39,34 @@ export default function ChatInputSection({
     const tryFlush = async () => {
       if (!pendingMessageRef.current) return;
       const { text: msg, id: pendingId, countryKey } = pendingMessageRef.current;
-      // Ensure we have an active conversation
       const targetConvId = conv.activeId;
-      if (!targetConvId) return;
-      // Guard: do not flush while activeId is still a temporary placeholder
-      if (targetConvId.startsWith('temp-')) return;
+      if (!targetConvId || targetConvId.startsWith('temp-')) return;
       const effectiveCountry = countryKey ?? selectedCountry ?? ui.selectedCountry ?? null;
-      const userMessage: Message = {
-        id: pendingId,
-        type: 'user',
-        content: msg,
-        timestamp: Date.now(),
-        country_key: effectiveCountry ?? undefined,
-      };
-      conv.addMessage(targetConvId, userMessage);
-      // emit via socket if available
+
+      if (!socket || !localIsConnected) {
+        return;
+      }
+
       try {
-        if (socket && localIsConnected) {
-          socket.emit('user_message', {
-            conversationId: targetConvId,
-            message: msg,
-            selected_country_key: effectiveCountry ?? null,
-            client_ts: Date.now(),
-            message_id: pendingId
-          });
-        }
+        socket.emit('user_message', {
+          conversationId: targetConvId,
+          message: msg,
+          selected_country_key: effectiveCountry ?? null,
+          client_ts: Date.now(),
+          message_id: pendingId
+        });
+        pendingMessageRef.current = null;
       } catch (err) {
         // eslint-disable-next-line no-console
-        console.error('Failed to emit user_message', err);
+        console.error('Failed to emit pending user_message', err);
       } finally {
-        pendingMessageRef.current = null;
         waitingForConversationRef.current = false;
       }
     };
 
     void tryFlush();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conv.activeId, socket, localIsConnected]);
+  }, [conv.activeId, socket, localIsConnected, selectedCountry, ui.selectedCountry]);
 
   const handleSend = async (msg: string) => {
     // forward to any optional caller
