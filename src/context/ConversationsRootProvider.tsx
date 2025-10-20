@@ -404,7 +404,16 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
 
     const handleConversationCreated = (data: { conversationId: string; userId: string }) => {
       console.log('🆕 Conversation created:', data.conversationId);
-      setList(prev => prev.map(conv => conv.id.startsWith('temp-') ? { ...conv, id: data.conversationId } : conv));
+      // Add the new conversation to the list with the selected persona
+      const newConversation: ConversationSummary = {
+        id: data.conversationId,
+        title: 'New Chat',
+        updated_at: new Date().toISOString(),
+        message_count: 0,
+        persona_id: selectedCountry ?? null,
+      };
+      setList(prev => [newConversation, ...prev]);
+      // Map any temp messages to the real conversation ID
       setMessagesMap(prev => {
         const tempEntry = Object.entries(prev).find(([key]) => key.startsWith('temp-'));
         if (!tempEntry) return prev;
