@@ -322,7 +322,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
       return copy;
     });
     if (typeof window !== 'undefined') {
-      localStorage.setItem('chatConversationId', id);
+      Storage.set('chatConversationId', id);
       historyMetricsRef.current.localStorageWrites += 1;
       console.debug('[ConversationsRoot] setActive persisted chatConversationId', { id, localWrites: historyMetricsRef.current.localStorageWrites });
     }
@@ -379,7 +379,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
     }
 
     if (typeof window !== 'undefined') {
-      localStorage.setItem('chatConversationId', tempId);
+      Storage.set('chatConversationId', tempId);
       historyMetricsRef.current.localStorageWrites += 1;
       console.debug('[ConversationsRoot] startNewConversation tempId assigned & persisted', { tempId, localWrites: historyMetricsRef.current.localStorageWrites });
     }
@@ -415,7 +415,7 @@ export function ConversationsRootProvider({ children }: { children: ReactNode })
       lastHistoryLoadedIdRef.current = null;
       setActiveId(data.conversationId);
       if (typeof window !== 'undefined') {
-        localStorage.setItem('chatConversationId', data.conversationId);
+        Storage.set('chatConversationId', data.conversationId);
       }
       setHistoryLoadingId(null);
 
