@@ -43,7 +43,7 @@ export default function ChatInputSection({
       if (!targetConvId || targetConvId.startsWith('temp-')) return;
       const effectiveCountry = countryKey ?? selectedCountry ?? ui.selectedCountry ?? null;
 
-      if (!socket || !localIsConnected) {
+      if (!socket) {
         return;
       }
 
@@ -66,7 +66,7 @@ export default function ChatInputSection({
 
     void tryFlush();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conv.activeId, socket, localIsConnected, selectedCountry, ui.selectedCountry]);
+  }, [conv.activeId, socket, selectedCountry, ui.selectedCountry]);
 
   const handleSend = async (msg: string) => {
     // forward to any optional caller
