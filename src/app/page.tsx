@@ -168,6 +168,11 @@ function HomePageContent() {
 
   const handleQuerySubmit = async (query: string) => {
     try {
+      // Immediately clear previous results when submitting new query
+      setTranslationResult(null);
+      setStreamingResult('');
+      // Don't clear currentQuery here, we'll set it after validation
+      
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
 
@@ -290,6 +295,7 @@ function HomePageContent() {
 
       setCurrentQuery(query);
       setStreamingResult('');
+      setTranslationResult(null); // Clear previous results
 
       const requestId = generateRequestId();
       const translationRequest = {
