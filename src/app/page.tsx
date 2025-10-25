@@ -168,10 +168,10 @@ function HomePageContent() {
 
   const handleQuerySubmit = async (query: string) => {
     try {
-      // Immediately clear previous results when submitting new query
+      // Immediately clear previous results and set current query when submitting new query
       setTranslationResult(null);
       setStreamingResult('');
-      // Don't clear currentQuery here, we'll set it after validation
+      setCurrentQuery(query); // Set currentQuery immediately to hide history section
       
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
@@ -276,7 +276,6 @@ function HomePageContent() {
             };
             setStreamingResult('');
             setTranslationResult(mapped);
-            setCurrentQuery(query);
             dispatch({ type: 'SET_LOADING', payload: false });
             dispatch({ type: 'ADD_TO_HISTORY', payload: {
               query,
@@ -293,7 +292,6 @@ function HomePageContent() {
         }
       }
 
-      setCurrentQuery(query);
       setStreamingResult('');
       setTranslationResult(null); // Clear previous results
 
